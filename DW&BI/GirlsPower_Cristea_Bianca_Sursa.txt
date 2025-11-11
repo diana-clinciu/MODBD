@@ -16,33 +16,34 @@ CREATE TABLE CLIENT (
 CREATE TABLE REZERVARE (
     id_rezervare NUMBER PRIMARY KEY,
     id_client NUMBER NOT NULL,
-    data_inceput DATE NOT NULL,
-    data_sfarsit DATE NOT NULL,
+    data_rezervare DATE NOT NULL, 
     FOREIGN KEY (id_client) REFERENCES CLIENT(id_client)
 );
 
 CREATE TABLE PLATA (
     id_plata NUMBER PRIMARY KEY,
     id_rezervare NUMBER NOT NULL,
-    suma NUMBER(10,2) NOT NULL,
+    suma NUMBER(10,2)  -> pret_rezervare + pret_servicii,
     data_plata DATE NOT NULL,
-    metoda_plata VARCHAR2(20),
+    metoda_plata -> sa poata alege intre cash, card, transfer,
     FOREIGN KEY (id_rezervare) REFERENCES REZERVARE(id_rezervare)
 );
 
 CREATE TABLE SERVICIU (
     id_serviciu NUMBER PRIMARY KEY,
     denumire VARCHAR2(50) NOT NULL,
-    pret NUMBER(10,2) NOT NULL
+    pret_serviciu NUMBER(10,2) NOT NULL
+    data_achizitionare
+    cantitate
 );
 
 CREATE TABLE ANGAJAT (
-    id_angajat NUMBER PRIMARY KEY,
+    id_angajat NUMBER PRIMARY KEY, 
     nume VARCHAR2(30) NOT NULL,
     prenume VARCHAR2(30) NOT NULL,
     functie VARCHAR2(30),
     salariu NUMBER(10,2),
-    id_serviciu NUMBER,
+    id_serviciu NUMBER NOT NULL -> ca e FK?,
     FOREIGN KEY (id_serviciu) REFERENCES SERVICIU(id_serviciu)
 );
 
@@ -50,7 +51,7 @@ CREATE TABLE CAMERA (
     id_camera NUMBER PRIMARY KEY,
     nr_camera NUMBER UNIQUE,
     tip_camera VARCHAR2(20),
-    pret_per_noapte NUMBER(10,2)
+    pret -> sa fie inghetat!!! NUMBER(10,2)
 );
 
 CREATE TABLE EVENIMENT_CLIENT (
@@ -75,7 +76,8 @@ CREATE TABLE REZERVARE_CAMERA (
     PRIMARY KEY(id_rezervare, id_camera),
     FOREIGN KEY (id_rezervare) REFERENCES REZERVARE(id_rezervare),
     FOREIGN KEY (id_camera) REFERENCES CAMERA(id_camera)
-);
+    mai adauga aici nr_nopti si pret_rezervare
+ );
 
 
 INSERT INTO EVENIMENT VALUES (1,'Concert Rock', TO_DATE('2025-11-01','YYYY-MM-DD'),'Concert de rock local');
