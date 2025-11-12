@@ -1,11 +1,12 @@
 # Proiect DW & BI – Gestiune Hotel
 
-## Descriere
+### Descriere
 
 Acest proiect reprezintă un sistem de gestiune pentru o unitate hotelieră, care oferă servicii de cazare, evenimente și servicii suplimentare (spa, fitness, transport etc.).
 Proiectul include etapele de analiză, implementare a bazei de date și dezvoltare a aplicației.
 
-## Structura proiectului
+### Structura proiectului
+
 1.Fișier complet al proiectului (.docx)
 Integrează toate cerințele proiectului.
 Denumire: NumeEchipa_Nume_Prenume_Proiect
