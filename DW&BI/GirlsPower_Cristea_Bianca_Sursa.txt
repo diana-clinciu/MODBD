@@ -1,253 +1,902 @@
-CREATE TABLE EVENIMENT (
-    id_eveniment NUMBER PRIMARY KEY,
-    nume_eveniment VARCHAR2(50) NOT NULL,
-    data_eveniment DATE NOT NULL,
-    descriere VARCHAR2(200)
+-- =====================================================
+-- Crearea tabelelor OLTP pentru gestionarea hotelului
+-- =====================================================
+
+create table eveniment (
+   id_eveniment   number primary key,
+   nume_eveniment varchar2(50) not null,
+   data_eveniment date not null,
+   descriere      varchar2(200)
 );
 
-CREATE TABLE CLIENT (
-    id_client NUMBER PRIMARY KEY,
-    nume VARCHAR2(30) NOT NULL,
-    prenume VARCHAR2(30) NOT NULL,
-    email VARCHAR2(50) UNIQUE
+create table client (
+   id_client number primary key,
+   nume      varchar2(30) not null,
+   prenume   varchar2(30) not null,
+   email     varchar2(50) unique
 );
 
-CREATE TABLE REZERVARE (
-    id_rezervare NUMBER PRIMARY KEY,
-    id_client NUMBER NOT NULL,
-    data_rezervare DATE NOT NULL,
-    FOREIGN KEY (id_client) REFERENCES CLIENT(id_client)
+create table rezervare (
+   id_rezervare   number primary key,
+   id_client      number not null,
+   data_rezervare date not null,
+   foreign key ( id_client )
+      references client ( id_client )
 );
 
-CREATE TABLE SERVICIU (
-    id_serviciu NUMBER PRIMARY KEY,
-    denumire VARCHAR2(50) NOT NULL,
-    pret_serviciu NUMBER(10,2) NOT NULL,
-    data_achizitionare DATE,
-    cantitate NUMBER
+create table serviciu (
+   id_serviciu        number primary key,
+   denumire           varchar2(50) not null,
+   pret_serviciu      number(10,2) not null,
+   data_achizitionare date,
+   cantitate          number
 );
 
-CREATE TABLE CAMERA (
-    id_camera NUMBER PRIMARY KEY,
-    nr_camera NUMBER UNIQUE NOT NULL,
-    tip_camera VARCHAR2(20) NOT NULL,
-    pret NUMBER(10,2) NOT NULL
+create table camera (
+   id_camera  number primary key,
+   nr_camera  number unique not null,
+   tip_camera varchar2(20) not null,
+   pret       number(10,2) not null
 );
 
-CREATE TABLE REZERVARE_CAMERA (
-    id_rezervare NUMBER,
-    id_camera NUMBER,
-    nr_nopti NUMBER NOT NULL,
-    pret_rezervare NUMBER(10,2) NOT NULL,
-    PRIMARY KEY(id_rezervare, id_camera),
-    FOREIGN KEY (id_rezervare) REFERENCES REZERVARE(id_rezervare),
-    FOREIGN KEY (id_camera) REFERENCES CAMERA(id_camera)
+create table rezervare_camera (
+   id_rezervare   number,
+   id_camera      number,
+   nr_nopti       number not null,
+   pret_rezervare number(10,2) not null,
+   primary key ( id_rezervare,
+                 id_camera ),
+   foreign key ( id_rezervare )
+      references rezervare ( id_rezervare ),
+   foreign key ( id_camera )
+      references camera ( id_camera )
 );
 
-CREATE TABLE CLIENT_SERVICIU (
-    id_client NUMBER,
-    id_serviciu NUMBER,
-    data_utilizare DATE DEFAULT SYSDATE,
-    PRIMARY KEY(id_client, id_serviciu),
-    FOREIGN KEY (id_client) REFERENCES CLIENT(id_client),
-    FOREIGN KEY (id_serviciu) REFERENCES SERVICIU(id_serviciu)
+create table client_serviciu (
+   id_client      number,
+   id_serviciu    number,
+   data_utilizare date default sysdate,
+   primary key ( id_client,
+                 id_serviciu ),
+   foreign key ( id_client )
+      references client ( id_client ),
+   foreign key ( id_serviciu )
+      references serviciu ( id_serviciu )
 );
 
-CREATE TABLE PLATA (
-    id_plata NUMBER PRIMARY KEY,
-    id_rezervare NUMBER NOT NULL,
-    suma NUMBER(10,2),
-    data_plata DATE NOT NULL,
-    metoda_plata VARCHAR2(20) CHECK (metoda_plata IN ('Cash', 'Card', 'Transfer')),
-    FOREIGN KEY (id_rezervare) REFERENCES REZERVARE(id_rezervare)
+create table plata (
+   id_plata     number primary key,
+   id_rezervare number not null,
+   suma         number(10,2),
+   data_plata   date not null,
+   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash',
+                                                       'Card',
+                                                       'Transfer' ) ),
+   foreign key ( id_rezervare )
+      references rezervare ( id_rezervare )
 );
 
-CREATE TABLE ANGAJAT (
-    id_angajat NUMBER PRIMARY KEY, 
-    nume VARCHAR2(30) NOT NULL,
-    prenume VARCHAR2(30) NOT NULL,
-    functie VARCHAR2(30),
-    salariu NUMBER(10,2),
-    id_serviciu NUMBER NOT NULL,
-    FOREIGN KEY (id_serviciu) REFERENCES SERVICIU(id_serviciu)
+create table angajat (
+   id_angajat  number primary key,
+   nume        varchar2(30) not null,
+   prenume     varchar2(30) not null,
+   functie     varchar2(30),
+   salariu     number(10,2),
+   id_serviciu number not null,
+   foreign key ( id_serviciu )
+      references serviciu ( id_serviciu )
 );
 
-CREATE TABLE EVENIMENT_CLIENT (
-    id_eveniment NUMBER,
-    id_client NUMBER,
-    PRIMARY KEY(id_eveniment, id_client),
-    FOREIGN KEY (id_eveniment) REFERENCES EVENIMENT(id_eveniment),
-    FOREIGN KEY (id_client) REFERENCES CLIENT(id_client)
+create table eveniment_client (
+   id_eveniment number,
+   id_client    number,
+   primary key ( id_eveniment,
+                 id_client ),
+   foreign key ( id_eveniment )
+      references eveniment ( id_eveniment ),
+   foreign key ( id_client )
+      references client ( id_client )
 );
 
--- Trigger pentru calcularea automată a sumei la plată
-CREATE OR REPLACE TRIGGER trg_calculeaza_suma_plata
-BEFORE INSERT OR UPDATE ON PLATA
-FOR EACH ROW
-DECLARE
-    v_pret_rezervare NUMBER := 0;
-    v_pret_servicii NUMBER := 0;
-    v_id_client NUMBER;
-BEGIN
+-- =====================================================
+-- Trigger pentru calcularea automata a sumei la plata
+-- =====================================================
+
+create or replace trigger trg_calculeaza_suma_plata before
+   insert or update on plata
+   for each row
+declare
+   v_pret_rezervare number := 0;
+   v_pret_servicii  number := 0;
+   v_id_client      number;
+begin
     -- Obține id_client din rezervare
-    SELECT id_client INTO v_id_client
-    FROM REZERVARE
-    WHERE id_rezervare = :NEW.id_rezervare;
+   select id_client
+     into v_id_client
+     from rezervare
+    where id_rezervare = :new.id_rezervare;
     
     -- Calculează prețul rezervării (suma tuturor camerelor * nr_nopti)
-    SELECT NVL(SUM(rc.pret_rezervare), 0)
-    INTO v_pret_rezervare
-    FROM REZERVARE_CAMERA rc
-    WHERE rc.id_rezervare = :NEW.id_rezervare;
+   select nvl(
+      sum(rc.pret_rezervare),
+      0
+   )
+     into v_pret_rezervare
+     from rezervare_camera rc
+    where rc.id_rezervare = :new.id_rezervare;
     
     -- Calculează prețul serviciilor utilizate de client
-    SELECT NVL(SUM(s.pret_serviciu), 0)
-    INTO v_pret_servicii
-    FROM CLIENT_SERVICIU cs
-    JOIN SERVICIU s ON cs.id_serviciu = s.id_serviciu
-    WHERE cs.id_client = v_id_client;
+   select nvl(
+      sum(s.pret_serviciu),
+      0
+   )
+     into v_pret_servicii
+     from client_serviciu cs
+     join serviciu s
+   on cs.id_serviciu = s.id_serviciu
+    where cs.id_client = v_id_client;
     
     -- Setează suma totală
-    :NEW.suma := v_pret_rezervare + v_pret_servicii;
-END;
+   :new.suma := v_pret_rezervare + v_pret_servicii;
+end;
 /
 
  
+-- =====================================================
+-- Inserare date exemple
+-- =====================================================
 
 -- EVENIMENTE
-INSERT INTO EVENIMENT VALUES (1,'Concert Rock', TO_DATE('2025-12-01','YYYY-MM-DD'),'Concert de rock cu trupe locale');
-INSERT INTO EVENIMENT VALUES (2,'Festival Jazz', TO_DATE('2025-12-05','YYYY-MM-DD'),'Festival de jazz internațional');
-INSERT INTO EVENIMENT VALUES (3,'Gala de Revelion', TO_DATE('2025-12-31','YYYY-MM-DD'),'Gala anuală de Revelion');
-INSERT INTO EVENIMENT VALUES (4,'Team Building Corporativ', TO_DATE('2025-12-12','YYYY-MM-DD'),'Eveniment pentru echipe corporative');
-INSERT INTO EVENIMENT VALUES (5,'Expoziție de Artă', TO_DATE('2025-12-15','YYYY-MM-DD'),'Expoziție de artă contemporană');
-INSERT INTO EVENIMENT VALUES (6,'Petrecere de Crăciun', TO_DATE('2025-12-25','YYYY-MM-DD'),'Petrecere tematică de Crăciun');
-INSERT INTO EVENIMENT VALUES (7,'Seminar Business', TO_DATE('2025-12-18','YYYY-MM-DD'),'Seminar pentru antreprenori');
-INSERT INTO EVENIMENT VALUES (8,'Concert Clasic', TO_DATE('2025-12-20','YYYY-MM-DD'),'Concert de muzică clasică');
-INSERT INTO EVENIMENT VALUES (9,'Atelier Culinar', TO_DATE('2025-12-22','YYYY-MM-DD'),'Atelier de gătit cu chef-ul hotelului');
-INSERT INTO EVENIMENT VALUES (10,'Seară de Film', TO_DATE('2025-12-28','YYYY-MM-DD'),'Proiecție de film pentru oaspeți');
+insert into eveniment values ( 1,
+                               'Concert Rock',
+                               to_date('2025-12-01','YYYY-MM-DD'),
+                               'Concert de rock cu trupe locale' );
+insert into eveniment values ( 2,
+                               'Festival Jazz',
+                               to_date('2025-12-05','YYYY-MM-DD'),
+                               'Festival de jazz internațional' );
+insert into eveniment values ( 3,
+                               'Gala de Revelion',
+                               to_date('2025-12-31','YYYY-MM-DD'),
+                               'Gala anuală de Revelion' );
+insert into eveniment values ( 4,
+                               'Team Building Corporativ',
+                               to_date('2025-12-12','YYYY-MM-DD'),
+                               'Eveniment pentru echipe corporative' );
+insert into eveniment values ( 5,
+                               'Expoziție de Artă',
+                               to_date('2025-12-15','YYYY-MM-DD'),
+                               'Expoziție de artă contemporană' );
+insert into eveniment values ( 6,
+                               'Petrecere de Crăciun',
+                               to_date('2025-12-25','YYYY-MM-DD'),
+                               'Petrecere tematică de Crăciun' );
+insert into eveniment values ( 7,
+                               'Seminar Business',
+                               to_date('2025-12-18','YYYY-MM-DD'),
+                               'Seminar pentru antreprenori' );
+insert into eveniment values ( 8,
+                               'Concert Clasic',
+                               to_date('2025-12-20','YYYY-MM-DD'),
+                               'Concert de muzică clasică' );
+insert into eveniment values ( 9,
+                               'Atelier Culinar',
+                               to_date('2025-12-22','YYYY-MM-DD'),
+                               'Atelier de gătit cu chef-ul hotelului' );
+insert into eveniment values ( 10,
+                               'Seară de Film',
+                               to_date('2025-12-28','YYYY-MM-DD'),
+                               'Proiecție de film pentru oaspeți' );
 
 -- CLIENȚI
-INSERT INTO CLIENT VALUES (1,'Popescu','Ana','ana.popescu@email.ro');
-INSERT INTO CLIENT VALUES (2,'Ionescu','Maria','maria.ionescu@email.ro');
-INSERT INTO CLIENT VALUES (3,'Georgescu','Ioana','ioana.georgescu@email.ro');
-INSERT INTO CLIENT VALUES (4,'Dumitrescu','Alina','alina.dumitrescu@email.ro');
-INSERT INTO CLIENT VALUES (5,'Radu','Cristina','cristina.radu@email.ro');
-INSERT INTO CLIENT VALUES (6,'Marin','Elena','elena.marin@email.ro');
-INSERT INTO CLIENT VALUES (7,'Stan','Gabriela','gabriela.stan@email.ro');
-INSERT INTO CLIENT VALUES (8,'Vasilescu','Laura','laura.vasilescu@email.ro');
-INSERT INTO CLIENT VALUES (9,'Niculae','Irina','irina.niculae@email.ro');
-INSERT INTO CLIENT VALUES (10,'Florea','Andreea','andreea.florea@email.ro');
+insert into client values ( 1,
+                            'Popescu',
+                            'Ana',
+                            'ana.popescu@email.ro' );
+insert into client values ( 2,
+                            'Ionescu',
+                            'Maria',
+                            'maria.ionescu@email.ro' );
+insert into client values ( 3,
+                            'Georgescu',
+                            'Ioana',
+                            'ioana.georgescu@email.ro' );
+insert into client values ( 4,
+                            'Dumitrescu',
+                            'Alina',
+                            'alina.dumitrescu@email.ro' );
+insert into client values ( 5,
+                            'Radu',
+                            'Cristina',
+                            'cristina.radu@email.ro' );
+insert into client values ( 6,
+                            'Marin',
+                            'Elena',
+                            'elena.marin@email.ro' );
+insert into client values ( 7,
+                            'Stan',
+                            'Gabriela',
+                            'gabriela.stan@email.ro' );
+insert into client values ( 8,
+                            'Vasilescu',
+                            'Laura',
+                            'laura.vasilescu@email.ro' );
+insert into client values ( 9,
+                            'Niculae',
+                            'Irina',
+                            'irina.niculae@email.ro' );
+insert into client values ( 10,
+                            'Florea',
+                            'Andreea',
+                            'andreea.florea@email.ro' );
 
 -- SERVICII
-INSERT INTO SERVICIU VALUES (1,'Spa și Masaj Relaxant',150,TO_DATE('2025-01-15','YYYY-MM-DD'),10);
-INSERT INTO SERVICIU VALUES (2,'Room Service 24/7',50,TO_DATE('2025-01-10','YYYY-MM-DD'),20);
-INSERT INTO SERVICIU VALUES (3,'Masaj Terapeutic',120,TO_DATE('2025-02-05','YYYY-MM-DD'),8);
-INSERT INTO SERVICIU VALUES (4,'Acces Piscină Interioară',40,TO_DATE('2025-01-20','YYYY-MM-DD'),15);
-INSERT INTO SERVICIU VALUES (5,'Tur Ghidat București',180,TO_DATE('2025-03-01','YYYY-MM-DD'),5);
-INSERT INTO SERVICIU VALUES (6,'Transport Aeroport',100,TO_DATE('2025-01-15','YYYY-MM-DD'),10);
-INSERT INTO SERVICIU VALUES (7,'Curățenie Suplimentară',60,TO_DATE('2025-01-10','YYYY-MM-DD'),25);
-INSERT INTO SERVICIU VALUES (8,'Spălătorie Express',45,TO_DATE('2025-02-10','YYYY-MM-DD'),12);
-INSERT INTO SERVICIU VALUES (9,'Sală Fitness Premium',80,TO_DATE('2025-01-25','YYYY-MM-DD'),15);
-INSERT INTO SERVICIU VALUES (10,'Cinema Privat',90,TO_DATE('2025-02-20','YYYY-MM-DD'),6);
+insert into serviciu values ( 1,
+                              'Spa și Masaj Relaxant',
+                              150,
+                              to_date('2025-01-15','YYYY-MM-DD'),
+                              10 );
+insert into serviciu values ( 2,
+                              'Room Service 24/7',
+                              50,
+                              to_date('2025-01-10','YYYY-MM-DD'),
+                              20 );
+insert into serviciu values ( 3,
+                              'Masaj Terapeutic',
+                              120,
+                              to_date('2025-02-05','YYYY-MM-DD'),
+                              8 );
+insert into serviciu values ( 4,
+                              'Acces Piscină Interioară',
+                              40,
+                              to_date('2025-01-20','YYYY-MM-DD'),
+                              15 );
+insert into serviciu values ( 5,
+                              'Tur Ghidat București',
+                              180,
+                              to_date('2025-03-01','YYYY-MM-DD'),
+                              5 );
+insert into serviciu values ( 6,
+                              'Transport Aeroport',
+                              100,
+                              to_date('2025-01-15','YYYY-MM-DD'),
+                              10 );
+insert into serviciu values ( 7,
+                              'Curățenie Suplimentară',
+                              60,
+                              to_date('2025-01-10','YYYY-MM-DD'),
+                              25 );
+insert into serviciu values ( 8,
+                              'Spălătorie Express',
+                              45,
+                              to_date('2025-02-10','YYYY-MM-DD'),
+                              12 );
+insert into serviciu values ( 9,
+                              'Sală Fitness Premium',
+                              80,
+                              to_date('2025-01-25','YYYY-MM-DD'),
+                              15 );
+insert into serviciu values ( 10,
+                              'Cinema Privat',
+                              90,
+                              to_date('2025-02-20','YYYY-MM-DD'),
+                              6 );
 
 -- CAMERE
-INSERT INTO CAMERA VALUES (1,101,'Single',150);
-INSERT INTO CAMERA VALUES (2,102,'Double',250);
-INSERT INTO CAMERA VALUES (3,103,'Suite',450);
-INSERT INTO CAMERA VALUES (4,104,'Single',150);
-INSERT INTO CAMERA VALUES (5,105,'Double',250);
-INSERT INTO CAMERA VALUES (6,106,'Suite Premium',550);
-INSERT INTO CAMERA VALUES (7,107,'Single',180);
-INSERT INTO CAMERA VALUES (8,108,'Double',280);
-INSERT INTO CAMERA VALUES (9,109,'Suite Deluxe',600);
-INSERT INTO CAMERA VALUES (10,110,'Double',260);
+insert into camera values ( 1,
+                            101,
+                            'Single',
+                            150 );
+insert into camera values ( 2,
+                            102,
+                            'Double',
+                            250 );
+insert into camera values ( 3,
+                            103,
+                            'Suite',
+                            450 );
+insert into camera values ( 4,
+                            104,
+                            'Single',
+                            150 );
+insert into camera values ( 5,
+                            105,
+                            'Double',
+                            250 );
+insert into camera values ( 6,
+                            106,
+                            'Suite Premium',
+                            550 );
+insert into camera values ( 7,
+                            107,
+                            'Single',
+                            180 );
+insert into camera values ( 8,
+                            108,
+                            'Double',
+                            280 );
+insert into camera values ( 9,
+                            109,
+                            'Suite Deluxe',
+                            600 );
+insert into camera values ( 10,
+                            110,
+                            'Double',
+                            260 );
 
 -- ANGAJAȚI
-INSERT INTO ANGAJAT VALUES (1,'Popa','Andrei','Recepționer',3500,2);
-INSERT INTO ANGAJAT VALUES (2,'Ionescu','Mihai','Bucătar Șef',4500,2);
-INSERT INTO ANGAJAT VALUES (3,'Marin','Sorina','Ospătar',3200,2);
-INSERT INTO ANGAJAT VALUES (4,'Dumitru','Raluca','Masor Terapeut',3800,3);
-INSERT INTO ANGAJAT VALUES (5,'Stan','Vlad','Instructor Fitness',3400,9);
-INSERT INTO ANGAJAT VALUES (6,'Vasilescu','Ioan','Șofer',3300,6);
-INSERT INTO ANGAJAT VALUES (7,'Niculae','Elena','Recepționer Senior',3800,2);
-INSERT INTO ANGAJAT VALUES (8,'Florea','Cristina','Supervizor Curățenie',3000,7);
-INSERT INTO ANGAJAT VALUES (9,'Georgescu','Alin','Responsabil Spălătorie',2900,8);
-INSERT INTO ANGAJAT VALUES (10,'Radu','Laura','Ghid Turistic',3200,5);
+insert into angajat values ( 1,
+                             'Popa',
+                             'Andrei',
+                             'Recepționer',
+                             3500,
+                             2 );
+insert into angajat values ( 2,
+                             'Ionescu',
+                             'Mihai',
+                             'Bucătar Șef',
+                             4500,
+                             2 );
+insert into angajat values ( 3,
+                             'Marin',
+                             'Sorina',
+                             'Ospătar',
+                             3200,
+                             2 );
+insert into angajat values ( 4,
+                             'Dumitru',
+                             'Raluca',
+                             'Masor Terapeut',
+                             3800,
+                             3 );
+insert into angajat values ( 5,
+                             'Stan',
+                             'Vlad',
+                             'Instructor Fitness',
+                             3400,
+                             9 );
+insert into angajat values ( 6,
+                             'Vasilescu',
+                             'Ioan',
+                             'Șofer',
+                             3300,
+                             6 );
+insert into angajat values ( 7,
+                             'Niculae',
+                             'Elena',
+                             'Recepționer Senior',
+                             3800,
+                             2 );
+insert into angajat values ( 8,
+                             'Florea',
+                             'Cristina',
+                             'Supervizor Curățenie',
+                             3000,
+                             7 );
+insert into angajat values ( 9,
+                             'Georgescu',
+                             'Alin',
+                             'Responsabil Spălătorie',
+                             2900,
+                             8 );
+insert into angajat values ( 10,
+                             'Radu',
+                             'Laura',
+                             'Ghid Turistic',
+                             3200,
+                             5 );
 
 -- REZERVĂRI
-INSERT INTO REZERVARE VALUES (1,1,TO_DATE('2025-12-01','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (2,2,TO_DATE('2025-12-03','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (3,3,TO_DATE('2025-12-05','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (4,4,TO_DATE('2025-12-07','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (5,5,TO_DATE('2025-12-10','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (6,6,TO_DATE('2025-12-12','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (7,7,TO_DATE('2025-12-15','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (8,8,TO_DATE('2025-12-18','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (9,9,TO_DATE('2025-12-20','YYYY-MM-DD'));
-INSERT INTO REZERVARE VALUES (10,10,TO_DATE('2025-12-23','YYYY-MM-DD'));
+insert into rezervare values ( 1,
+                               1,
+                               to_date('2025-12-01','YYYY-MM-DD') );
+insert into rezervare values ( 2,
+                               2,
+                               to_date('2025-12-03','YYYY-MM-DD') );
+insert into rezervare values ( 3,
+                               3,
+                               to_date('2025-12-05','YYYY-MM-DD') );
+insert into rezervare values ( 4,
+                               4,
+                               to_date('2025-12-07','YYYY-MM-DD') );
+insert into rezervare values ( 5,
+                               5,
+                               to_date('2025-12-10','YYYY-MM-DD') );
+insert into rezervare values ( 6,
+                               6,
+                               to_date('2025-12-12','YYYY-MM-DD') );
+insert into rezervare values ( 7,
+                               7,
+                               to_date('2025-12-15','YYYY-MM-DD') );
+insert into rezervare values ( 8,
+                               8,
+                               to_date('2025-12-18','YYYY-MM-DD') );
+insert into rezervare values ( 9,
+                               9,
+                               to_date('2025-12-20','YYYY-MM-DD') );
+insert into rezervare values ( 10,
+                               10,
+                               to_date('2025-12-23','YYYY-MM-DD') );
 
 -- REZERVARE_CAMERA 
-INSERT INTO REZERVARE_CAMERA VALUES (1,1,3,450);   -- 3 nopți × 150
-INSERT INTO REZERVARE_CAMERA VALUES (2,2,2,500);   -- 2 nopți × 250
-INSERT INTO REZERVARE_CAMERA VALUES (3,3,1,450);   -- 1 noapte × 450
-INSERT INTO REZERVARE_CAMERA VALUES (4,4,4,600);   -- 4 nopți × 150
-INSERT INTO REZERVARE_CAMERA VALUES (5,5,2,500);   -- 2 nopți × 250
-INSERT INTO REZERVARE_CAMERA VALUES (6,6,3,1650);  -- 3 nopți × 550
-INSERT INTO REZERVARE_CAMERA VALUES (7,7,2,360);   -- 2 nopți × 180
-INSERT INTO REZERVARE_CAMERA VALUES (8,8,3,840);   -- 3 nopți × 280
-INSERT INTO REZERVARE_CAMERA VALUES (9,9,2,1200);  -- 2 nopți × 600
-INSERT INTO REZERVARE_CAMERA VALUES (10,10,4,1040);-- 4 nopți × 260
+insert into rezervare_camera values ( 1,
+                                      1,
+                                      3,
+                                      450 );   -- 3 nopți × 150
+insert into rezervare_camera values ( 2,
+                                      2,
+                                      2,
+                                      500 );   -- 2 nopți × 250
+insert into rezervare_camera values ( 3,
+                                      3,
+                                      1,
+                                      450 );   -- 1 noapte × 450
+insert into rezervare_camera values ( 4,
+                                      4,
+                                      4,
+                                      600 );   -- 4 nopți × 150
+insert into rezervare_camera values ( 5,
+                                      5,
+                                      2,
+                                      500 );   -- 2 nopți × 250
+insert into rezervare_camera values ( 6,
+                                      6,
+                                      3,
+                                      1650 );  -- 3 nopți × 550
+insert into rezervare_camera values ( 7,
+                                      7,
+                                      2,
+                                      360 );   -- 2 nopți × 180
+insert into rezervare_camera values ( 8,
+                                      8,
+                                      3,
+                                      840 );   -- 3 nopți × 280
+insert into rezervare_camera values ( 9,
+                                      9,
+                                      2,
+                                      1200 );  -- 2 nopți × 600
+insert into rezervare_camera values ( 10,
+                                      10,
+                                      4,
+                                      1040 );-- 4 nopți × 260
 
 -- CLIENT_SERVICIU  
-INSERT INTO CLIENT_SERVICIU VALUES (1,1,TO_DATE('2025-12-02','YYYY-MM-DD'));  -- Spa
-INSERT INTO CLIENT_SERVICIU VALUES (2,2,TO_DATE('2025-12-04','YYYY-MM-DD'));  -- Room Service
-INSERT INTO CLIENT_SERVICIU VALUES (3,3,TO_DATE('2025-12-06','YYYY-MM-DD'));  -- Masaj
-INSERT INTO CLIENT_SERVICIU VALUES (4,4,TO_DATE('2025-12-08','YYYY-MM-DD'));  -- Piscină
-INSERT INTO CLIENT_SERVICIU VALUES (5,5,TO_DATE('2025-12-11','YYYY-MM-DD'));  -- Tur Ghidat
-INSERT INTO CLIENT_SERVICIU VALUES (6,6,TO_DATE('2025-12-13','YYYY-MM-DD'));  -- Transport
-INSERT INTO CLIENT_SERVICIU VALUES (7,7,TO_DATE('2025-12-16','YYYY-MM-DD'));  -- Curățenie
-INSERT INTO CLIENT_SERVICIU VALUES (8,8,TO_DATE('2025-12-19','YYYY-MM-DD'));  -- Spălătorie
-INSERT INTO CLIENT_SERVICIU VALUES (9,9,TO_DATE('2025-12-21','YYYY-MM-DD'));  -- Fitness
-INSERT INTO CLIENT_SERVICIU VALUES (10,10,TO_DATE('2025-12-24','YYYY-MM-DD'));-- Cinema
+insert into client_serviciu values ( 1,
+                                     1,
+                                     to_date('2025-12-02','YYYY-MM-DD') );  -- Spa
+insert into client_serviciu values ( 2,
+                                     2,
+                                     to_date('2025-12-04','YYYY-MM-DD') );  -- Room Service
+insert into client_serviciu values ( 3,
+                                     3,
+                                     to_date('2025-12-06','YYYY-MM-DD') );  -- Masaj
+insert into client_serviciu values ( 4,
+                                     4,
+                                     to_date('2025-12-08','YYYY-MM-DD') );  -- Piscină
+insert into client_serviciu values ( 5,
+                                     5,
+                                     to_date('2025-12-11','YYYY-MM-DD') );  -- Tur Ghidat
+insert into client_serviciu values ( 6,
+                                     6,
+                                     to_date('2025-12-13','YYYY-MM-DD') );  -- Transport
+insert into client_serviciu values ( 7,
+                                     7,
+                                     to_date('2025-12-16','YYYY-MM-DD') );  -- Curățenie
+insert into client_serviciu values ( 8,
+                                     8,
+                                     to_date('2025-12-19','YYYY-MM-DD') );  -- Spălătorie
+insert into client_serviciu values ( 9,
+                                     9,
+                                     to_date('2025-12-21','YYYY-MM-DD') );  -- Fitness
+insert into client_serviciu values ( 10,
+                                     10,
+                                     to_date('2025-12-24','YYYY-MM-DD') );-- Cinema
 
--- PLĂȚI (suma se calculează automat prin trigger)
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (1, 1, TO_DATE('2025-11-25','YYYY-MM-DD'), 'Card');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (2, 2, TO_DATE('2025-11-28','YYYY-MM-DD'), 'Cash');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (3, 3, TO_DATE('2025-12-01','YYYY-MM-DD'), 'Transfer');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (4, 4, TO_DATE('2025-12-03','YYYY-MM-DD'), 'Card');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (5, 5, TO_DATE('2025-12-06','YYYY-MM-DD'), 'Card');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (6, 6, TO_DATE('2025-12-08','YYYY-MM-DD'), 'Transfer');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (7, 7, TO_DATE('2025-12-11','YYYY-MM-DD'), 'Cash');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (8, 8, TO_DATE('2025-12-14','YYYY-MM-DD'), 'Card');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (9, 9, TO_DATE('2025-12-16','YYYY-MM-DD'), 'Transfer');
-INSERT INTO PLATA (id_plata, id_rezervare, data_plata, metoda_plata) 
-    VALUES (10, 10, TO_DATE('2025-12-19','YYYY-MM-DD'), 'Card');
+-- PLATI (suma se calculează automat prin trigger)
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 1,
+           1,
+           to_date('2025-11-25','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 2,
+           2,
+           to_date('2025-11-28','YYYY-MM-DD'),
+           'Cash' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 3,
+           3,
+           to_date('2025-12-01','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 4,
+           4,
+           to_date('2025-12-03','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 5,
+           5,
+           to_date('2025-12-06','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 6,
+           6,
+           to_date('2025-12-08','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 7,
+           7,
+           to_date('2025-12-11','YYYY-MM-DD'),
+           'Cash' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 8,
+           8,
+           to_date('2025-12-14','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 9,
+           9,
+           to_date('2025-12-16','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 10,
+           10,
+           to_date('2025-12-19','YYYY-MM-DD'),
+           'Card' );
 
 -- EVENIMENT_CLIENT
-INSERT INTO EVENIMENT_CLIENT VALUES (1,1);
-INSERT INTO EVENIMENT_CLIENT VALUES (2,2);
-INSERT INTO EVENIMENT_CLIENT VALUES (3,3);
-INSERT INTO EVENIMENT_CLIENT VALUES (4,4);
-INSERT INTO EVENIMENT_CLIENT VALUES (5,5);
-INSERT INTO EVENIMENT_CLIENT VALUES (6,6);
-INSERT INTO EVENIMENT_CLIENT VALUES (7,7);
-INSERT INTO EVENIMENT_CLIENT VALUES (8,8);
-INSERT INTO EVENIMENT_CLIENT VALUES (9,9);
-INSERT INTO EVENIMENT_CLIENT VALUES (10,10);
+insert into eveniment_client values ( 1,
+                                      1 );
+insert into eveniment_client values ( 2,
+                                      2 );
+insert into eveniment_client values ( 3,
+                                      3 );
+insert into eveniment_client values ( 4,
+                                      4 );
+insert into eveniment_client values ( 5,
+                                      5 );
+insert into eveniment_client values ( 6,
+                                      6 );
+insert into eveniment_client values ( 7,
+                                      7 );
+insert into eveniment_client values ( 8,
+                                      8 );
+insert into eveniment_client values ( 9,
+                                      9 );
+insert into eveniment_client values ( 10,
+                                      10 );
 
-COMMIT;
+commit;
 
 -- Verificare sume calculate automat
-SELECT p.id_plata, p.id_rezervare, p.suma AS suma_calculata_automat, 
-       p.data_plata, p.metoda_plata
-FROM PLATA p
-ORDER BY p.id_plata;
+select p.id_plata,
+       p.id_rezervare,
+       p.suma as suma_calculata_automat,
+       p.data_plata,
+       p.metoda_plata
+  from plata p
+ order by p.id_plata;
+
+select *
+  from client;
+select owner,
+       table_name
+  from all_tables
+ where table_name in ( 'CLIENT',
+                       'REZERVARE',
+                       'CAMERA' );
+
+
+-- =====================================================
+-- Crearea tabelelor pentru depozitul de date (Data Warehouse)
+-- =====================================================
+-- Dimensiuni
+-- 3. Crearea bazei de date depozit și a utilizatorilor 
+
+-- DIM CLIENT: tabel de dimensiune pentru clienti
+create table dim_client (
+   client_key     number primary key,
+   id_client_oltp number,
+   nume           varchar2(30),
+   prenume        varchar2(30),
+   email          varchar2(50)
+);
+
+-- DIM CAMERA: tabel de dimensiune pentru camere
+create table dim_camera (
+   camera_key     number primary key,
+   id_camera_oltp number,
+   nr_camera      number,
+   tip_camera     varchar2(20),
+   pret           number(10,2)
+);
+
+-- DIM SERVICIU: tabel de dimensiune pentru servicii
+create table dim_serviciu (
+   serviciu_key     number primary key,
+   id_serviciu_oltp number,
+   denumire         varchar2(50),
+   pret_serviciu    number(10,2)
+);
+
+-- DIM EVENIMENT: tabel de dimensiune pentru evenimente
+create table dim_eveniment (
+   eveniment_key     number primary key,
+   id_eveniment_oltp number,
+   nume_eveniment    varchar2(50),
+   data_eveniment    date
+);
+
+-- DIM TIMP: tabel de dimensiune pentru timp
+create table dim_timp (
+   timp_key      number primary key,
+   data_completa date,
+   zi            number,
+   luna          number,
+   an            number
+);
+
+-- FACT: tabel de fapte pentru rezervari
+create table fact_rezervari (
+   rezervare_key     number primary key,
+   id_rezervare_oltp number,
+   client_key        number,
+   camera_key        number,
+   serviciu_key      number,
+   eveniment_key     number,
+   timp_key          number,
+   suma_totala       number(10,2),
+   foreign key ( client_key )
+      references dim_client ( client_key ),
+   foreign key ( camera_key )
+      references dim_camera ( camera_key ),
+   foreign key ( serviciu_key )
+      references dim_serviciu ( serviciu_key ),
+   foreign key ( eveniment_key )
+      references dim_eveniment ( eveniment_key ),
+   foreign key ( timp_key )
+      references dim_timp ( timp_key )
+);
+
+-- =====================================================
+-- Populare dimensiuni din OLTP
+-- =====================================================
+
+--4. Popularea cu informații a bazei de date depozit folosind ca sursă datele din baza de date OLTP
+insert into dim_client
+   select id_client,
+          id_client,
+          nume,
+          prenume,
+          email
+     from client;
+
+insert into dim_camera
+   select id_camera,
+          id_camera,
+          nr_camera,
+          tip_camera,
+          pret
+     from camera;
+
+insert into dim_serviciu
+   select id_serviciu,
+          id_serviciu,
+          denumire,
+          pret_serviciu
+     from serviciu;
+
+insert into dim_eveniment
+   select id_eveniment,
+          id_eveniment,
+          nume_eveniment,
+          data_eveniment
+     from eveniment;
+
+-- Dimensiune timp pe baza datei rezervarii
+insert into dim_timp
+   select dense_rank()
+          over(
+       order by data_rezervare
+          ),
+          data_rezervare,
+          extract(day from data_rezervare),
+          extract(month from data_rezervare),
+          extract(year from data_rezervare)
+     from (
+      select distinct data_rezervare
+        from rezervare
+   );
+
+-- Populare fact table
+-- Se selecteaza datele din OLTP si se leaga cu dimensiunile prin subquery-uri
+insert into fact_rezervari (
+   rezervare_key,
+   id_rezervare_oltp,
+   client_key,
+   camera_key,
+   serviciu_key,
+   eveniment_key,
+   timp_key,
+   suma_totala
+)
+   select r.id_rezervare,
+          r.id_rezervare,
+          r.id_client,
+    
+    -- prima camera din rezervare
+          (
+             select id_camera
+               from rezervare_camera rc
+              where rc.id_rezervare = r.id_rezervare
+              fetch first 1 rows only
+          ),
+     
+    -- primul serviciu al clientului
+          (
+             select id_serviciu
+               from client_serviciu cs
+              where cs.id_client = r.id_client
+              fetch first 1 rows only
+          ),
+     
+    -- primul eveniment al clientului
+          (
+             select id_eveniment
+               from eveniment_client ec
+              where ec.id_client = r.id_client
+              fetch first 1 rows only
+          ),
+     
+    -- timp_key din dim_timp corespunzator datei rezervarii
+          (
+             select timp_key
+               from dim_timp t
+              where t.data_completa = r.data_rezervare
+          ),
+     
+    -- suma totala platita pentru rezervare
+          (
+             select sum(suma)
+               from plata p
+              where p.id_rezervare = r.id_rezervare
+          )
+     from rezervare r;
+
+-- =====================================================
+-- Creare constrangeri suplimentare si indexuri
+-- =====================================================
+
+--5. Definirea constrângerilor
+-- DIM CLIENT
+alter table dim_client modify
+   nume not null;
+alter table dim_client modify
+   prenume not null;
+
+-- DIM CAMERA
+alter table dim_camera modify
+   tip_camera not null;
+alter table dim_camera modify
+   pret check ( pret > 0 );
+
+-- DIM SERVICIU
+alter table dim_serviciu modify
+   pret_serviciu check ( pret_serviciu >= 0 );
+
+-- DIM EVENIMENT
+alter table dim_eveniment modify
+   nume_eveniment not null;
+
+-- DIM TIMP
+alter table dim_timp modify
+   zi check ( zi between 1 and 31 );
+alter table dim_timp modify
+   luna check ( luna between 1 and 12 );
+alter table dim_timp modify
+   an check ( an between 1900 and 2100 );
+
+-- Indexuri pentru performanta la interogari
+create index idx_dim_client_nume on
+   dim_client (
+      nume,
+      prenume
+   );
+create index idx_dim_camera_tip on
+   dim_camera (
+      tip_camera
+   );
+create index idx_dim_serviciu_denumire on
+   dim_serviciu (
+      denumire
+   );
+create index idx_dim_eveniment_nume on
+   dim_eveniment (
+      nume_eveniment
+   );
+create index idx_dim_timp_data on
+   dim_timp (
+      data_completa
+   );
+
+create index idx_fact_client on
+   fact_rezervari (
+      client_key
+   );
+create index idx_fact_camera on
+   fact_rezervari (
+      camera_key
+   );
+create index idx_fact_serviciu on
+   fact_rezervari (
+      serviciu_key
+   );
+create index idx_fact_eveniment on
+   fact_rezervari (
+      eveniment_key
+   );
+create index idx_fact_timp on
+   fact_rezervari (
+      timp_key
+   );
+
+-- Verificare suma_totala pozitiva
+alter table fact_rezervari modify
+   suma_totala check ( suma_totala >= 0 );
+
+-- =====================================================
+-- Verificari finale
+-- =====================================================
+
+select count(*)
+  from dim_client;
+select count(*)
+  from dim_camera;
+select count(*)
+  from dim_serviciu;
+select count(*)
+  from dim_eveniment;
+select count(*)
+  from dim_timp;
+select count(*)
+  from fact_rezervari;
