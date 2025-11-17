@@ -1,0 +1,17 @@
+Endpoint path: https://one-community-uat.azurewebsites.net//odata/Partners
+{points: 15, cardTypeId: 61, cardName: null}
+int
+CardType
+{points: 20, cardTypeId: 62, cardName: null}
+int
+CardType
+{points: 25, cardTypeId: 63, cardName: null}
+int
+CardType
+{points: 30, cardTypeId: 64, cardName: null}
+int
+CardType
+{points: 35, cardTypeId: 65, cardName: null}
+int
+CardType
+(Instance of 'Reward', Instance of 'Reward', Instance of 'Reward', Instance of 'Reward', Instance of 'Reward')
