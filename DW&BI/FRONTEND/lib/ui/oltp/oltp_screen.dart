@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mvvm_flutter/models/angajat.dart';
+import 'package:mvvm_flutter/models/camera.dart';
+import 'package:mvvm_flutter/models/client.dart';
+import 'package:mvvm_flutter/models/eveniment.dart';
+import 'package:mvvm_flutter/models/plata.dart';
+import 'package:mvvm_flutter/models/rezervare.dart';
+import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -18,13 +25,76 @@ class OltpScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSection("Clienți", vm.clients.map((c) => "${c.nume} ${c.prenume}").toList()),
-                  _buildSection("Rezervări", vm.rezervari.map((r) => "${r.clientName} - ${r.data.toLocal().toShortDateString()}").toList()),
-                  _buildSection("Camere", vm.camere.map((c) => "${c.nr} - ${c.tip} - ${c.pret} RON").toList()),
-                  _buildSection("Servicii", vm.servicii.map((s) => "${s.denumire} - ${s.pret} RON").toList()),
-                  _buildSection("Plăți", vm.plati.map((p) => "${p.id} - ${p.suma} RON - ${p.metoda}").toList()),
-                  _buildSection("Angajați", vm.angajati.map((a) => "${a.nume} - ${a.functie}").toList()),
-                  _buildSection("Evenimente", vm.evenimente.map((e) => "${e.nume} - ${e.data.toLocal().toShortDateString()}").toList()),
+                  _buildCrudSection(
+                    context,
+                    "Clienti",
+                    vm.clients
+                        .map((c) => "${c.nume} ${c.prenume} (${c.email})")
+                        .toList(),
+                    () => Client.showAddClientDialog(context, vm),
+                    (index) => Client.showEditClientDialog(context, vm, index),
+                    (index) => vm.deleteClient(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Rezervari",
+                    vm.rezervari
+                        .map((c) => "${c.clientName} ${c.data.toShortDateString()}")
+                        .toList(),
+                    () => Rezervare.showAddReservationDialog(context, vm),
+                    (index) => Rezervare.showEditReservationDialog(context, vm, index),
+                    (index) => vm.deleteRezervare(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Camere",
+                    vm.camere
+                        .map((c) => "${c.nr} ${c.pret} ${c.tip}")
+                        .toList(),
+                    () => Camera.showAddCameraDialog(context, vm),
+                    (index) => Camera.showEditCameraDialog(context, vm, index),
+                    (index) => vm.deleteClient(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Servicii",
+                    vm.servicii
+                        .map((c) => "${c.denumire} ${c.pret}")
+                        .toList(),
+                    () => Serviciu.showAddCServiciuDialog(context, vm),
+                    (index) => Serviciu.showEditServiciuDialog(context, vm, index),
+                    (index) => vm.deleteServiciu(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Plati",
+                    vm.plati
+                        .map((c) => "${c.metoda} ${c.suma}")
+                        .toList(),
+                    () => Plata.showAddPlataDialog(context, vm),
+                    (index) => Plata.showEditPlatiDialog(context, vm, index),
+                    (index) => vm.deletePlata(index),
+                  ),
+                   _buildCrudSection(
+                    context,
+                    "Angajati",
+                    vm.angajati
+                        .map((c) => "${c.nume} ${c.functie}")
+                        .toList(),
+                    () => Angajat.showAddAngajatDialog(context, vm),
+                    (index) => Angajat.showEditAngajatDialog(context, vm, index),
+                    (index) => vm.deleteAngajat(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Evenimente",
+                    vm.evenimente
+                        .map((c) => "${c.nume} ${c.data.toShortDateString()}")
+                        .toList(),
+                    () => Eveniment.showAddEvenimentDialog(context, vm),
+                    (index) => Eveniment.showEditEvenimentDialog(context, vm, index),
+                    (index) => vm.deleteEveniment(index),
+                  ),
                 ],
               ),
             );
@@ -34,18 +104,48 @@ class OltpScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, List<String> items) {
+  Widget _buildCrudSection(
+    BuildContext context,
+    String title,
+    List<String> items,
+    VoidCallback onAdd,
+    void Function(int) onEdit,
+    void Function(int) onDelete,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ElevatedButton(onPressed: onAdd, child: Text("Adauga")),
+            ],
+          ),
           SizedBox(height: 8),
-          ...items.map((i) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Text(i, style: TextStyle(fontSize: 16)),
-              )),
+          ...items.asMap().entries.map(
+                (entry) => Card(
+                  child: ListTile(
+                    title: Text(entry.value),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => onEdit(entry.key),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => onDelete(entry.key),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
         ],
       ),
     );

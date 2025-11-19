@@ -1,61 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mvvm_flutter/models/angajat.dart';
+import 'package:mvvm_flutter/models/camera.dart';
+import 'package:mvvm_flutter/models/client.dart';
+import 'package:mvvm_flutter/models/eveniment.dart';
+import 'package:mvvm_flutter/models/plata.dart';
+import 'package:mvvm_flutter/models/rezervare.dart';
+import 'package:mvvm_flutter/models/serviciu.dart';
 
-// MODELS MOCK
-class Client {
-  final int id;
-  final String nume;
-  final String prenume;
-  final String email;
-
-  Client(this.id, this.nume, this.prenume, this.email);
-}
-
-class Rezervare {
-  final int id;
-  final String clientName;
-  final DateTime data;
-
-  Rezervare(this.id, this.clientName, this.data);
-}
-
-class Camera {
-  final int nr;
-  final String tip;
-  final double pret;
-
-  Camera(this.nr, this.tip, this.pret);
-}
-
-class Serviciu {
-  final String denumire;
-  final double pret;
-
-  Serviciu(this.denumire, this.pret);
-}
-
-class Plata {
-  final int id;
-  final double suma;
-  final String metoda;
-
-  Plata(this.id, this.suma, this.metoda);
-}
-
-class Angajat {
-  final String nume;
-  final String functie;
-
-  Angajat(this.nume, this.functie);
-}
-
-class Eveniment {
-  final String nume;
-  final DateTime data;
-
-  Eveniment(this.nume, this.data);
-}
-
-// VIEWMODEL
 class OLTPViewModel extends ChangeNotifier {
   List<Client> clients = [];
   List<Rezervare> rezervari = [];
@@ -71,38 +22,150 @@ class OLTPViewModel extends ChangeNotifier {
 
   void _loadMockData() {
     clients = [
-      Client(1, "Popescu", "Ana", "ana.popescu@email.ro"),
-      Client(2, "Ionescu", "Maria", "maria.ionescu@email.ro"),
+      Client(id: 1, nume: "Popescu", prenume: "Ana", email: "ana.popescu@email.ro"),
+      Client(id: 2, nume: "Ionescu", prenume: "Maria", email: "maria.ionescu@email.ro"),
     ];
 
     rezervari = [
-      Rezervare(1, "Popescu Ana", DateTime(2025, 12, 1)),
-      Rezervare(2, "Ionescu Maria", DateTime(2025, 12, 3)),
+      Rezervare(id: 1, clientName: "Popescu Ana", data: DateTime(2025, 12, 1)),
+      Rezervare(id: 2, clientName: "Ionescu Maria", data: DateTime(2025, 12, 3)),
     ];
 
     camere = [
-      Camera(101, "Single", 150),
-      Camera(102, "Double", 250),
+      Camera(nr: 101, tip: "Single", pret: 150),
+      Camera(nr: 102, tip: "Double", pret: 250),
     ];
 
     servicii = [
-      Serviciu("Spa", 150),
-      Serviciu("Room Service", 50),
+      Serviciu(denumire: "Spa", pret: 150),
+      Serviciu(denumire: "Room Service", pret: 50),
     ];
 
     plati = [
-      Plata(1, 450, "Card"),
-      Plata(2, 500, "Cash"),
+      Plata(id: 1, suma: 450, metoda: "Card"),
+      Plata(id: 2, suma: 500, metoda: "Cash"),
     ];
 
     angajati = [
-      Angajat("Popa Andrei", "Recepționer"),
-      Angajat("Ionescu Mihai", "Bucătar Șef"),
+      Angajat(nume: "Popa Andrei", functie: "Recepționer"),
+      Angajat(nume: "Ionescu Mihai", functie: "Bucătar Șef"),
     ];
 
     evenimente = [
-      Eveniment("Concert Rock", DateTime(2025, 12, 1)),
-      Eveniment("Festival Jazz", DateTime(2025, 12, 5)),
+      Eveniment(nume: "Concert Rock", data: DateTime(2025, 12, 1)),
+      Eveniment(nume: "Festival Jazz", data: DateTime(2025, 12, 5)),
     ];
+  }
+
+  // CLIENT CRUD
+  void addClient(Client client) {
+    clients.add(client);
+    notifyListeners();
+  }
+
+  void editClient(int index, Client updatedClient) {
+    clients[index] = updatedClient;
+    notifyListeners();
+  }
+
+  void deleteClient(int index) {
+    clients.removeAt(index);
+    notifyListeners();
+  }
+
+  // CAMERA CRUD
+  void addCamera(Camera camera) {
+    camere.add(camera);
+    notifyListeners();
+  }
+
+  void editCamera(int index, Camera updatedCamera) {
+    camere[index] = updatedCamera;
+    notifyListeners();
+  }
+
+  void deleteCamera(int index) {
+    camere.removeAt(index);
+    notifyListeners();
+  }
+
+  // REZERVARE CRUD
+  void addRezervare(Rezervare rezervare) {
+    rezervari.add(rezervare);
+    notifyListeners();
+  }
+
+  void editRezervare(int index, Rezervare updatedRezervare) {
+    rezervari[index] = updatedRezervare;
+    notifyListeners();
+  }
+
+  void deleteRezervare(int index) {
+    rezervari.removeAt(index);
+    notifyListeners();
+  }
+
+  // SERVICIU CRUD
+  void addServiciu(Serviciu serviciu) {
+    servicii.add(serviciu);
+    notifyListeners();
+  }
+
+  void editServiciu(int index, Serviciu updatedServiciu) {
+    servicii[index] = updatedServiciu;
+    notifyListeners();
+  }
+
+  void deleteServiciu(int index) {
+    servicii.removeAt(index);
+    notifyListeners();
+  }
+
+  // PLATA CRUD
+  void addPlata(Plata plata) {
+    plati.add(plata);
+    notifyListeners();
+  }
+
+  void editPlata(int index, Plata updatedPlata) {
+    plati[index] = updatedPlata;
+    notifyListeners();
+  }
+
+  void deletePlata(int index) {
+    plati.removeAt(index);
+    notifyListeners();
+  }
+
+  // ANGAJAT CRUD
+  void addAngajat(Angajat angajat) {
+    angajati.add(angajat);
+    notifyListeners();
+  }
+
+  void editAngajat(int index, Angajat updatedAngajat) {
+    angajati[index] = updatedAngajat;
+    notifyListeners();
+  }
+
+  void deleteAngajat(int index) {
+    angajati.removeAt(index);
+    notifyListeners();
+  }
+
+  // EVENIMENT CRUD
+  void addEveniment(Eveniment eveniment) {
+    evenimente.add(eveniment);
+    notifyListeners();
+  }
+
+  void editEveniment(int index, Eveniment updatedEveniment) {
+    evenimente[index] = updatedEveniment;
+    notifyListeners();
+  }
+
+  void deleteEveniment(int index) {
+    evenimente.removeAt(index);
+    notifyListeners();
   }
 }

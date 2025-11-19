@@ -48,7 +48,7 @@ class _BottomNavBarItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: AppColors.contentPrimary,
+                    color: isSelected ? AppColors.oliveColor : AppColors.contentPrimary,
                   ),
                 ),
               ],
