@@ -31,9 +31,19 @@ class Rezervare {
             TextField(
                 onChanged: (v) => clientName = v,
                 decoration: InputDecoration(labelText: "Nume client")),
-            // TextField(
-            //     onChanged: (v) => data = v,
-            //     decoration: InputDecoration(labelText: "Data")), TODO: alexia - add date picker
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: data,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) data = picked;
+              },
+              child: Text("Selecteaza data"),
+            )
           ],
         ),
         actions: [
@@ -42,8 +52,10 @@ class Rezervare {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addRezervare(
-                  Rezervare(id: vm.rezervari.length + 1, clientName: clientName, data: data));
+              vm.addRezervare(Rezervare(
+                  id: vm.rezervari.length + 1,
+                  clientName: clientName,
+                  data: data));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -70,11 +82,19 @@ class Rezervare {
               onChanged: (v) => clientName = v,
               decoration: InputDecoration(labelText: "Nume client"),
             ),
-            // TextField(
-            //   controller: TextEditingController(text: data.toString()),
-            //   onChanged: (v) => data = v,
-            //   decoration: InputDecoration(labelText: "Data rezervare"),
-            // ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: data,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) data = picked;
+              },
+              child: Text("Selecteaza data"),
+            )
           ],
         ),
         actions: [
@@ -84,7 +104,11 @@ class Rezervare {
           ElevatedButton(
             onPressed: () {
               vm.editRezervare(
-                  index, Rezervare(id: vm.rezervari[index].id, clientName: clientName, data: data));
+                  index,
+                  Rezervare(
+                      id: vm.rezervari[index].id,
+                      clientName: clientName,
+                      data: data));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

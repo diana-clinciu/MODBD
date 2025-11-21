@@ -66,7 +66,7 @@ class Plata {
                 decoration: InputDecoration(labelText: "Metoda de plata")),
             TextField(
                 controller: TextEditingController(text: suma.toString()),
-                onChanged: (v) => suma = v as double,
+                onChanged: (v) => suma = double.tryParse(v) ?? 0.0,
                 decoration: InputDecoration(labelText: "Suma de plata")),
           ],
         ),

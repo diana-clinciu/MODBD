@@ -39,7 +39,7 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Rezervari",
                     vm.rezervari
-                        .map((c) => "${c.clientName} ${c.data.toShortDateString()}")
+                        .map((c) => "${c.clientName} - ${c.data.toShortDateString()}")
                         .toList(),
                     () => Rezervare.showAddReservationDialog(context, vm),
                     (index) => Rezervare.showEditReservationDialog(context, vm, index),
@@ -49,17 +49,17 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Camere",
                     vm.camere
-                        .map((c) => "${c.nr} ${c.pret} ${c.tip}")
+                        .map((c) => "${c.nr} - ${c.pret} RON - ${c.tip}")
                         .toList(),
                     () => Camera.showAddCameraDialog(context, vm),
                     (index) => Camera.showEditCameraDialog(context, vm, index),
-                    (index) => vm.deleteClient(index),
+                    (index) => vm.deleteCamera(index),
                   ),
                   _buildCrudSection(
                     context,
                     "Servicii",
                     vm.servicii
-                        .map((c) => "${c.denumire} ${c.pret}")
+                        .map((c) => "${c.denumire} - ${c.pret} RON")
                         .toList(),
                     () => Serviciu.showAddCServiciuDialog(context, vm),
                     (index) => Serviciu.showEditServiciuDialog(context, vm, index),
@@ -69,7 +69,7 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Plati",
                     vm.plati
-                        .map((c) => "${c.metoda} ${c.suma}")
+                        .map((c) => "${c.metoda} - ${c.suma} RON")
                         .toList(),
                     () => Plata.showAddPlataDialog(context, vm),
                     (index) => Plata.showEditPlatiDialog(context, vm, index),
@@ -79,7 +79,7 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Angajati",
                     vm.angajati
-                        .map((c) => "${c.nume} ${c.functie}")
+                        .map((c) => "${c.nume} - ${c.functie}")
                         .toList(),
                     () => Angajat.showAddAngajatDialog(context, vm),
                     (index) => Angajat.showEditAngajatDialog(context, vm, index),
@@ -89,7 +89,7 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Evenimente",
                     vm.evenimente
-                        .map((c) => "${c.nume} ${c.data.toShortDateString()}")
+                        .map((c) => "${c.nume} - ${c.data.toShortDateString()}")
                         .toList(),
                     () => Eveniment.showAddEvenimentDialog(context, vm),
                     (index) => Eveniment.showEditEvenimentDialog(context, vm, index),
@@ -154,6 +154,8 @@ class OltpScreen extends StatelessWidget {
 
 extension DateTimeExtension on DateTime {
   String toShortDateString() {
-    return "${this.day}/${this.month}/${this.year}";
+    return "${this.day.toString().padLeft(2,'0')}/"
+           "${this.month.toString().padLeft(2,'0')}/"
+           "${this.year}";
   }
 }

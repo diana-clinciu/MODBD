@@ -53,7 +53,7 @@ class _DWViewState extends State<DWScreen> {
                                 child: ListTile(
                                   title: Text("${f.client} - ${f.rezervareKey}"),
                                   subtitle: Text(
-                                      "Cameră: ${f.camera}, Serviciu: ${f.serviciu}, Eveniment: ${f.eveniment}\nData: ${f.data.toLocal().toShortDateString()}, Sumă: ${f.suma} RON"),
+                                      "Cameră: ${f.camera}, Serviciu: ${f.serviciu}, Eveniment: ${f.eveniment}\nData: ${f.data.toShortDateString()}, Sumă: ${f.suma} RON"),
                                 ),
                               ))
                           .toList(),

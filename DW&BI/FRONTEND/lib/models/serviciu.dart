@@ -27,7 +27,7 @@ class Serviciu {
                 onChanged: (v) => denumire = v,
                 decoration: InputDecoration(labelText: "Denumire serviciu")),
             TextField(
-                onChanged: (v) => pret = v as double,
+                onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
                 decoration: InputDecoration(labelText: "Pret serviciu")),
           ],
         ),

@@ -26,13 +26,13 @@ class Camera {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                onChanged: (v) => nr = v as int,
+                onChanged: (v) => nr = int.tryParse(v) ?? 0,
                 decoration: InputDecoration(labelText: "Numar camera")),
             TextField(
                 onChanged: (v) => tip = v,
                 decoration: InputDecoration(labelText: "Tip camera")),
             TextField(
-                onChanged: (v) => pret = v as double,
+                onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
                 decoration: InputDecoration(labelText: "Pret camera")),
           ],
         ),

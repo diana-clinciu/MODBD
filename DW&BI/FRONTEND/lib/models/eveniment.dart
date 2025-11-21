@@ -9,7 +9,8 @@ class Eveniment {
   Eveniment({required this.nume, required this.data});
 
   static Eveniment jsonJSON(JSON jsonBody) {
-    return Eveniment(nume: jsonBody["nume"], data: DateTime.parse(jsonBody["data"]));
+    return Eveniment(
+        nume: jsonBody["nume"], data: DateTime.parse(jsonBody["data"]));
   }
 
   static void showAddEvenimentDialog(BuildContext context, OLTPViewModel vm) {
@@ -26,9 +27,19 @@ class Eveniment {
             TextField(
                 onChanged: (v) => nume = v,
                 decoration: InputDecoration(labelText: "Nume eveniment")),
-            // TextField(
-            //     onChanged: (v) => data = v,
-            //     decoration: InputDecoration(labelText: "Data eveniment")), TODO: alexia - add date picker
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: data,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) data = picked;
+              },
+              child: Text("Selecteaza data"),
+            )
           ],
         ),
         actions: [
@@ -63,11 +74,19 @@ class Eveniment {
                 controller: TextEditingController(text: nume),
                 onChanged: (v) => nume = v,
                 decoration: InputDecoration(labelText: "Nume eveniment")),
-            // TextField(
-            //   controller: TextEditingController(text: data.toString()),
-            //   onChanged: (v) => data = v,
-            //   decoration: InputDecoration(labelText: "Data eveniment"),
-            // ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: data,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) data = picked;
+              },
+              child: Text("Selecteaza data"),
+            )
           ],
         ),
         actions: [
