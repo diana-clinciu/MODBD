@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:mvvm_flutter/models/angajat.dart';
 import 'package:mvvm_flutter/models/camera.dart';
 import 'package:mvvm_flutter/models/client.dart';
@@ -6,166 +7,128 @@ import 'package:mvvm_flutter/models/eveniment.dart';
 import 'package:mvvm_flutter/models/plata.dart';
 import 'package:mvvm_flutter/models/rezervare.dart';
 import 'package:mvvm_flutter/models/serviciu.dart';
+import 'package:mvvm_flutter/services/otlp_service.dart';
 
 class OLTPViewModel extends ChangeNotifier {
-  List<Client> clients = [];
-  List<Rezervare> rezervari = [];
-  List<Camera> camere = [];
-  List<Serviciu> servicii = [];
-  List<Plata> plati = [];
-  List<Angajat> angajati = [];
-  List<Eveniment> evenimente = [];
+  final OtlpService otlpService = GetIt.instance.get<OtlpService>();
 
-  OLTPViewModel() {
-    _loadMockData();
-  }
-
-  void _loadMockData() {
-    clients = [
-      Client(id: 1, nume: "Popescu", prenume: "Ana", email: "ana.popescu@email.ro"),
-      Client(id: 2, nume: "Ionescu", prenume: "Maria", email: "maria.ionescu@email.ro"),
-    ];
-
-    rezervari = [
-      Rezervare(id: 1, clientName: "Popescu Ana", data: DateTime(2025, 12, 1)),
-      Rezervare(id: 2, clientName: "Ionescu Maria", data: DateTime(2025, 12, 3)),
-    ];
-
-    camere = [
-      Camera(nr: 101, tip: "Single", pret: 150),
-      Camera(nr: 102, tip: "Double", pret: 250),
-    ];
-
-    servicii = [
-      Serviciu(denumire: "Spa", pret: 150),
-      Serviciu(denumire: "Room Service", pret: 50),
-    ];
-
-    plati = [
-      Plata(id: 1, suma: 450, metoda: "Card"),
-      Plata(id: 2, suma: 500, metoda: "Cash"),
-    ];
-
-    angajati = [
-      Angajat(nume: "Popa Andrei", functie: "Recepționer"),
-      Angajat(nume: "Ionescu Mihai", functie: "Bucătar Șef"),
-    ];
-
-    evenimente = [
-      Eveniment(nume: "Concert Rock", data: DateTime(2025, 12, 1)),
-      Eveniment(nume: "Festival Jazz", data: DateTime(2025, 12, 5)),
-    ];
-  }
+  List<Client> get clients => otlpService.clients;
+  List<Rezervare> get rezervari => otlpService.rezervari;
+  List<Camera> get camere => otlpService.camere;
+  List<Serviciu> get servicii => otlpService.servicii;
+  List<Plata> get plati => otlpService.plati;
+  List<Angajat> get angajati => otlpService.angajati;
+  List<Eveniment> get evenimente => otlpService.evenimente;
 
   // CLIENT CRUD
   void addClient(Client client) {
-    clients.add(client);
+    otlpService.addClient(client);
     notifyListeners();
   }
 
   void editClient(int index, Client updatedClient) {
-    clients[index] = updatedClient;
+    otlpService.editClient(index, updatedClient);
     notifyListeners();
   }
 
   void deleteClient(int index) {
-    clients.removeAt(index);
+    otlpService.deleteClient(index);
     notifyListeners();
   }
 
   // CAMERA CRUD
   void addCamera(Camera camera) {
-    camere.add(camera);
+    otlpService.addCamera(camera);
     notifyListeners();
   }
 
   void editCamera(int index, Camera updatedCamera) {
-    camere[index] = updatedCamera;
+    otlpService.editCamera(index, updatedCamera);
     notifyListeners();
   }
 
   void deleteCamera(int index) {
-    camere.removeAt(index);
+    otlpService.deleteCamera(index);
     notifyListeners();
   }
 
   // REZERVARE CRUD
   void addRezervare(Rezervare rezervare) {
-    rezervari.add(rezervare);
+    otlpService.addRezervare(rezervare);
     notifyListeners();
   }
 
   void editRezervare(int index, Rezervare updatedRezervare) {
-    rezervari[index] = updatedRezervare;
+    otlpService.editRezervare(index, updatedRezervare);
     notifyListeners();
   }
 
   void deleteRezervare(int index) {
-    rezervari.removeAt(index);
+    otlpService.deleteRezervare(index);
     notifyListeners();
   }
 
   // SERVICIU CRUD
   void addServiciu(Serviciu serviciu) {
-    servicii.add(serviciu);
+    otlpService.addServiciu(serviciu);
     notifyListeners();
   }
 
   void editServiciu(int index, Serviciu updatedServiciu) {
-    servicii[index] = updatedServiciu;
+    otlpService.editServiciu(index, updatedServiciu);
     notifyListeners();
   }
 
   void deleteServiciu(int index) {
-    servicii.removeAt(index);
+    otlpService.deleteServiciu(index);
     notifyListeners();
   }
 
   // PLATA CRUD
   void addPlata(Plata plata) {
-    plati.add(plata);
+    otlpService.addPlata(plata);
     notifyListeners();
   }
 
   void editPlata(int index, Plata updatedPlata) {
-    plati[index] = updatedPlata;
+    otlpService.editPlata(index, updatedPlata);
     notifyListeners();
   }
 
   void deletePlata(int index) {
-    plati.removeAt(index);
+    otlpService.deletePlata(index);
     notifyListeners();
   }
 
   // ANGAJAT CRUD
   void addAngajat(Angajat angajat) {
-    angajati.add(angajat);
+    otlpService.addAngajat(angajat);
     notifyListeners();
   }
 
   void editAngajat(int index, Angajat updatedAngajat) {
-    angajati[index] = updatedAngajat;
+    otlpService.editAngajat(index, updatedAngajat);
     notifyListeners();
   }
 
   void deleteAngajat(int index) {
-    angajati.removeAt(index);
+    otlpService.deleteAngajat(index);
     notifyListeners();
   }
 
   // EVENIMENT CRUD
   void addEveniment(Eveniment eveniment) {
-    evenimente.add(eveniment);
+    otlpService.addEveniment(eveniment);
     notifyListeners();
   }
 
   void editEveniment(int index, Eveniment updatedEveniment) {
-    evenimente[index] = updatedEveniment;
+    otlpService.editEveniment(index, updatedEveniment);
     notifyListeners();
   }
 
   void deleteEveniment(int index) {
-    evenimente.removeAt(index);
+    otlpService.deleteEveniment(index);
     notifyListeners();
   }
 }

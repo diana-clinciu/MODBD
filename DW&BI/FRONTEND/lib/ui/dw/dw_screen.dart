@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mvvm_flutter/models/fact_rezervari.dart';
 import 'package:mvvm_flutter/ui/dw/dw_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,7 @@ class _DWViewState extends State<DWScreen> {
       create: (_) => DWViewModel(),
       child: Consumer<DWViewModel>(
         builder: (context, vm, _) {
+          // Filtrare fact rezervări după nume client
           List<FactRezervari> filteredFact = _filterController.text.isEmpty
               ? vm.factRezervari
               : vm.filterFactByClient(_filterController.text);
@@ -34,7 +36,15 @@ class _DWViewState extends State<DWScreen> {
                     child: Text("Propagare modificări OLTP → DW"),
                   ),
                   SizedBox(height: 12),
-                  Text(vm.statusMessage, style: TextStyle(color: Colors.green)),
+                  Text(
+                    vm.statusMessage,
+                    style: TextStyle(
+                      color: vm.statusMessage.contains("finalizată")
+                          ? Colors.green
+                          : Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 16),
                   TextField(
                     controller: _filterController,
@@ -47,17 +57,22 @@ class _DWViewState extends State<DWScreen> {
                   ),
                   SizedBox(height: 16),
                   Expanded(
-                    child: ListView(
-                      children: filteredFact
-                          .map((f) => Card(
+                    child: filteredFact.isEmpty
+                        ? Center(child: Text("Nu există rezervări."))
+                        : ListView.builder(
+                            itemCount: filteredFact.length,
+                            itemBuilder: (context, index) {
+                              final f = filteredFact[index];
+                              return Card(
                                 child: ListTile(
-                                  title: Text("${f.client} - ${f.rezervareKey}"),
+                                  title: Text(
+                                      "${f.client} - Rezervare #${f.rezervareKey}"),
                                   subtitle: Text(
                                       "Cameră: ${f.camera}, Serviciu: ${f.serviciu}, Eveniment: ${f.eveniment}\nData: ${f.data.toShortDateString()}, Sumă: ${f.suma} RON"),
                                 ),
-                              ))
-                          .toList(),
-                    ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
