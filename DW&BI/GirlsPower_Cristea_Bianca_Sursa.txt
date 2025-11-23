@@ -676,6 +676,13 @@ create table dim_timp (
    an            number
 );
 
+-- DIM METODA PLATA: tabel de dimensiune pentru metoda de plata
+create table dim_metoda_plata (
+   metoda_plata_key number primary key,
+   metoda_plata     varchar2(20),
+   tip_tranzactie   varchar2(30)
+);
+
 -- FACT: tabel de fapte pentru rezervari
 create table fact_rezervari (
    rezervare_key     number primary key,
@@ -685,6 +692,7 @@ create table fact_rezervari (
    serviciu_key      number,
    eveniment_key     number,
    timp_key          number,
+   metoda_plata_key  number,
    suma_totala       number(10,2),
    foreign key ( client_key )
       references dim_client ( client_key ),
@@ -695,7 +703,9 @@ create table fact_rezervari (
    foreign key ( eveniment_key )
       references dim_eveniment ( eveniment_key ),
    foreign key ( timp_key )
-      references dim_timp ( timp_key )
+      references dim_timp ( timp_key ),
+   foreign key ( metoda_plata_key )
+      references dim_metoda_plata ( metoda_plata_key )
 );
 
 -- =====================================================
@@ -748,6 +758,25 @@ insert into dim_timp
         from rezervare
    );
 
+insert into dim_metoda_plata
+   select dense_rank()
+          over(
+       order by metoda_plata
+          ) as metoda_plata_key,
+          metoda_plata,
+          case
+             when metoda_plata = 'Card'     then
+                'Electronic'
+             when metoda_plata = 'Transfer' then
+                'Electronic'
+             when metoda_plata = 'Cash'     then
+                'Numerar'
+          end as tip_tranzactie
+     from (
+      select distinct metoda_plata
+        from plata
+   );
+
 -- Populare fact table
 -- Se selecteaza datele din OLTP si se leaga cu dimensiunile prin subquery-uri
 insert into fact_rezervari (
@@ -758,48 +787,80 @@ insert into fact_rezervari (
    serviciu_key,
    eveniment_key,
    timp_key,
+   metoda_plata_key,
    suma_totala
 )
-   select r.id_rezervare,
-          r.id_rezervare,
-          r.id_client,
-    
-    -- prima camera din rezervare
+   select r.id_rezervare,                               -- Surrogate key
+          r.id_rezervare,                               -- OLTP id
+
+   -- client_key din dim_client
           (
-             select id_camera
-               from rezervare_camera rc
-              where rc.id_rezervare = r.id_rezervare
-              fetch first 1 rows only
+             select client_key
+               from dim_client d
+              where d.id_client_oltp = r.id_client
           ),
-     
-    -- primul serviciu al clientului
+
+   -- prima camera folosită în rezervare
           (
-             select id_serviciu
-               from client_serviciu cs
-              where cs.id_client = r.id_client
-              fetch first 1 rows only
+             select camera_key
+               from dim_camera d
+              where d.id_camera_oltp = (
+                select rc.id_camera
+                  from rezervare_camera rc
+                 where rc.id_rezervare = r.id_rezervare
+                 fetch first 1 rows only
+             )
           ),
-     
-    -- primul eveniment al clientului
+
+   -- primul serviciu folosit de client
           (
-             select id_eveniment
-               from eveniment_client ec
-              where ec.id_client = r.id_client
-              fetch first 1 rows only
+             select serviciu_key
+               from dim_serviciu d
+              where d.id_serviciu_oltp = (
+                select cs.id_serviciu
+                  from client_serviciu cs
+                 where cs.id_client = r.id_client
+                 fetch first 1 rows only
+             )
           ),
-     
-    -- timp_key din dim_timp corespunzator datei rezervarii
+
+   -- primul eveniment la care a participat clientul
+          (
+             select eveniment_key
+               from dim_eveniment d
+              where d.id_eveniment_oltp = (
+                select ec.id_eveniment
+                  from eveniment_client ec
+                 where ec.id_client = r.id_client
+                 fetch first 1 rows only
+             )
+          ),
+
+   -- timp_key bazat pe data rezervarii
           (
              select timp_key
-               from dim_timp t
-              where t.data_completa = r.data_rezervare
+               from dim_timp dt
+              where dt.data_completa = r.data_rezervare
           ),
-     
-    -- suma totala platita pentru rezervare
+
+   -- metoda_plata_key
           (
-             select sum(suma)
+             select metoda_plata_key
+               from dim_metoda_plata dmp
+              where dmp.metoda_plata = (
+                select p.metoda_plata
+                  from plata p
+                 where p.id_rezervare = r.id_rezervare
+                 fetch first 1 rows only
+             )
+          ),
+
+   -- suma totala (din plata)
+          (
+             select suma
                from plata p
               where p.id_rezervare = r.id_rezervare
+              fetch first 1 rows only
           )
      from rezervare r;
 
@@ -835,6 +896,13 @@ alter table dim_timp modify
    luna check ( luna between 1 and 12 );
 alter table dim_timp modify
    an check ( an between 1900 and 2100 );
+
+-- DIM METODA_PLATA
+alter table dim_metoda_plata modify
+   metoda_plata not null;
+
+alter table dim_metoda_plata modify
+   tip_tranzactie not null;
 
 -- Indexuri pentru performanta la interogari
 create index idx_dim_client_nume on
@@ -879,6 +947,12 @@ create index idx_fact_timp on
    fact_rezervari (
       timp_key
    );
+
+create index idx_dim_metoda_plata_metoda on
+   dim_metoda_plata (metoda_plata);
+
+create index idx_dim_metoda_plata_tip on
+   dim_metoda_plata (tip_tranzactie);
 
 -- Verificare suma_totala pozitiva
 alter table fact_rezervari modify
