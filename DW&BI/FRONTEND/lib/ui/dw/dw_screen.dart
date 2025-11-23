@@ -17,7 +17,6 @@ class _DWViewState extends State<DWScreen> {
       create: (_) => DWViewModel(),
       child: Consumer<DWViewModel>(
         builder: (context, vm, _) {
-          // Filtrare fact rezervări după nume client
           List<FactRezervari> filteredFact = _filterController.text.isEmpty
               ? vm.factRezervari
               : vm.filterFactByClient(_filterController.text);
