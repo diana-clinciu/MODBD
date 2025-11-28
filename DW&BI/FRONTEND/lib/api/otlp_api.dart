@@ -249,7 +249,7 @@ final class OtlpApi extends ClientApi {
           form.append(plata.idRezervare.toString(), withName: "id_rezervare");
           form.append(plata.suma.toString(), withName: "suma");
           form.append(
-            plata.dataPlata.toIso8601String().split("T")[0], 
+            plata.dataPlata.toIso8601String().split("T")[0],
             withName: "data_plata",
           );
           form.append(plata.metoda, withName: "metoda_plata");
@@ -270,25 +270,31 @@ final class OtlpApi extends ClientApi {
 
   Future<List<Angajat>> fetchAngajati() async {
     return get(
-        path: "angajati",
-        deserializer: (json) {
-          return (json["data"] as List<dynamic>)
-              .map((clientJson) => Angajat.fromJson(clientJson))
-              .toList();
-        });
+      path: "angajati",
+      deserializer: (json) {
+        return (json as List<dynamic>)
+            .map((clientJson) => Angajat.fromJson(clientJson))
+            .toList();
+      },
+    );
   }
 
   Future<Angajat> addAngajat(Angajat angajat) async {
     try {
       return await multiPartRequest(
-          path: "angajati/add",
-          multipartEncoding: (form) {
-            form.append(angajat.nume, withName: "nume");
-            form.append(angajat.functie, withName: "functie");
-          },
-          deserializer: (json) {
-            return Angajat.fromJson(json);
-          });
+        path: "angajati/add",
+        multipartEncoding: (form) {
+          form.append(angajat.nume, withName: "nume");
+          form.append(angajat.prenume, withName: "prenume");
+          form.append(angajat.functie, withName: "functie");
+          form.append(angajat.salariu?.toString() ?? "0.0",
+              withName: "salariu");
+          form.append(angajat.idServiciu.toString(), withName: "id_serviciu");
+        },
+        deserializer: (json) {
+          return Angajat.fromJson(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error adding angajat: ${e.errorBody}');
       rethrow;
@@ -298,14 +304,19 @@ final class OtlpApi extends ClientApi {
   Future<Angajat> updateAngajat(Angajat angajat) async {
     try {
       return await multiPartRequest(
-          path: "angajati/${angajat.id}",
-          multipartEncoding: (form) {
-            form.append(angajat.nume, withName: "nume");
-            form.append(angajat.functie, withName: "functie");
-          },
-          deserializer: (json) {
-            return Angajat.fromJson(json);
-          });
+        path: "angajati/${angajat.id}",
+        multipartEncoding: (form) {
+          form.append(angajat.nume, withName: "nume");
+          form.append(angajat.prenume, withName: "prenume");
+          form.append(angajat.functie, withName: "functie");
+          form.append(angajat.salariu?.toString() ?? "0.0",
+              withName: "salariu");
+          form.append(angajat.idServiciu.toString(), withName: "id_serviciu");
+        },
+        deserializer: (json) {
+          return Angajat.fromJson(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error updating angajat: ${e.errorBody}');
       rethrow;
@@ -318,25 +329,28 @@ final class OtlpApi extends ClientApi {
 
   Future<List<Eveniment>> fetchEvenimente() async {
     return get(
-        path: "evenimente",
-        deserializer: (json) {
-          return (json["data"] as List<dynamic>)
-              .map((clientJson) => Eveniment.fromJSON(clientJson))
-              .toList();
-        });
+      path: "evenimente",
+      deserializer: (json) {
+        return (json as List<dynamic>)
+            .map((clientJson) => Eveniment.fromJSON(clientJson))
+            .toList();
+      },
+    );
   }
 
   Future<Eveniment> addEveniment(Eveniment eveniment) async {
     try {
       return await multiPartRequest(
-          path: "evenimente/add",
-          multipartEncoding: (form) {
-            form.append(eveniment.nume, withName: "nume");
-            form.append(eveniment.data.toIso8601String(), withName: "data");
-          },
-          deserializer: (json) {
-            return Eveniment.fromJSON(json);
-          });
+        path: "evenimente/add",
+        multipartEncoding: (form) {
+          form.append(eveniment.nume, withName: "nume_eveniment");
+          form.append(eveniment.data.toIso8601String(), withName: "data_eveniment");
+          form.append(eveniment.descriere ?? '', withName: "descriere"); 
+        },
+        deserializer: (json) {
+          return Eveniment.fromJSON(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error adding eveniment: ${e.errorBody}');
       rethrow;
@@ -346,14 +360,16 @@ final class OtlpApi extends ClientApi {
   Future<Eveniment> updateEveniment(Eveniment eveniment) async {
     try {
       return await multiPartRequest(
-          path: "evenimente/${eveniment.id}",
-          multipartEncoding: (form) {
-            form.append(eveniment.nume, withName: "nume");
-            form.append(eveniment.data.toIso8601String(), withName: "data");
-          },
-          deserializer: (json) {
-            return Eveniment.fromJSON(json);
-          });
+        path: "evenimente/${eveniment.id}",
+        multipartEncoding: (form) {
+          form.append(eveniment.nume, withName: "nume_eveniment");
+          form.append(eveniment.data.toIso8601String(), withName: "data_eveniment");
+          form.append(eveniment.descriere ?? '', withName: "descriere"); 
+        },
+        deserializer: (json) {
+          return Eveniment.fromJSON(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error updating eveniment: ${e.errorBody}');
       rethrow;

@@ -5,41 +5,94 @@ import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 class Angajat {
   final int id;
   final String nume;
+  final String prenume;
   final String functie;
+  final double? salariu;
+  final int idServiciu;
 
-  Angajat({required this.id, required this.nume, required this.functie});
+  Angajat({
+    required this.id,
+    required this.nume,
+    required this.prenume,
+    required this.functie,
+    this.salariu,
+    required this.idServiciu,
+  });
 
   static Angajat fromJson(JSON jsonBody) {
-    return Angajat(id: jsonBody["id"], nume: jsonBody["nume"], functie: jsonBody["functie"]);
+    return Angajat(
+      id: jsonBody["id_angajat"],
+      nume: jsonBody["nume"],
+      prenume: jsonBody["prenume"],
+      functie: jsonBody["functie"],
+      salariu: jsonBody["salariu"]?.toDouble(),
+      idServiciu: jsonBody["id_serviciu"],
+    );
   }
 
   static void showAddAngajatDialog(BuildContext context, OLTPViewModel vm) {
     String nume = '';
+    String prenume = '';
     String functie = '';
+    double? salariu;
+    int? idServiciu;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text("Adauga Angajat"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
                 onChanged: (v) => nume = v,
-                decoration: InputDecoration(labelText: "Nume angajat")),
-            TextField(
+                decoration: InputDecoration(labelText: "Nume"),
+              ),
+              TextField(
+                onChanged: (v) => prenume = v,
+                decoration: InputDecoration(labelText: "Prenume"),
+              ),
+              TextField(
                 onChanged: (v) => functie = v,
-                decoration: InputDecoration(labelText: "Functie angajat")),
-          ],
+                decoration: InputDecoration(labelText: "Functie"),
+              ),
+              TextField(
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                onChanged: (v) => salariu = double.tryParse(v),
+                decoration: InputDecoration(labelText: "Salariu"),
+              ),
+              DropdownButton<int>(
+                hint: Text("Alege Serviciu"),
+                value: idServiciu,
+                items: vm.servicii
+                    .map((s) => DropdownMenuItem(
+                        value: s.id,
+                        child: Text("${s.denumire} (${s.pret} RON)")))
+                    .toList(),
+                onChanged: (v) => idServiciu = v,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text("Anuleaza"),
+          ),
           ElevatedButton(
             onPressed: () {
-              vm.addAngajat(Angajat(id: vm.angajati.length + 1, nume: nume, functie: functie));
-              Navigator.pop(dialogContext);
+              if (idServiciu != null) {
+                vm.addAngajat(Angajat(
+                  id: vm.angajati.length + 1,
+                  nume: nume,
+                  prenume: prenume,
+                  functie: functie,
+                  salariu: salariu,
+                  idServiciu: idServiciu!,
+                ));
+                Navigator.pop(dialogContext);
+              }
             },
             child: Text("Salveaza"),
           ),
@@ -50,25 +103,54 @@ class Angajat {
 
   static void showEditAngajatDialog(
       BuildContext context, OLTPViewModel vm, int index) {
-    String nume = vm.angajati[index].nume;
-    String functie = vm.angajati[index].functie;
+    Angajat a = vm.angajati[index];
+    String nume = a.nume;
+    String prenume = a.prenume;
+    String functie = a.functie;
+    double? salariu = a.salariu;
+    int idServiciu = a.idServiciu;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text("Modifica Angajat"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
                 controller: TextEditingController(text: nume),
                 onChanged: (v) => nume = v,
-                decoration: InputDecoration(labelText: "Nume angajat")),
-            TextField(
+                decoration: InputDecoration(labelText: "Nume"),
+              ),
+              TextField(
+                controller: TextEditingController(text: prenume),
+                onChanged: (v) => prenume = v,
+                decoration: InputDecoration(labelText: "Prenume"),
+              ),
+              TextField(
                 controller: TextEditingController(text: functie),
                 onChanged: (v) => functie = v,
-                decoration: InputDecoration(labelText: "Functie angajat")),
-          ],
+                decoration: InputDecoration(labelText: "Functie"),
+              ),
+              TextField(
+                controller:
+                    TextEditingController(text: salariu?.toString() ?? ""),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                onChanged: (v) => salariu = double.tryParse(v),
+                decoration: InputDecoration(labelText: "Salariu"),
+              ),
+              DropdownButton<int>(
+                value: idServiciu,
+                items: vm.servicii
+                    .map((s) => DropdownMenuItem(
+                        value: s.id,
+                        child: Text("${s.denumire} (${s.pret} RON)")))
+                    .toList(),
+                onChanged: (v) => idServiciu = v ?? idServiciu,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -76,7 +158,16 @@ class Angajat {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editAngajat(index, Angajat(id: vm.angajati[index].id, nume: nume, functie: functie));
+              vm.editAngajat(
+                  index,
+                  Angajat(
+                    id: a.id,
+                    nume: nume,
+                    prenume: prenume,
+                    functie: functie,
+                    salariu: salariu,
+                    idServiciu: idServiciu,
+                  ));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

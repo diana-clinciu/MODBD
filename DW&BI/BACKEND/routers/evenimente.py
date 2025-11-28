@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from session import get_db
@@ -13,21 +14,27 @@ def fetch_evenimente(db: Session = Depends(get_db)):
 
 @router.post("/add", response_model=Eveniment)
 def add_eveniment(
-    nume: str = Form(...),
-    data: str = Form(...),
+    nume_eveniment: str = Form(...),
+    data_eveniment: datetime = Form(...),
+    descriere: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    eveniment = EvenimentCreate(nume=nume, data=data)
+    eveniment = EvenimentCreate(
+        nume_eveniment=nume_eveniment,
+        data_eveniment=data_eveniment,
+        descriere=descriere
+    )
     return crud.create_eveniment(db, eveniment)
 
 @router.post("/{id}", response_model=Eveniment)
 def update_eveniment(
     id: int,
-    nume: str = Form(...),
-    data: str = Form(...),
+    nume_eveniment: str = Form(...),
+    data_eveniment: datetime = Form(...),
+    descriere: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    eveniment = EvenimentCreate(nume=nume, data=data)
+    eveniment = EvenimentCreate(nume_eveniment=nume_eveniment, data_eveniment=data_eveniment, descriere=descriere)
     return crud.update_eveniment(db, id, eveniment)
 
 @router.post("/delete/{id}")

@@ -44,12 +44,14 @@ class OtlpService {
     return plati;
   }
 
-  Future<void> loadAngajati() async {
-    angajati = await bookingApi.fetchAngajati();
+  Future<List<Angajat>> fetchAngajati() async {
+    final angajati = await bookingApi.fetchAngajati();
+    return angajati;
   }
 
-  Future<void> loadEvenimente() async {
-    evenimente = await bookingApi.fetchEvenimente();
+  Future<List<Eveniment>> fetchEvenimente() async {
+    final evenimente = await bookingApi.fetchEvenimente();
+    return evenimente;
   }
 
   // CLIENT CRUD
@@ -128,34 +130,32 @@ class OtlpService {
   }
 
   // ANGAJAT CRUD
-  Future<void> addAngajat(Angajat angajat) async {
-    await bookingApi.addAngajat(angajat);
-    angajati.add(angajat);
+  Future<Angajat> addAngajat(Angajat angajat) async {
+    final addedAngajat = await bookingApi.addAngajat(angajat);
+    return addedAngajat;
   }
 
-  Future<void> editAngajat(int index, Angajat updatedAngajat) async {
-    await bookingApi.updateAngajat(updatedAngajat);
-    angajati[index] = updatedAngajat;
+  Future<Angajat> editAngajat(Angajat updatedAngajat) async {
+    final updated = await bookingApi.updateAngajat(updatedAngajat);
+    return updated;
   }
 
-  Future<void> deleteAngajat(int index) async {
-    await bookingApi.deleteAngajat(angajati[index].id);
-    angajati.removeAt(index);
+  Future<void> deleteAngajat(int id_angajat) async {
+    await bookingApi.deleteAngajat(id_angajat);
   }
 
   // EVENIMENT CRUD
-  Future<void> addEveniment(Eveniment eveniment) async {
-    await bookingApi.addEveniment(eveniment);
-    evenimente.add(eveniment);
+  Future<Eveniment> addEveniment(Eveniment eveniment) async {
+    final addedEveniment = await bookingApi.addEveniment(eveniment);
+    return addedEveniment;
   }
 
-  Future<void> editEveniment(int index, Eveniment updatedEveniment) async {
-    await bookingApi.updateEveniment(updatedEveniment);
-    evenimente[index] = updatedEveniment;
+  Future<Eveniment> editEveniment(Eveniment updatedEveniment) async {
+    final updated = await bookingApi.updateEveniment(updatedEveniment);
+    return updated;
   }
 
-  Future<void> deleteEveniment(int index) async {
-    await bookingApi.deleteEveniment(evenimente[index].id);
-    evenimente.removeAt(index);
+  Future<void> deleteEveniment(int id_eveniment) async {
+    await bookingApi.deleteEveniment(id_eveniment);
   }
 }

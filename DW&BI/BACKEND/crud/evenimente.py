@@ -13,7 +13,7 @@ def create_eveniment(db: Session, client: EvenimentCreate):
     return db_client
 
 def update_eveniment(db: Session, id: int, client: EvenimentCreate):
-    db_client = db.query(Eveniment).filter(Eveniment.id == id).first()
+    db_client = db.query(Eveniment).filter(Eveniment.id_eveniment == id).first()
     if db_client:
         for key, value in client.dict().items():
             setattr(db_client, key, value)
@@ -22,7 +22,7 @@ def update_eveniment(db: Session, id: int, client: EvenimentCreate):
         return db_client
 
 def delete_eveniment(db: Session, id: int):
-    db_client = db.query(Eveniment).filter(Eveniment.id == id).first()
+    db_client = db.query(Eveniment).filter(Eveniment.id_eveniment == id).first()
     if db_client:
         db.delete(db_client)
         db.commit()

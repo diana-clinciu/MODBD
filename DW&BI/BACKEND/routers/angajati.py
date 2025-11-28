@@ -14,20 +14,38 @@ def fetch_angajati(db: Session = Depends(get_db)):
 @router.post("/add", response_model=Angajat)
 def add_angajat(
     nume: str = Form(...),
+    prenume: str = Form(...),
     functie: str = Form(...),
+    salariu: float = Form(...),
+    id_serviciu: int = Form(...),
     db: Session = Depends(get_db)
 ):
-    angajat = AngajatCreate(nume=nume, functie=functie)
+    angajat = AngajatCreate(
+        nume=nume,
+        prenume=prenume,
+        functie=functie,
+        salariu=salariu,
+        id_serviciu=id_serviciu
+    )
     return crud.create_angajat(db, angajat)
 
 @router.post("/{id}", response_model=Angajat)
 def update_angajat(
     id: int,
     nume: str = Form(...),
+    prenume: str = Form(...),
     functie: str = Form(...),
+    salariu: float = Form(...),
+    id_serviciu: int = Form(...),
     db: Session = Depends(get_db)
 ):
-    angajat = AngajatCreate(nume=nume, functie=functie)
+    angajat = AngajatCreate(
+        nume=nume,
+        prenume=prenume,
+        functie=functie,
+        salariu=salariu,
+        id_serviciu=id_serviciu
+    )
     return crud.update_angajat(db, id, angajat)
 
 @router.post("/delete/{id}")

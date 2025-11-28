@@ -45,7 +45,6 @@ class Camera(CameraBase):
     class Config:
         orm_mode = True
 
-
 # Serviciu
 class ServiciuBase(BaseModel):
     denumire: str
@@ -65,7 +64,6 @@ class Serviciu(ServiciuBase):
     class Config:
         orm_mode = True
 
-
 # Plata
 class PlataBase(BaseModel):
     id_rezervare: int
@@ -81,30 +79,33 @@ class Plata(PlataBase):
     class Config:
         orm_mode = True
 
-
 # Angajat
 class AngajatBase(BaseModel):
     nume: str
+    prenume: str
     functie: str
+    salariu: float
+    id_serviciu: int
 
 class AngajatCreate(AngajatBase):
     pass
 
 class Angajat(AngajatBase):
-    id: int
+    id: int = Field(..., alias="id_angajat")
     class Config:
         orm_mode = True
 
-
 # Eveniment
 class EvenimentBase(BaseModel):
-    nume: str
-    data: datetime
+    nume_eveniment: str = Field(..., alias="nume_eveniment")
+    data_eveniment: datetime = Field(..., alias="data_eveniment")
+    descriere: str = ""
+
+    class Config:
+        orm_mode = True
 
 class EvenimentCreate(EvenimentBase):
     pass
 
 class Eveniment(EvenimentBase):
-    id: int
-    class Config:
-        orm_mode = True
+    id_eveniment: int

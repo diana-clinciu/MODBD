@@ -55,13 +55,23 @@ class Plata(Base):
     metoda_plata = Column("METODA_PLATA", String(20))
 
 class Angajat(Base):
-    __tablename__ = "angajati"
-    id = Column(Integer, primary_key=True, index=True)
-    nume = Column(String(50))
-    functie = Column(String(100))
+    __tablename__ = 'ANGAJAT'
+    __table_args__ = {'schema': 'ALEXIA'}
+
+    id_angajat = Column("ID_ANGAJAT", Integer, primary_key=True, index=True)
+    nume = Column("NUME", String(30), nullable=False)
+    prenume = Column("PRENUME", String(30), nullable=False)
+    functie = Column("FUNCTIE", String(30))
+    salariu = Column("SALARIU", Float(precision=2))
+    id_serviciu = Column("id_serviciu", Integer, ForeignKey("ALEXIA.SERVICIU.id_serviciu"), nullable=False)
+
+    serviciu = relationship("Serviciu")
 
 class Eveniment(Base):
-    __tablename__ = "evenimente"
-    id = Column(Integer, primary_key=True, index=True)
-    nume = Column(String(100))
-    data = Column(DateTime, default=datetime.utcnow)
+    __tablename__ = 'EVENIMENT'
+    __table_args__ = {'schema': 'ALEXIA'}
+
+    id_eveniment = Column("ID_EVENIMENT", Integer, primary_key=True, index=True)
+    nume_eveniment = Column("NUME_EVENIMENT", String(50), nullable=False)
+    data_eveniment = Column("DATA_EVENIMENT", DateTime, nullable=False)
+    descriere = Column("DESCRIERE", String(200))

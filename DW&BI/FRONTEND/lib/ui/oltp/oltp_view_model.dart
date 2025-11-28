@@ -29,8 +29,8 @@ class OLTPViewModel extends ChangeNotifier {
     await loadCamere();
     await loadServicii();
     await loadPlati();
-    // await loadAngajati();
-    // await loadEvenimente();
+    await loadAngajati();
+    await loadEvenimente();
   }
 
   Future<void> loadClients() async {
@@ -55,6 +55,16 @@ class OLTPViewModel extends ChangeNotifier {
 
   Future<void> loadPlati() async {
     plati = await otlpService.fetchPlati();
+    notifyListeners();
+  }
+
+  Future<void> loadAngajati() async {
+    angajati = await otlpService.fetchAngajati();
+    notifyListeners();
+  }
+
+  Future<void> loadEvenimente() async {
+    evenimente = await otlpService.fetchEvenimente();
     notifyListeners();
   }
 
@@ -160,33 +170,41 @@ class OLTPViewModel extends ChangeNotifier {
 
   // ANGAJAT CRUD
   Future<void> addAngajat(Angajat angajat) async {
-    await otlpService.addAngajat(angajat);
+    final newAngajat = await otlpService.addAngajat(angajat);
+    angajati.add(newAngajat);
     notifyListeners();
   }
 
   Future<void> editAngajat(int index, Angajat updatedAngajat) async {
-    await otlpService.editAngajat(index, updatedAngajat);
+    final updated = await otlpService.editAngajat(updatedAngajat);
+    angajati[index] = updated;
     notifyListeners();
   }
 
   Future<void> deleteAngajat(int index) async {
-    await otlpService.deleteAngajat(index);
+    final id = angajati[index].id;
+    await otlpService.deleteAngajat(id);
+    angajati.removeAt(index);
     notifyListeners();
   }
 
   // EVENIMENT CRUD
   Future<void> addEveniment(Eveniment eveniment) async {
-    await otlpService.addEveniment(eveniment);
+    final newEveniment = await otlpService.addEveniment(eveniment);
+    evenimente.add(newEveniment);
     notifyListeners();
   }
 
   Future<void> editEveniment(int index, Eveniment updatedEveniment) async {
-    await otlpService.editEveniment(index, updatedEveniment);
+    final updated = await otlpService.editEveniment(updatedEveniment);
+    evenimente[index] = updated;
     notifyListeners();
   }
 
   Future<void> deleteEveniment(int index) async {
-    await otlpService.deleteEveniment(index);
+    final id = evenimente[index].id;
+    await otlpService.deleteEveniment(id);
+    evenimente.removeAt(index);
     notifyListeners();
   }
 }

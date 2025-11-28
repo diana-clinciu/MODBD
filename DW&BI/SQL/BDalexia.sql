@@ -223,6 +223,38 @@ BEGIN
 END;
 /
 
+-- Trigger pentru generarea automata a ID-ului angajat
+CREATE SEQUENCE ANGAJAT_SEQ
+  START WITH 11
+  INCREMENT BY 1
+  NOCACHE;
+
+CREATE OR REPLACE TRIGGER ANGAJAT_ID
+BEFORE INSERT ON ANGAJAT
+FOR EACH ROW
+BEGIN
+  IF :NEW.ID_ANGAJAT IS NULL THEN
+    SELECT ANGAJAT_SEQ.NEXTVAL INTO :NEW.ID_ANGAJAT FROM dual;
+  END IF;
+END;
+/
+
+-- Trigger pentru generarea automata a ID-ului eveniment
+CREATE SEQUENCE EVENIMENT_SEQ
+  START WITH 11
+  INCREMENT BY 1
+  NOCACHE;
+
+CREATE OR REPLACE TRIGGER EVENIMENT_ID
+BEFORE INSERT ON EVENIMENT
+FOR EACH ROW
+BEGIN
+  IF :NEW.ID_EVENIMENT IS NULL THEN
+    SELECT EVENIMENT_SEQ.NEXTVAL INTO :NEW.ID_EVENIMENT FROM dual;
+  END IF;
+END;
+/
+
 -- =====================================================
 -- Inserare date exemple
 -- =====================================================

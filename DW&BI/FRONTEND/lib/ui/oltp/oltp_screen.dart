@@ -86,26 +86,30 @@ class OltpScreen extends StatelessWidget {
                     (index) => Plata.showEditPlataDialog(context, vm, index),
                     (index) => vm.deletePlata(index),
                   ),
-                  //  _buildCrudSection(
-                  //   context,
-                  //   "Angajati",
-                  //   vm.angajati
-                  //       .map((c) => "${c.nume} - ${c.functie}")
-                  //       .toList(),
-                  //   () => Angajat.showAddAngajatDialog(context, vm),
-                  //   (index) => Angajat.showEditAngajatDialog(context, vm, index),
-                  //   (index) => vm.deleteAngajat(index),
-                  // ),
-                  // _buildCrudSection(
-                  //   context,
-                  //   "Evenimente",
-                  //   vm.evenimente
-                  //       .map((c) => "${c.nume} - ${c.data.toShortDateString()}")
-                  //       .toList(),
-                  //   () => Eveniment.showAddEvenimentDialog(context, vm),
-                  //   (index) => Eveniment.showEditEvenimentDialog(context, vm, index),
-                  //   (index) => vm.deleteEveniment(index),
-                  // ),
+                  _buildCrudSection(
+                    context,
+                    "Angajati",
+                    vm.angajati
+                        .map((c) =>
+                            "${c.nume} ${c.prenume} - Funcție: ${c.functie}, Salariu: ${c.salariu} RON, Serviciu ID: ${c.idServiciu}")
+                        .toList(),
+                    () => Angajat.showAddAngajatDialog(context, vm),
+                    (index) =>
+                        Angajat.showEditAngajatDialog(context, vm, index),
+                    (index) => vm.deleteAngajat(index),
+                  ),
+                  _buildCrudSection(
+                    context,
+                    "Evenimente",
+                    vm.evenimente
+                        .map((e) =>
+                            "${e.nume} - ${e.data.day}/${e.data.month}/${e.data.year} - ${e.descriere ?? ''}")
+                        .toList(),
+                    () => Eveniment.showAddEvenimentDialog(context, vm),
+                    (index) =>
+                        Eveniment.showEditEvenimentDialog(context, vm, index),
+                    (index) => vm.deleteEveniment(index),
+                  ),
                 ],
               ),
             );
