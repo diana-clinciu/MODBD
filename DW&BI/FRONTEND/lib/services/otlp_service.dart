@@ -34,8 +34,9 @@ class OtlpService {
     return response;
   }
 
-  Future<void> loadServicii() async {
-    servicii = await bookingApi.fetchServicii();
+  Future<List<Serviciu>> fetchServicii() async {
+    final response = await bookingApi.fetchServicii();
+    return response;
   }
 
   Future<void> loadPlati() async {
@@ -96,19 +97,18 @@ class OtlpService {
   }
 
   // SERVICIU CRUD
-  Future<void> addServiciu(Serviciu serviciu) async {
-    await bookingApi.addServiciu(serviciu);
-    servicii.add(serviciu);
+  Future<Serviciu> addServiciu(Serviciu serviciu) async {
+    final addedServiciu = await bookingApi.addServiciu(serviciu);
+    return addedServiciu;
   }
 
-  Future<void> editServiciu(int index, Serviciu updatedServiciu) async {
-    await bookingApi.updateServiciu(updatedServiciu);
-    servicii[index] = updatedServiciu;
+  Future<Serviciu> editServiciu(Serviciu updatedServiciu) async {
+    final updated = await bookingApi.updateServiciu(updatedServiciu);
+    return updated;
   }
 
-  Future<void> deleteServiciu(int index) async {
-    await bookingApi.deleteServiciu(servicii[index].id);
-    servicii.removeAt(index);
+  Future<void> deleteServiciu(int id_serviciu) async {
+    await bookingApi.deleteServiciu(id_serviciu);
   }
 
   // PLATA CRUD

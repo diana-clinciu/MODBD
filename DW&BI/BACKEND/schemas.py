@@ -1,5 +1,6 @@
+from typing import Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import date, datetime
 
 # Client
 class ClientBase(BaseModel):
@@ -49,12 +50,18 @@ class Camera(CameraBase):
 class ServiciuBase(BaseModel):
     denumire: str
     pret: float
+    data_achizitionare: Optional[date] = None
+    cantitate: Optional[int] = None
 
 class ServiciuCreate(ServiciuBase):
     pass
 
+class ServiciuUpdate(ServiciuBase):
+    pass
+
 class Serviciu(ServiciuBase):
     id: int
+
     class Config:
         orm_mode = True
 

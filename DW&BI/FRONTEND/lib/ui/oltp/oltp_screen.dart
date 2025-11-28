@@ -39,10 +39,12 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Rezervari",
                     vm.rezervari
-                        .map((c) => "${c.clientName} - ${c.data.toShortDateString()}")
+                        .map((c) =>
+                            "${c.clientName} - ${c.data.toShortDateString()}")
                         .toList(),
                     () => Rezervare.showAddReservationDialog(context, vm),
-                    (index) => Rezervare.showEditReservationDialog(context, vm, index),
+                    (index) =>
+                        Rezervare.showEditReservationDialog(context, vm, index),
                     (index) => vm.deleteRezervare(index),
                   ),
                   _buildCrudSection(
@@ -55,16 +57,23 @@ class OltpScreen extends StatelessWidget {
                     (index) => Camera.showEditCameraDialog(context, vm, index),
                     (index) => vm.deleteCamera(index),
                   ),
-                  // _buildCrudSection(
-                  //   context,
-                  //   "Servicii",
-                  //   vm.servicii
-                  //       .map((c) => "${c.denumire} - ${c.pret} RON")
-                  //       .toList(),
-                  //   () => Serviciu.showAddCServiciuDialog(context, vm),
-                  //   (index) => Serviciu.showEditServiciuDialog(context, vm, index),
-                  //   (index) => vm.deleteServiciu(index),
-                  // ),
+                  _buildCrudSection(
+                    context,
+                    "Servicii",
+                    vm.servicii.map((c) {
+                      String dataText = c.dataAchizitionare != null
+                          ? "${c.dataAchizitionare!.day}/${c.dataAchizitionare!.month}/${c.dataAchizitionare!.year}"
+                          : "N/A";
+                      String cantText =
+                          c.cantitate != null ? "${c.cantitate}" : "N/A";
+
+                      return "${c.denumire} - ${c.pret} RON - Cantitate: $cantText - Data: $dataText";
+                    }).toList(),
+                    () => Serviciu.showAddServiciuDialog(context, vm),
+                    (index) =>
+                        Serviciu.showEditServiciuDialog(context, vm, index),
+                    (index) => vm.deleteServiciu(index),
+                  ),
                   // _buildCrudSection(
                   //   context,
                   //   "Plati",
@@ -154,8 +163,8 @@ class OltpScreen extends StatelessWidget {
 
 extension DateTimeExtension on DateTime {
   String toShortDateString() {
-    return "${this.day.toString().padLeft(2,'0')}/"
-           "${this.month.toString().padLeft(2,'0')}/"
-           "${this.year}";
+    return "${this.day.toString().padLeft(2, '0')}/"
+        "${this.month.toString().padLeft(2, '0')}/"
+        "${this.year}";
   }
 }

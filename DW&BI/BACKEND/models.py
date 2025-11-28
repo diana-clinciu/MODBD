@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Date, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -35,10 +35,14 @@ class Camera(Base):
     pret = Column("PRET", Float, nullable=False)
 
 class Serviciu(Base):
-    __tablename__ = "servicii"
-    id = Column(Integer, primary_key=True, index=True)
-    denumire = Column(String(100))
-    pret = Column(Float)
+    __tablename__ = 'SERVICIU'
+    __table_args__ = {'schema': 'ALEXIA'}
+
+    id = Column("id_serviciu", Integer, primary_key=True, index=True)
+    denumire = Column(String(50), nullable=False)
+    pret = Column("pret_serviciu", Float, nullable=False)
+    data_achizitionare = Column(Date, nullable=True)
+    cantitate = Column(Integer, nullable=True)
 
 class Plata(Base):
     __tablename__ = "plati"

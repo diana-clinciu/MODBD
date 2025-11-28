@@ -191,6 +191,22 @@ BEGIN
 END;
 /
 
+-- Trigger pentru generarea automata a ID-ului serviciu
+CREATE SEQUENCE SERVICIU_SEQ
+  START WITH 11
+  INCREMENT BY 1
+  NOCACHE;
+
+CREATE OR REPLACE TRIGGER SERVICIU_ID
+BEFORE INSERT ON SERVICIU
+FOR EACH ROW
+BEGIN
+  IF :NEW.ID_SERVICIU IS NULL THEN
+    SELECT SERVICIU_SEQ.NEXTVAL INTO :NEW.ID_SERVICIU FROM dual;
+  END IF;
+END;
+/
+
 -- =====================================================
 -- Inserare date exemple
 -- =====================================================

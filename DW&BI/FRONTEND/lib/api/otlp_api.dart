@@ -164,7 +164,7 @@ final class OtlpApi extends ClientApi {
     return get(
         path: "servicii",
         deserializer: (json) {
-          return (json["data"] as List<dynamic>)
+          return (json as List<dynamic>)
               .map((clientJson) => Serviciu.fromJson(clientJson))
               .toList();
         });

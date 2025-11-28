@@ -1,9 +1,10 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from session import get_db
 import crud.servicii as crud
-from schemas import Serviciu, ServiciuCreate
-from typing import List
+from schemas import Serviciu, ServiciuCreate, ServiciuUpdate
+from typing import List, Optional
 
 router = APIRouter(prefix="/servicii", tags=["Servicii"])
 
@@ -15,9 +16,16 @@ def fetch_servicii(db: Session = Depends(get_db)):
 def add_serviciu(
     denumire: str = Form(...),
     pret: float = Form(...),
+    data_achizitionare: Optional[date] = Form(None),
+    cantitate: Optional[int] = Form(None),
     db: Session = Depends(get_db)
 ):
-    serviciu = ServiciuCreate(denumire=denumire, pret=pret)
+    serviciu = ServiciuCreate(
+        denumire=denumire,
+        pret=pret,
+        data_achizitionare=data_achizitionare,
+        cantitate=cantitate
+    )
     return crud.create_serviciu(db, serviciu)
 
 @router.post("/{id}", response_model=Serviciu)
@@ -25,9 +33,16 @@ def update_serviciu(
     id: int,
     denumire: str = Form(...),
     pret: float = Form(...),
+    data_achizitionare: Optional[date] = Form(None),
+    cantitate: Optional[int] = Form(None),
     db: Session = Depends(get_db)
 ):
-    serviciu = ServiciuCreate(denumire=denumire, pret=pret)
+    serviciu = ServiciuUpdate(
+        denumire=denumire,
+        pret=pret,
+        data_achizitionare=data_achizitionare,
+        cantitate=cantitate
+    )
     return crud.update_serviciu(db, id, serviciu)
 
 @router.post("/delete/{id}")
