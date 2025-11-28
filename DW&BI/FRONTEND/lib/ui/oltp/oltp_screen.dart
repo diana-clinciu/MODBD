@@ -45,16 +45,16 @@ class OltpScreen extends StatelessWidget {
                     (index) => Rezervare.showEditReservationDialog(context, vm, index),
                     (index) => vm.deleteRezervare(index),
                   ),
-                  // _buildCrudSection(
-                  //   context,
-                  //   "Camere",
-                  //   vm.camere
-                  //       .map((c) => "${c.nr} - ${c.pret} RON - ${c.tip}")
-                  //       .toList(),
-                  //   () => Camera.showAddCameraDialog(context, vm),
-                  //   (index) => Camera.showEditCameraDialog(context, vm, index),
-                  //   (index) => vm.deleteCamera(index),
-                  // ),
+                  _buildCrudSection(
+                    context,
+                    "Camere",
+                    vm.camere
+                        .map((c) => "${c.nr} - ${c.pret} RON - ${c.tip}")
+                        .toList(),
+                    () => Camera.showAddCameraDialog(context, vm),
+                    (index) => Camera.showEditCameraDialog(context, vm, index),
+                    (index) => vm.deleteCamera(index),
+                  ),
                   // _buildCrudSection(
                   //   context,
                   //   "Servicii",

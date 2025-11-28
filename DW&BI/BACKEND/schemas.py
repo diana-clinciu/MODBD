@@ -32,15 +32,15 @@ class RezervareResponse(BaseModel):
 
 # Camera
 class CameraBase(BaseModel):
-    nr: int
-    tip: str
+    nr_camera: int
+    tip_camera: str
     pret: float
 
 class CameraCreate(CameraBase):
     pass
 
 class Camera(CameraBase):
-    id: int
+    id: int = Field(..., alias="id_camera")
     class Config:
         orm_mode = True
 

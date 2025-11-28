@@ -26,11 +26,13 @@ class Rezervare(Base):
 
 
 class Camera(Base):
-    __tablename__ = "camere"
-    id = Column(Integer, primary_key=True, index=True)
-    nr = Column(Integer)
-    tip = Column(String(50))
-    pret = Column(Float)
+    __tablename__ = 'CAMERA'
+    __table_args__ = {'schema': 'ALEXIA'}
+
+    id_camera = Column("ID_CAMERA", Integer, primary_key=True, index=True)
+    nr_camera = Column("NR_CAMERA", Integer, nullable=False)
+    tip_camera = Column("TIP_CAMERA", String(50), nullable=False)
+    pret = Column("PRET", Float, nullable=False)
 
 class Serviciu(Base):
     __tablename__ = "servicii"

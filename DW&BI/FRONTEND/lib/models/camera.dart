@@ -8,10 +8,18 @@ class Camera {
   final String tip;
   final double pret;
 
-  Camera({required this.id, required this.nr, required this.tip, required this.pret});
+  Camera(
+      {required this.id,
+      required this.nr,
+      required this.tip,
+      required this.pret});
 
   static Camera fromJson(JSON jsonBody) {
-    return Camera(id: jsonBody["idn"], nr: jsonBody["numar"], tip: jsonBody["tip"], pret: jsonBody["pret"]);
+    return Camera(
+        id: jsonBody["id_camera"],
+        nr: jsonBody["nr_camera"],
+        tip: jsonBody["tip_camera"],
+        pret: jsonBody["pret"]);
   }
 
   static void showAddCameraDialog(BuildContext context, OLTPViewModel vm) {
@@ -27,14 +35,18 @@ class Camera {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                onChanged: (v) => nr = int.tryParse(v) ?? 0,
-                decoration: InputDecoration(labelText: "Numar camera")),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => nr = int.tryParse(v) ?? 0,
+              decoration: InputDecoration(labelText: "Numar camera"),
+            ),
             TextField(
                 onChanged: (v) => tip = v,
                 decoration: InputDecoration(labelText: "Tip camera")),
             TextField(
-                onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
-                decoration: InputDecoration(labelText: "Pret camera")),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
+              decoration: InputDecoration(labelText: "Pret camera"),
+            ),
           ],
         ),
         actions: [
@@ -43,7 +55,8 @@ class Camera {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addCamera(Camera(id: vm.camere.length + 1, nr: nr, tip: tip, pret: pret));
+              vm.addCamera(Camera(
+                  id: vm.camere.length + 1, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -67,17 +80,22 @@ class Camera {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                controller: TextEditingController(text: nr.toString()),
-                onChanged: (v) => nr = v as int,
-                decoration: InputDecoration(labelText: "Numar camera")),
+              controller: TextEditingController(text: nr.toString()),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => nr = int.tryParse(v) ?? 0,
+              decoration: InputDecoration(labelText: "Numar camera"),
+            ),
             TextField(
-                controller: TextEditingController(text: tip),
-                onChanged: (v) => tip = v,
-                decoration: InputDecoration(labelText: "Tip camera")),
+              controller: TextEditingController(text: tip),
+              onChanged: (v) => tip = v,
+              decoration: InputDecoration(labelText: "Tip camera"),
+            ),
             TextField(
-                controller: TextEditingController(text: pret.toString()),
-                onChanged: (v) => pret = v as double,
-                decoration: InputDecoration(labelText: "Pret camera")),
+              controller: TextEditingController(text: pret.toString()),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
+              decoration: InputDecoration(labelText: "Pret camera"),
+            ),
           ],
         ),
         actions: [
@@ -86,7 +104,10 @@ class Camera {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editCamera(index, Camera(id: vm.camere[index].id, nr: nr, tip: tip, pret: pret));
+              vm.editCamera(
+                  index,
+                  Camera(
+                      id: vm.camere[index].id, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

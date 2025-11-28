@@ -26,7 +26,7 @@ class OLTPViewModel extends ChangeNotifier {
   Future<void> loadAll() async {
     await loadClients();
     await loadRezervari();
-    // await loadCamere();
+    await loadCamere();
     // await loadServicii();
     // await loadPlati();
     // await loadAngajati();
@@ -40,6 +40,11 @@ class OLTPViewModel extends ChangeNotifier {
 
   Future<void> loadRezervari() async {
     rezervari = await otlpService.fetchRezervari();
+    notifyListeners();
+  }
+
+  Future<void> loadCamere() async {
+    camere = await otlpService.fetchCamere();
     notifyListeners();
   }
 
@@ -85,17 +90,21 @@ class OLTPViewModel extends ChangeNotifier {
 
   // CAMERA CRUD
   Future<void> addCamera(Camera camera) async {
-    await otlpService.addCamera(camera);
+    final newCamera = await otlpService.addCamera(camera);
+    camere.add(newCamera);
     notifyListeners();
   }
 
   Future<void> editCamera(int index, Camera updatedCamera) async {
-    await otlpService.editCamera(index, updatedCamera);
+    final updated = await otlpService.editCamera(updatedCamera);
+    camere[index] = updated;
     notifyListeners();
   }
 
   Future<void> deleteCamera(int index) async {
-    await otlpService.deleteCamera(index);
+    final id = camere[index].id;
+    await otlpService.deleteCamera(id);
+    camere.removeAt(index);
     notifyListeners();
   }
 

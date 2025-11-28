@@ -13,23 +13,23 @@ def fetch_camere(db: Session = Depends(get_db)):
 
 @router.post("/add", response_model=Camera)
 def add_camera(
-    nr: str = Form(...),
-    tip: str = Form(...),
+    nr_camera: int = Form(...),
+    tip_camera: str = Form(...),
     pret: float = Form(...),
     db: Session = Depends(get_db)
 ):
-    camera = CameraCreate(nr=nr, tip=tip, pret=pret)
+    camera = CameraCreate(nr_camera=nr_camera, tip_camera=tip_camera, pret=pret)
     return crud.create_camera(db, camera)
 
 @router.post("/{id}", response_model=Camera)
 def update_camera(
     id: int,
-    nr: str = Form(...),
-    tip: str = Form(...),
+    nr_camera: int = Form(...),
+    tip_camera: str = Form(...),
     pret: float = Form(...),
     db: Session = Depends(get_db)
 ):
-    camera = CameraCreate(nr=nr, tip=tip, pret=pret)
+    camera = CameraCreate(nr_camera=nr_camera, tip_camera=tip_camera, pret=pret)
     return crud.update_camera(db, id, camera)
 
 @router.post("/delete/{id}")

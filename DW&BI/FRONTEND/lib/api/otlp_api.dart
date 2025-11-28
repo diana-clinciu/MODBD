@@ -110,13 +110,23 @@ final class OtlpApi extends ClientApi {
     return post(path: "rezervari/delete/$id", deserializer: (json) {});
   }
 
+  Future<List<Camera>> fetchCamere() async {
+    return get(
+        path: "camere",
+        deserializer: (json) {
+          return (json as List<dynamic>)
+              .map((clientJson) => Camera.fromJson(clientJson))
+              .toList();
+        });
+  }
+
   Future<Camera> addCamera(Camera camera) async {
     try {
       return await multiPartRequest(
           path: "camere/add",
           multipartEncoding: (form) {
-            form.append(camera.nr.toString(), withName: "nr");
-            form.append(camera.tip, withName: "tip");
+            form.append(camera.nr.toString(), withName: "nr_camera");
+            form.append(camera.tip, withName: "tip_camera");
             form.append(camera.pret.toString(), withName: "pret");
           },
           deserializer: (json) {
@@ -133,8 +143,8 @@ final class OtlpApi extends ClientApi {
       return await multiPartRequest(
           path: "camere/${camera.id}",
           multipartEncoding: (form) {
-            form.append(camera.nr.toString(), withName: "nr");
-            form.append(camera.tip, withName: "tip");
+            form.append(camera.nr.toString(), withName: "nr_camera");
+            form.append(camera.tip, withName: "tip_camera");
             form.append(camera.pret.toString(), withName: "pret");
           },
           deserializer: (json) {

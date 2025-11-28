@@ -175,6 +175,21 @@ BEGIN
 END;
 /
 
+-- Trigger pentru generarea automata a ID-ului camera
+CREATE SEQUENCE CAMERA_SEQ
+  START WITH 11
+  INCREMENT BY 1
+  NOCACHE;
+
+CREATE OR REPLACE TRIGGER CAMERA_ID
+BEFORE INSERT ON CAMERA
+FOR EACH ROW
+BEGIN
+  IF :NEW.ID_CAMERA IS NULL THEN
+    SELECT CAMERA_SEQ.NEXTVAL INTO :NEW.ID_CAMERA FROM dual;
+  END IF;
+END;
+/
 
 -- =====================================================
 -- Inserare date exemple

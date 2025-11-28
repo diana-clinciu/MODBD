@@ -29,8 +29,9 @@ class OtlpService {
     return response;
   }
 
-  Future<void> loadCamere() async {
-    // camere = await bookingApi.fetchCamere();
+  Future<List<Camera>> fetchCamere() async {
+    final response = await bookingApi.fetchCamere();
+    return response;
   }
 
   Future<void> loadServicii() async {
@@ -80,19 +81,18 @@ class OtlpService {
   }
 
   // CAMERA CRUD
-  Future<void> addCamera(Camera camera) async {
-    await bookingApi.addCamera(camera);
-    camere.add(camera);
+  Future<Camera> addCamera(Camera camera) async {
+    final addedCamera = await bookingApi.addCamera(camera);
+    return addedCamera;
   }
 
-  Future<void> editCamera(int index, Camera updatedCamera) async {
-    await bookingApi.updateCamera(updatedCamera);
-    camere[index] = updatedCamera;
+  Future<Camera> editCamera(Camera updatedCamera) async {
+    final updated = await bookingApi.updateCamera(updatedCamera);
+    return updated;
   }
 
-  Future<void> deleteCamera(int index) async {
-    await bookingApi.deleteCamera(camere[index].nr);
-    camere.removeAt(index);
+  Future<void> deleteCamera(int id_camera) async {
+    await bookingApi.deleteCamera(id_camera);
   }
 
   // SERVICIU CRUD
