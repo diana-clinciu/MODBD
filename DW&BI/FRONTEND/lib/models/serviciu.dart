@@ -53,17 +53,28 @@ class Serviciu {
                 onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
                 decoration: InputDecoration(labelText: "Pret serviciu"),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: dataAchizitionare,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) dataAchizitionare = picked;
-                },
-                child: Text("Selecteaza data"),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(dataAchizitionare != null
+                        ? "${dataAchizitionare!.day}/${dataAchizitionare!.month}/${dataAchizitionare!.year}"
+                        : "Alege data"),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: dataAchizitionare ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        dataAchizitionare = picked;
+                      }
+                    },
+                  ),
+                ],
               ),
               TextField(
                 keyboardType: TextInputType.number,
@@ -124,17 +135,28 @@ class Serviciu {
                 onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
                 decoration: InputDecoration(labelText: "Pret serviciu"),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: dataAchizitionare,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) dataAchizitionare = picked;
-                },
-                child: Text("Selecteaza data"),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(dataAchizitionare != null
+                        ? "${dataAchizitionare!.day}/${dataAchizitionare!.month}/${dataAchizitionare!.year}"
+                        : "Alege data"),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: dataAchizitionare ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        dataAchizitionare = picked;
+                      }
+                    },
+                  ),
+                ],
               ),
               TextField(
                 controller: TextEditingController(

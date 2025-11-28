@@ -13,21 +13,35 @@ def fetch_plati(db: Session = Depends(get_db)):
 
 @router.post("/add", response_model=Plata)
 def add_plata(
-    metoda: str = Form(...),
+    id_rezervare: int = Form(...),
     suma: float = Form(...),
+    data_plata: str = Form(...),
+    metoda_plata: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    plata = PlataCreate(metoda=metoda, suma=suma)
+    plata = PlataCreate(
+        id_rezervare=id_rezervare,
+        suma=suma,
+        data_plata=data_plata,
+        metoda_plata=metoda_plata
+    )
     return crud.create_plata(db, plata)
 
 @router.post("/{id}", response_model=Plata)
 def update_plata(
     id: int,
-    metoda: str = Form(...),
+    id_rezervare: int = Form(...),
     suma: float = Form(...),
+    data_plata: str = Form(...),
+    metoda_plata: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    plata = PlataCreate(metoda=metoda, suma=suma)
+    plata = PlataCreate(
+        id_rezervare=id_rezervare,
+        suma=suma,
+        data_plata=data_plata,
+        metoda_plata=metoda_plata
+    )
     return crud.update_plata(db, id, plata)
 
 @router.post("/delete/{id}")

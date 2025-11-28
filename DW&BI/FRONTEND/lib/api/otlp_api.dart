@@ -212,7 +212,7 @@ final class OtlpApi extends ClientApi {
     return get(
         path: "plati",
         deserializer: (json) {
-          return (json["data"] as List<dynamic>)
+          return (json as List<dynamic>)
               .map((clientJson) => Plata.fromJson(clientJson))
               .toList();
         });
@@ -221,14 +221,20 @@ final class OtlpApi extends ClientApi {
   Future<Plata> addPlata(Plata plata) async {
     try {
       return await multiPartRequest(
-          path: "plati/add",
-          multipartEncoding: (form) {
-            form.append(plata.metoda, withName: "metoda");
-            form.append(plata.suma.toString(), withName: "suma");
-          },
-          deserializer: (json) {
-            return Plata.fromJson(json);
-          });
+        path: "plati/add",
+        multipartEncoding: (form) {
+          form.append(plata.idRezervare.toString(), withName: "id_rezervare");
+          form.append(plata.suma.toString(), withName: "suma");
+          form.append(
+            plata.dataPlata.toIso8601String().split("T")[0],
+            withName: "data_plata",
+          );
+          form.append(plata.metoda, withName: "metoda_plata");
+        },
+        deserializer: (json) {
+          return Plata.fromJson(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error adding plata: ${e.errorBody}');
       rethrow;
@@ -238,14 +244,20 @@ final class OtlpApi extends ClientApi {
   Future<Plata> updatePlata(Plata plata) async {
     try {
       return await multiPartRequest(
-          path: "plati/${plata.id}",
-          multipartEncoding: (form) {
-            form.append(plata.metoda, withName: "metoda");
-            form.append(plata.suma.toString(), withName: "suma");
-          },
-          deserializer: (json) {
-            return Plata.fromJson(json);
-          });
+        path: "plati/${plata.id}",
+        multipartEncoding: (form) {
+          form.append(plata.idRezervare.toString(), withName: "id_rezervare");
+          form.append(plata.suma.toString(), withName: "suma");
+          form.append(
+            plata.dataPlata.toIso8601String().split("T")[0], 
+            withName: "data_plata",
+          );
+          form.append(plata.metoda, withName: "metoda_plata");
+        },
+        deserializer: (json) {
+          return Plata.fromJson(json);
+        },
+      );
     } on ApiException catch (e) {
       print('Error updating plata: ${e.errorBody}');
       rethrow;

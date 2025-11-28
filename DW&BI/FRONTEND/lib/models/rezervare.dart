@@ -46,18 +46,27 @@ class Rezervare {
               onChanged: (value) => selectedClientId = value,
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: data,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) data = picked;
-              },
-              child: Text("Selecteaza data"),
-            )
+            Row(
+              children: [
+                Expanded(
+                  child: Text("${data.day}/${data.month}/${data.year}"),
+                ),
+                IconButton(
+                  icon: Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    DateTime? picked = await showDatePicker(
+                      context: dialogContext,
+                      initialDate: data,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      data = picked;
+                    }
+                  },
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -103,18 +112,27 @@ class Rezervare {
               onChanged: (value) => selectedClientId = value,
             ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: data,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) data = picked;
-              },
-              child: Text("Selecteaza data"),
-            )
+            Row(
+              children: [
+                Expanded(
+                  child: Text("${data.day}/${data.month}/${data.year}"),
+                ),
+                IconButton(
+                  icon: Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    DateTime? picked = await showDatePicker(
+                      context: dialogContext,
+                      initialDate: data,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      data = picked;
+                    }
+                  },
+                ),
+              ],
+            ),
           ],
         ),
         actions: [

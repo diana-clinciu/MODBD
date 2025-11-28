@@ -39,8 +39,9 @@ class OtlpService {
     return response;
   }
 
-  Future<void> loadPlati() async {
-    plati = await bookingApi.fetchPlati();
+  Future<List<Plata>> fetchPlati() async {
+    final plati = await bookingApi.fetchPlati();
+    return plati;
   }
 
   Future<void> loadAngajati() async {
@@ -112,19 +113,18 @@ class OtlpService {
   }
 
   // PLATA CRUD
-  Future<void> addPlata(Plata plata) async {
-    await bookingApi.addPlata(plata);
-    plati.add(plata);
+  Future<Plata> addPlata(Plata plata) async {
+    final addedPlata = await bookingApi.addPlata(plata);
+    return addedPlata;
   }
 
-  Future<void> editPlata(int index, Plata updatedPlata) async {
-    await bookingApi.updatePlata(updatedPlata);
-    plati[index] = updatedPlata;
+  Future<Plata> editPlata(Plata updatedPlata) async {
+    final updated = await bookingApi.updatePlata(updatedPlata);
+    return updated;
   }
 
-  Future<void> deletePlata(int index) async {
-    await bookingApi.deletePlata(plati[index].id);
-    plati.removeAt(index);
+  Future<void> deletePlata(int id_plata) async {
+    await bookingApi.deletePlata(id_plata);
   }
 
   // ANGAJAT CRUD

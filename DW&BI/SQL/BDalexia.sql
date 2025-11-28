@@ -207,6 +207,22 @@ BEGIN
 END;
 /
 
+-- Trigger pentru generarea automata a ID-ului plata
+CREATE SEQUENCE PLATA_SEQ
+  START WITH 11
+  INCREMENT BY 1
+  NOCACHE;
+
+CREATE OR REPLACE TRIGGER PLATA_ID
+BEFORE INSERT ON PLATA
+FOR EACH ROW
+BEGIN
+  IF :NEW.ID_PLATA IS NULL THEN
+    SELECT PLATA_SEQ.NEXTVAL INTO :NEW.ID_PLATA FROM dual;
+  END IF;
+END;
+/
+
 -- =====================================================
 -- Inserare date exemple
 -- =====================================================

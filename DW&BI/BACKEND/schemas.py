@@ -68,14 +68,16 @@ class Serviciu(ServiciuBase):
 
 # Plata
 class PlataBase(BaseModel):
-    metoda: str
+    id_rezervare: int
     suma: float
+    data_plata: date
+    metoda_plata: str
 
 class PlataCreate(PlataBase):
     pass
 
 class Plata(PlataBase):
-    id: int
+    id_plata: int = Field(..., alias="id_plata")
     class Config:
         orm_mode = True
 

@@ -45,10 +45,14 @@ class Serviciu(Base):
     cantitate = Column(Integer, nullable=True)
 
 class Plata(Base):
-    __tablename__ = "plati"
-    id = Column(Integer, primary_key=True, index=True)
-    metoda = Column(String(50))
-    suma = Column(Float)
+    __tablename__ = 'PLATA'
+    __table_args__ = {'schema': 'ALEXIA'}
+
+    id_plata = Column("ID_PLATA", Integer, primary_key=True, index=True)
+    id_rezervare = Column("ID_REZERVARE", Integer, ForeignKey("ALEXIA.REZERVARE.ID_REZERVARE"), nullable=False)
+    suma = Column("SUMA", Float(precision=2))
+    data_plata = Column("DATA_PLATA", Date, nullable=False)
+    metoda_plata = Column("METODA_PLATA", String(20))
 
 class Angajat(Base):
     __tablename__ = "angajati"

@@ -74,16 +74,18 @@ class OltpScreen extends StatelessWidget {
                         Serviciu.showEditServiciuDialog(context, vm, index),
                     (index) => vm.deleteServiciu(index),
                   ),
-                  // _buildCrudSection(
-                  //   context,
-                  //   "Plati",
-                  //   vm.plati
-                  //       .map((c) => "${c.metoda} - ${c.suma} RON")
-                  //       .toList(),
-                  //   () => Plata.showAddPlataDialog(context, vm),
-                  //   (index) => Plata.showEditPlatiDialog(context, vm, index),
-                  //   (index) => vm.deletePlata(index),
-                  // ),
+                  _buildCrudSection(
+                    context,
+                    "Plati",
+                    vm.plati.map((c) {
+                      final dataStr =
+                          "${c.dataPlata.day}/${c.dataPlata.month}/${c.dataPlata.year}";
+                      return "Rezervare: ${c.idRezervare}, Suma: ${c.suma} RON, Data: $dataStr, Metoda: ${c.metoda}";
+                    }).toList(),
+                    () => Plata.showAddPlataDialog(context, vm),
+                    (index) => Plata.showEditPlataDialog(context, vm, index),
+                    (index) => vm.deletePlata(index),
+                  ),
                   //  _buildCrudSection(
                   //   context,
                   //   "Angajati",

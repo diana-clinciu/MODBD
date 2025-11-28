@@ -28,7 +28,7 @@ class OLTPViewModel extends ChangeNotifier {
     await loadRezervari();
     await loadCamere();
     await loadServicii();
-    // await loadPlati();
+    await loadPlati();
     // await loadAngajati();
     // await loadEvenimente();
   }
@@ -50,6 +50,11 @@ class OLTPViewModel extends ChangeNotifier {
 
   Future<void> loadServicii() async {
     servicii = await otlpService.fetchServicii();
+    notifyListeners();
+  }
+
+  Future<void> loadPlati() async {
+    plati = await otlpService.fetchPlati();
     notifyListeners();
   }
 
@@ -135,17 +140,21 @@ class OLTPViewModel extends ChangeNotifier {
 
   // PLATA CRUD
   Future<void> addPlata(Plata plata) async {
-    await otlpService.addPlata(plata);
+    final newPlata = await otlpService.addPlata(plata);
+    plati.add(newPlata);
     notifyListeners();
   }
 
   Future<void> editPlata(int index, Plata updatedPlata) async {
-    await otlpService.editPlata(index, updatedPlata);
+    final updated = await otlpService.editPlata(updatedPlata);
+    plati[index] = updated;
     notifyListeners();
   }
 
   Future<void> deletePlata(int index) async {
-    await otlpService.deletePlata(index);
+    final id = plati[index].id;
+    await otlpService.deletePlata(id);
+    plati.removeAt(index);
     notifyListeners();
   }
 
