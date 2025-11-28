@@ -3,14 +3,15 @@ import 'package:mvvm_flutter/api/client_api.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 
 class Camera {
+  final int id;
   final int nr;
   final String tip;
   final double pret;
 
-  Camera({required this.nr, required this.tip, required this.pret});
+  Camera({required this.id, required this.nr, required this.tip, required this.pret});
 
   static Camera fromJson(JSON jsonBody) {
-    return Camera(nr: jsonBody["numar"], tip: jsonBody["tip"], pret: jsonBody["pret"]);
+    return Camera(id: jsonBody["idn"], nr: jsonBody["numar"], tip: jsonBody["tip"], pret: jsonBody["pret"]);
   }
 
   static void showAddCameraDialog(BuildContext context, OLTPViewModel vm) {
@@ -42,7 +43,7 @@ class Camera {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addCamera(Camera(nr: nr, tip: tip, pret: pret));
+              vm.addCamera(Camera(id: vm.camere.length + 1, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -85,7 +86,7 @@ class Camera {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editCamera(index, Camera(nr: nr, tip: tip, pret: pret));
+              vm.editCamera(index, Camera(id: vm.camere[index].id, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

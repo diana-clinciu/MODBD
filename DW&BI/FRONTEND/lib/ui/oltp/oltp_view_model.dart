@@ -11,124 +11,155 @@ import 'package:mvvm_flutter/services/otlp_service.dart';
 
 class OLTPViewModel extends ChangeNotifier {
   final OtlpService otlpService = GetIt.instance.get<OtlpService>();
+  List<Client> clients = [];
+  List<Rezervare> rezervari = [];
+  List<Camera> camere = [];
+  List<Serviciu> servicii = [];
+  List<Plata> plati = [];
+  List<Angajat> angajati = [];
+  List<Eveniment> evenimente = [];
 
-  List<Client> get clients => otlpService.clients;
-  List<Rezervare> get rezervari => otlpService.rezervari;
-  List<Camera> get camere => otlpService.camere;
-  List<Serviciu> get servicii => otlpService.servicii;
-  List<Plata> get plati => otlpService.plati;
-  List<Angajat> get angajati => otlpService.angajati;
-  List<Eveniment> get evenimente => otlpService.evenimente;
+  OLTPViewModel() {
+    loadAll();
+  }
+
+  Future<void> loadAll() async {
+    await loadClients();
+    await loadRezervari();
+    // await loadCamere();
+    // await loadServicii();
+    // await loadPlati();
+    // await loadAngajati();
+    // await loadEvenimente();
+  }
+
+  Future<void> loadClients() async {
+    clients = await otlpService.fetchClients();
+    notifyListeners();
+  }
+
+  Future<void> loadRezervari() async {
+    rezervari = await otlpService.fetchRezervari();
+    notifyListeners();
+  }
 
   // CLIENT CRUD
-  void addClient(Client client) {
-    otlpService.addClient(client);
+  Future<void> addClient(Client client) async {
+    final newClient = await otlpService.addClient(client);
+    clients.add(newClient);
     notifyListeners();
   }
 
-  void editClient(int index, Client updatedClient) {
-    otlpService.editClient(index, updatedClient);
+  Future<void> editClient(int index, Client updatedClient) async {
+    final updated = await otlpService.editClient(updatedClient);
+    clients[index] = updated;
     notifyListeners();
   }
 
-  void deleteClient(int index) {
-    otlpService.deleteClient(index);
-    notifyListeners();
-  }
-
-  // CAMERA CRUD
-  void addCamera(Camera camera) {
-    otlpService.addCamera(camera);
-    notifyListeners();
-  }
-
-  void editCamera(int index, Camera updatedCamera) {
-    otlpService.editCamera(index, updatedCamera);
-    notifyListeners();
-  }
-
-  void deleteCamera(int index) {
-    otlpService.deleteCamera(index);
+  Future<void> deleteClient(int index) async {
+    final id = clients[index].id;
+    await otlpService.deleteClient(id);
+    clients.removeAt(index);
     notifyListeners();
   }
 
   // REZERVARE CRUD
-  void addRezervare(Rezervare rezervare) {
-    otlpService.addRezervare(rezervare);
+  Future<void> addRezervare(Rezervare rezervare) async {
+    final newRezervare = await otlpService.addRezervare(rezervare);
+    rezervari.add(newRezervare);
     notifyListeners();
   }
 
-  void editRezervare(int index, Rezervare updatedRezervare) {
-    otlpService.editRezervare(index, updatedRezervare);
+  Future<void> editRezervare(int index, Rezervare updatedRezervare) async {
+    final updated = await otlpService.editRezervare(updatedRezervare);
+    rezervari[index] = updated;
     notifyListeners();
   }
 
-  void deleteRezervare(int index) {
-    otlpService.deleteRezervare(index);
+  Future<void> deleteRezervare(int index) async {
+    final id = rezervari[index].id;
+    await otlpService.deleteRezervare(id);
+    rezervari.removeAt(index);
+    notifyListeners();
+  }
+
+  // CAMERA CRUD
+  Future<void> addCamera(Camera camera) async {
+    await otlpService.addCamera(camera);
+    notifyListeners();
+  }
+
+  Future<void> editCamera(int index, Camera updatedCamera) async {
+    await otlpService.editCamera(index, updatedCamera);
+    notifyListeners();
+  }
+
+  Future<void> deleteCamera(int index) async {
+    await otlpService.deleteCamera(index);
     notifyListeners();
   }
 
   // SERVICIU CRUD
-  void addServiciu(Serviciu serviciu) {
-    otlpService.addServiciu(serviciu);
+  Future<void> addServiciu(Serviciu serviciu) async {
+    await otlpService.addServiciu(serviciu);
     notifyListeners();
   }
 
-  void editServiciu(int index, Serviciu updatedServiciu) {
-    otlpService.editServiciu(index, updatedServiciu);
+  Future<void> editServiciu(int index, Serviciu updatedServiciu) async {
+    await otlpService.editServiciu(index, updatedServiciu);
     notifyListeners();
   }
 
-  void deleteServiciu(int index) {
-    otlpService.deleteServiciu(index);
+  Future<void> deleteServiciu(int index) async {
+    await otlpService.deleteServiciu(index);
     notifyListeners();
   }
 
   // PLATA CRUD
-  void addPlata(Plata plata) {
-    otlpService.addPlata(plata);
+  Future<void> addPlata(Plata plata) async {
+    await otlpService.addPlata(plata);
     notifyListeners();
   }
 
-  void editPlata(int index, Plata updatedPlata) {
-    otlpService.editPlata(index, updatedPlata);
+  Future<void> editPlata(int index, Plata updatedPlata) async {
+    await otlpService.editPlata(index, updatedPlata);
     notifyListeners();
   }
 
-  void deletePlata(int index) {
-    otlpService.deletePlata(index);
+  Future<void> deletePlata(int index) async {
+    await otlpService.deletePlata(index);
     notifyListeners();
   }
 
   // ANGAJAT CRUD
-  void addAngajat(Angajat angajat) {
-    otlpService.addAngajat(angajat);
+  Future<void> addAngajat(Angajat angajat) async {
+    await otlpService.addAngajat(angajat);
     notifyListeners();
   }
 
-  void editAngajat(int index, Angajat updatedAngajat) {
-    otlpService.editAngajat(index, updatedAngajat);
+  Future<void> editAngajat(int index, Angajat updatedAngajat) async {
+    await otlpService.editAngajat(index, updatedAngajat);
     notifyListeners();
   }
 
-  void deleteAngajat(int index) {
-    otlpService.deleteAngajat(index);
+  Future<void> deleteAngajat(int index) async {
+    await otlpService.deleteAngajat(index);
     notifyListeners();
   }
 
   // EVENIMENT CRUD
-  void addEveniment(Eveniment eveniment) {
-    otlpService.addEveniment(eveniment);
+  Future<void> addEveniment(Eveniment eveniment) async {
+    await otlpService.addEveniment(eveniment);
     notifyListeners();
   }
 
-  void editEveniment(int index, Eveniment updatedEveniment) {
-    otlpService.editEveniment(index, updatedEveniment);
+  Future<void> editEveniment(int index, Eveniment updatedEveniment) async {
+    await otlpService.editEveniment(index, updatedEveniment);
     notifyListeners();
   }
 
-  void deleteEveniment(int index) {
-    otlpService.deleteEveniment(index);
+  Future<void> deleteEveniment(int index) async {
+    await otlpService.deleteEveniment(index);
     notifyListeners();
   }
 }

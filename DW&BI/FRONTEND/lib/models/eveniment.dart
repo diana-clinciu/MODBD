@@ -3,14 +3,15 @@ import 'package:mvvm_flutter/api/client_api.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 
 class Eveniment {
+  final int id;
   final String nume;
   final DateTime data;
 
-  Eveniment({required this.nume, required this.data});
+  Eveniment({required this.id, required this.nume, required this.data});
 
-  static Eveniment jsonJSON(JSON jsonBody) {
+  static Eveniment fromJSON(JSON jsonBody) {
     return Eveniment(
-        nume: jsonBody["nume"], data: DateTime.parse(jsonBody["data"]));
+        id: jsonBody["id"], nume: jsonBody["nume"], data: DateTime.parse(jsonBody["data"]));
   }
 
   static void showAddEvenimentDialog(BuildContext context, OLTPViewModel vm) {
@@ -48,7 +49,7 @@ class Eveniment {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addEveniment(Eveniment(nume: nume, data: data));
+              vm.addEveniment(Eveniment(id: vm.evenimente.length + 1, nume: nume, data: data));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -95,7 +96,7 @@ class Eveniment {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editEveniment(index, Eveniment(nume: nume, data: data));
+              vm.editEveniment(index, Eveniment(id: vm.evenimente[index].id, nume: nume, data: data));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

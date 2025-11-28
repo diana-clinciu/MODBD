@@ -1,4 +1,4 @@
-const _devBaseUrl = "";
+const _devBaseUrl = "http://localhost:8000";
 
 enum ApiType {
   dev(_devBaseUrl);

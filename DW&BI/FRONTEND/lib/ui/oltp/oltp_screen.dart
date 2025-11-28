@@ -45,56 +45,56 @@ class OltpScreen extends StatelessWidget {
                     (index) => Rezervare.showEditReservationDialog(context, vm, index),
                     (index) => vm.deleteRezervare(index),
                   ),
-                  _buildCrudSection(
-                    context,
-                    "Camere",
-                    vm.camere
-                        .map((c) => "${c.nr} - ${c.pret} RON - ${c.tip}")
-                        .toList(),
-                    () => Camera.showAddCameraDialog(context, vm),
-                    (index) => Camera.showEditCameraDialog(context, vm, index),
-                    (index) => vm.deleteCamera(index),
-                  ),
-                  _buildCrudSection(
-                    context,
-                    "Servicii",
-                    vm.servicii
-                        .map((c) => "${c.denumire} - ${c.pret} RON")
-                        .toList(),
-                    () => Serviciu.showAddCServiciuDialog(context, vm),
-                    (index) => Serviciu.showEditServiciuDialog(context, vm, index),
-                    (index) => vm.deleteServiciu(index),
-                  ),
-                  _buildCrudSection(
-                    context,
-                    "Plati",
-                    vm.plati
-                        .map((c) => "${c.metoda} - ${c.suma} RON")
-                        .toList(),
-                    () => Plata.showAddPlataDialog(context, vm),
-                    (index) => Plata.showEditPlatiDialog(context, vm, index),
-                    (index) => vm.deletePlata(index),
-                  ),
-                   _buildCrudSection(
-                    context,
-                    "Angajati",
-                    vm.angajati
-                        .map((c) => "${c.nume} - ${c.functie}")
-                        .toList(),
-                    () => Angajat.showAddAngajatDialog(context, vm),
-                    (index) => Angajat.showEditAngajatDialog(context, vm, index),
-                    (index) => vm.deleteAngajat(index),
-                  ),
-                  _buildCrudSection(
-                    context,
-                    "Evenimente",
-                    vm.evenimente
-                        .map((c) => "${c.nume} - ${c.data.toShortDateString()}")
-                        .toList(),
-                    () => Eveniment.showAddEvenimentDialog(context, vm),
-                    (index) => Eveniment.showEditEvenimentDialog(context, vm, index),
-                    (index) => vm.deleteEveniment(index),
-                  ),
+                  // _buildCrudSection(
+                  //   context,
+                  //   "Camere",
+                  //   vm.camere
+                  //       .map((c) => "${c.nr} - ${c.pret} RON - ${c.tip}")
+                  //       .toList(),
+                  //   () => Camera.showAddCameraDialog(context, vm),
+                  //   (index) => Camera.showEditCameraDialog(context, vm, index),
+                  //   (index) => vm.deleteCamera(index),
+                  // ),
+                  // _buildCrudSection(
+                  //   context,
+                  //   "Servicii",
+                  //   vm.servicii
+                  //       .map((c) => "${c.denumire} - ${c.pret} RON")
+                  //       .toList(),
+                  //   () => Serviciu.showAddCServiciuDialog(context, vm),
+                  //   (index) => Serviciu.showEditServiciuDialog(context, vm, index),
+                  //   (index) => vm.deleteServiciu(index),
+                  // ),
+                  // _buildCrudSection(
+                  //   context,
+                  //   "Plati",
+                  //   vm.plati
+                  //       .map((c) => "${c.metoda} - ${c.suma} RON")
+                  //       .toList(),
+                  //   () => Plata.showAddPlataDialog(context, vm),
+                  //   (index) => Plata.showEditPlatiDialog(context, vm, index),
+                  //   (index) => vm.deletePlata(index),
+                  // ),
+                  //  _buildCrudSection(
+                  //   context,
+                  //   "Angajati",
+                  //   vm.angajati
+                  //       .map((c) => "${c.nume} - ${c.functie}")
+                  //       .toList(),
+                  //   () => Angajat.showAddAngajatDialog(context, vm),
+                  //   (index) => Angajat.showEditAngajatDialog(context, vm, index),
+                  //   (index) => vm.deleteAngajat(index),
+                  // ),
+                  // _buildCrudSection(
+                  //   context,
+                  //   "Evenimente",
+                  //   vm.evenimente
+                  //       .map((c) => "${c.nume} - ${c.data.toShortDateString()}")
+                  //       .toList(),
+                  //   () => Eveniment.showAddEvenimentDialog(context, vm),
+                  //   (index) => Eveniment.showEditEvenimentDialog(context, vm, index),
+                  //   (index) => vm.deleteEveniment(index),
+                  // ),
                 ],
               ),
             );

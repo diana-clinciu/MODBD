@@ -4,22 +4,29 @@ import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 
 class Rezervare {
   final int id;
-  final String clientName;
+  final int? clientId;
+  String? clientName;
   final DateTime data;
 
-  Rezervare({required this.id, required this.clientName, required this.data});
+  Rezervare({
+    required this.id,
+    this.clientName,
+    this.clientId,
+    required this.data,
+  });
 
   static Rezervare fromJson(JSON jsonBody) {
     return Rezervare(
-      id: jsonBody["id"],
+      id: jsonBody["id_rezervare"],
+      clientId: jsonBody["id_client"],
       clientName: jsonBody["clientName"],
       data: DateTime.parse(jsonBody["data"]),
     );
   }
 
   static void showAddReservationDialog(BuildContext context, OLTPViewModel vm) {
-    String clientName = '';
-    DateTime data = DateTime.now(); //TODO: alexia - change to DateTime
+    int? selectedClientId;
+    DateTime data = DateTime.now();
 
     showDialog(
       context: context,
@@ -28,9 +35,16 @@ class Rezervare {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-                onChanged: (v) => clientName = v,
-                decoration: InputDecoration(labelText: "Nume client")),
+            DropdownButtonFormField<int>(
+              decoration: InputDecoration(labelText: "Alege client"),
+              items: vm.clients.map((c) {
+                return DropdownMenuItem(
+                  value: c.id,
+                  child: Text("${c.nume} ${c.prenume}"),
+                );
+              }).toList(),
+              onChanged: (value) => selectedClientId = value,
+            ),
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: () async {
@@ -54,7 +68,7 @@ class Rezervare {
             onPressed: () {
               vm.addRezervare(Rezervare(
                   id: vm.rezervari.length + 1,
-                  clientName: clientName,
+                  clientId: selectedClientId!,
                   data: data));
               Navigator.pop(dialogContext);
             },
@@ -67,8 +81,8 @@ class Rezervare {
 
   static void showEditReservationDialog(
       BuildContext context, OLTPViewModel vm, int index) {
-    String clientName = vm.rezervari[index].clientName;
     DateTime data = vm.rezervari[index].data;
+    int? selectedClientId = vm.rezervari[index].clientId;
 
     showDialog(
       context: context,
@@ -77,10 +91,16 @@ class Rezervare {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: TextEditingController(text: clientName),
-              onChanged: (v) => clientName = v,
-              decoration: InputDecoration(labelText: "Nume client"),
+            DropdownButtonFormField<int>(
+              decoration: InputDecoration(labelText: "Alege client"),
+              value: selectedClientId,
+              items: vm.clients.map((c) {
+                return DropdownMenuItem(
+                  value: c.id,
+                  child: Text("${c.nume} ${c.prenume}"),
+                );
+              }).toList(),
+              onChanged: (value) => selectedClientId = value,
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -107,7 +127,7 @@ class Rezervare {
                   index,
                   Rezervare(
                       id: vm.rezervari[index].id,
-                      clientName: clientName,
+                      clientId: selectedClientId!,
                       data: data));
               Navigator.pop(dialogContext);
             },

@@ -3,13 +3,14 @@ import 'package:mvvm_flutter/api/client_api.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 
 class Angajat {
+  final int id;
   final String nume;
   final String functie;
 
-  Angajat({required this.nume, required this.functie});
+  Angajat({required this.id, required this.nume, required this.functie});
 
   static Angajat fromJson(JSON jsonBody) {
-    return Angajat(nume: jsonBody["nume"], functie: jsonBody["functie"]);
+    return Angajat(id: jsonBody["id"], nume: jsonBody["nume"], functie: jsonBody["functie"]);
   }
 
   static void showAddAngajatDialog(BuildContext context, OLTPViewModel vm) {
@@ -37,7 +38,7 @@ class Angajat {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addAngajat(Angajat(nume: nume, functie: functie));
+              vm.addAngajat(Angajat(id: vm.angajati.length + 1, nume: nume, functie: functie));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -75,7 +76,7 @@ class Angajat {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editAngajat(index, Angajat(nume: nume, functie: functie));
+              vm.editAngajat(index, Angajat(id: vm.angajati[index].id, nume: nume, functie: functie));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

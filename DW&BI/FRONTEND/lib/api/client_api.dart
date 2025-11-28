@@ -1,6 +1,6 @@
-import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter/material.dart';
 
 enum HttpMethod { get, post, put, delete }
@@ -22,18 +22,16 @@ class URL {
 }
 
 typedef Arguments = Map<String, dynamic>;
-typedef APIClientDeserializer<T> = T Function(Map<String, dynamic>);
+typedef APIClientDeserializer<T> = T Function(dynamic json);
 
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  final HttpClientResponse? response;
   final Map<String, dynamic>? errorBody; // Added this
 
   ApiException(
     this.message, {
     this.statusCode,
-    this.response,
     this.errorBody, // Added this
   });
 
@@ -142,9 +140,9 @@ typedef MultipartEncoder = void Function(MultipartFormData form);
 
 class ClientApi {
   final String baseURL;
-  final HttpClient _httpClient;
+  final http.Client _httpClient;
 
-  ClientApi({required this.baseURL}) : _httpClient = HttpClient();
+  ClientApi({required this.baseURL}) : _httpClient = http.Client();
 
   URL _buildEndpointURL(
       {required String path, Map<String, dynamic>? queryParameters}) {
@@ -175,154 +173,178 @@ class ClientApi {
     return URL.fromUri(uri);
   }
 
-  Future<T> callFuture<T>(
-      {required HttpMethod method,
-      required URL endpoint,
-      Arguments? query,
-      Arguments? parameters,
-      List<HttpHeader>? headers,
-      Function(HttpClientResponse?)? errorProcessor,
-      required APIClientDeserializer<T> deserializer}) async {
-    HttpClientRequest? request;
-    HttpClientResponse? response;
-
+  Future<T> callFuture<T>({
+    required HttpMethod method,
+    required URL endpoint,
+    Arguments? parameters,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) async {
     try {
       final uri = Uri.parse(endpoint.path);
 
+      // Construim headers
+      final Map<String, String> requestHeaders = {
+        'Content-Type': 'application/json',
+        if (headers != null)
+          for (var h in headers) h.key: h.value,
+      };
+
+      late http.Response response;
+
+      // Trimitem requestul
       switch (method) {
         case HttpMethod.get:
-          request = await _httpClient.getUrl(uri);
+          response = await _httpClient.get(uri, headers: requestHeaders);
           break;
         case HttpMethod.post:
-          request = await _httpClient.postUrl(uri);
+          response = await _httpClient.post(
+            uri,
+            headers: requestHeaders,
+            body: parameters != null ? jsonEncode(parameters) : null,
+          );
           break;
         case HttpMethod.put:
-          request = await _httpClient.putUrl(uri);
+          response = await _httpClient.put(
+            uri,
+            headers: requestHeaders,
+            body: parameters != null ? jsonEncode(parameters) : null,
+          );
           break;
         case HttpMethod.delete:
-          request = await _httpClient.deleteUrl(uri);
+          response = await _httpClient.delete(
+            uri,
+            headers: requestHeaders,
+          );
           break;
       }
 
-      if (headers != null) {
-        for (final header in headers) {
-          request.headers.add(header.key, header.value);
-        }
-      }
-
-      request.headers.contentType =
-          ContentType('application', 'json', charset: 'utf-8');
-
-      if (parameters != null) {
-        final jsonBody = jsonEncode(parameters);
-        request.write(jsonBody);
-      }
-
-      response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-
+      // Verificăm codul de status
       if (response.statusCode < 200 || response.statusCode >= 300) {
         Map<String, dynamic>? errorBody;
         try {
-          errorBody = json.decode(responseBody) as Map<String, dynamic>;
-        } catch (e) {
-          // Not JSON, keep as null
-        }
-
-        if (errorProcessor != null) {
-          errorProcessor(response);
-        }
+          errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
         throw ApiException(
-          'HTTP Error: ${response.statusCode} ${response.reasonPhrase}',
+          'HTTP Error: ${response.statusCode}',
           statusCode: response.statusCode,
-          response: response,
           errorBody: errorBody,
         );
       }
 
-      final Map<String, dynamic> jsonResponse;
-      try {
-        jsonResponse = json.decode(responseBody) as Map<String, dynamic>;
-      } catch (e) {
-        throw ApiException('Failed to parse JSON response: $e');
-      }
-
+      final dynamic jsonResponse = jsonDecode(response.body);
       return deserializer(jsonResponse);
     } catch (e) {
-      if (e is ApiException) {
-        rethrow;
-      }
-
-      if (errorProcessor != null) {
-        errorProcessor(response);
-      }
-
       throw ApiException('Request failed: $e');
     }
   }
 
-  Future<T> get<T>(
-      {required String path,
-      Arguments? query,
-      List<HttpHeader>? headers,
-      Function(HttpClientResponse?)? errorProcessor,
-      required APIClientDeserializer<T> deserializer}) async {
-    final url = _buildEndpointURL(path: path, queryParameters: query);
+  Future<T> get<T>({
+    required String path,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) {
+    final url = _buildEndpointURL(path: path);
     return callFuture<T>(
         method: HttpMethod.get,
         endpoint: url,
         headers: headers,
-        errorProcessor: errorProcessor,
         deserializer: deserializer);
   }
 
-  Future<T> post<T>(
-      {required String path,
-      Arguments? query,
-      Arguments? parameters,
-      List<HttpHeader>? headers,
-      Function(HttpClientResponse?)? errorProcessor,
-      required APIClientDeserializer<T> deserializer}) async {
-    final url = _buildEndpointURL(path: path, queryParameters: query);
+  Future<T> post<T>({
+    required String path,
+    Arguments? parameters,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) {
+    final url = _buildEndpointURL(path: path);
     return callFuture<T>(
         method: HttpMethod.post,
         endpoint: url,
         parameters: parameters,
         headers: headers,
-        errorProcessor: errorProcessor,
         deserializer: deserializer);
   }
 
-  Future<T> put<T>(
-      {required String path,
-      Arguments? query,
-      Arguments? parameters,
-      List<HttpHeader>? headers,
-      Function(HttpClientResponse?)? errorProcessor,
-      required APIClientDeserializer<T> deserializer}) async {
+  Future<T> put<T>({
+    required String path,
+    Arguments? query,
+    Arguments? parameters,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) async {
     final url = _buildEndpointURL(path: path, queryParameters: query);
-    return callFuture<T>(
-        method: HttpMethod.put,
-        endpoint: url,
-        parameters: parameters,
-        headers: headers,
-        errorProcessor: errorProcessor,
-        deserializer: deserializer);
+    try {
+      final uri = Uri.parse(url.path);
+
+      final Map<String, String> requestHeaders = {
+        'Content-Type': 'application/json',
+        if (headers != null)
+          for (var h in headers) h.key: h.value,
+      };
+
+      final response = await http.put(
+        uri,
+        headers: requestHeaders,
+        body: parameters != null ? jsonEncode(parameters) : null,
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        Map<String, dynamic>? errorBody;
+        try {
+          errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
+        throw ApiException(
+          'HTTP Error: ${response.statusCode}',
+          statusCode: response.statusCode,
+          errorBody: errorBody,
+        );
+      }
+
+      final Map<String, dynamic> jsonResponse =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      return deserializer(jsonResponse);
+    } catch (e) {
+      throw ApiException('Request failed: $e');
+    }
   }
 
-  Future<T> delete<T>(
-      {required String path,
-      Arguments? query,
-      List<HttpHeader>? headers,
-      Function(HttpClientResponse?)? errorProcessor,
-      required APIClientDeserializer<T> deserializer}) async {
+  Future<T> delete<T>({
+    required String path,
+    Arguments? query,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) async {
     final url = _buildEndpointURL(path: path, queryParameters: query);
-    return callFuture<T>(
-        method: HttpMethod.delete,
-        endpoint: url,
-        headers: headers,
-        errorProcessor: errorProcessor,
-        deserializer: deserializer);
+    try {
+      final uri = Uri.parse(url.path);
+
+      final Map<String, String> requestHeaders = {
+        if (headers != null)
+          for (var h in headers) h.key: h.value,
+      };
+
+      final response = await http.delete(uri, headers: requestHeaders);
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        Map<String, dynamic>? errorBody;
+        try {
+          errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
+        throw ApiException(
+          'HTTP Error: ${response.statusCode}',
+          statusCode: response.statusCode,
+          errorBody: errorBody,
+        );
+      }
+
+      final Map<String, dynamic> jsonResponse =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      return deserializer(jsonResponse);
+    } catch (e) {
+      throw ApiException('Request failed: $e');
+    }
   }
 
   Future<T> multiPartRequest<T>({
@@ -330,85 +352,62 @@ class ClientApi {
     Arguments? query,
     required MultipartEncoder multipartEncoding,
     List<HttpHeader>? headers,
-    Function(HttpClientResponse?)? errorProcessor,
     required APIClientDeserializer<T> deserializer,
   }) async {
-    HttpClientRequest? request;
-    HttpClientResponse? response;
-
+    final url = _buildEndpointURL(path: path, queryParameters: query);
     try {
-      final url = _buildEndpointURL(path: path, queryParameters: query);
       final uri = Uri.parse(url.path);
 
-      request = await _httpClient.postUrl(uri);
+      final request = http.MultipartRequest('POST', uri);
 
-      // Create multipart form data
+      // Adăugăm headers
+      if (headers != null) {
+        for (var h in headers) {
+          request.headers[h.key] = h.value;
+        }
+      }
+
+      // Construim multipart data
       final form = MultipartFormData();
       multipartEncoding(form);
 
-      // Set content type with boundary
-      request.headers.set(
-        'Content-Type',
-        'multipart/form-data; boundary=${form.boundary}',
-      );
-
-      // Add custom headers
-      if (headers != null) {
-        for (final header in headers) {
-          request.headers.add(header.key, header.value);
+      for (var field in form._fields) {
+        if (field.isFile && field.fileName != null) {
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              field.name,
+              field.value,
+              filename: field.fileName!,
+              contentType: field.mimeType != null
+                  ? MediaType.parse(field.mimeType!)
+                  : null,
+            ),
+          );
+        } else {
+          request.fields[field.name] = utf8.decode(field.value);
         }
       }
 
-      // Write multipart body
-      final body = form.encode();
-      request.contentLength = body.length;
-      request.add(body);
-
-      response = await request.close();
-
-      final responseBody = await response.transform(utf8.decoder).join();
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        // Try to parse error body as JSON
         Map<String, dynamic>? errorBody;
         try {
-          errorBody = json.decode(responseBody) as Map<String, dynamic>;
-        } catch (e) {
-          // Not JSON, keep as null
-        }
-
-        if (errorProcessor != null) {
-          errorProcessor(response);
-        }
-
+          errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
         throw ApiException(
-          'HTTP Error: ${response.statusCode} ${response.reasonPhrase}\nBody: $responseBody',
+          'HTTP Error: ${response.statusCode}',
           statusCode: response.statusCode,
-          response: response,
-          errorBody: errorBody, // Include parsed error body
+          errorBody: errorBody,
         );
       }
 
-      final Map<String, dynamic> jsonResponse;
-      try {
-        jsonResponse = json.decode(responseBody) as Map<String, dynamic>;
-      } catch (e) {
-        throw ApiException(
-          'Failed to parse JSON response: $e',
-        );
-      }
-
+      final Map<String, dynamic> jsonResponse =
+          jsonDecode(response.body) as Map<String, dynamic>;
       return deserializer(jsonResponse);
     } catch (e) {
-      if (e is ApiException) {
-        rethrow;
-      }
-
-      if (errorProcessor != null) {
-        errorProcessor(response);
-      }
-
-      throw ApiException('Request failed: $e');
+      throw ApiException('Multipart request failed: $e');
     }
   }
 

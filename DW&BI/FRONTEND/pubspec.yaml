@@ -43,6 +43,8 @@ dependencies:
   rxdart: ^0.28.0
   cached_network_image: ^3.4.1
   syncfusion_flutter_charts: ^29.1.38
+  http: ^1.6.0
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

@@ -3,13 +3,14 @@ import 'package:mvvm_flutter/api/client_api.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 
 class Serviciu {
+  final int id;
   final String denumire;
   final double pret;
 
-  Serviciu({required this.denumire, required this.pret});
+  Serviciu({required this.id, required this.denumire, required this.pret});
 
   static Serviciu fromJson(JSON jsonBody) {
-    return Serviciu(denumire: jsonBody["denumire"], pret: jsonBody["pret"]);
+    return Serviciu(id: jsonBody["id"], denumire: jsonBody["denumire"], pret: jsonBody["pret"]);
   }
 
   static void showAddCServiciuDialog(BuildContext context, OLTPViewModel vm) {
@@ -37,7 +38,7 @@ class Serviciu {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.addServiciu(Serviciu(denumire: denumire, pret: pret));
+              vm.addServiciu(Serviciu(id: vm.servicii.length + 1, denumire: denumire, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),
@@ -75,7 +76,7 @@ class Serviciu {
               child: Text("Anuleaza")),
           ElevatedButton(
             onPressed: () {
-              vm.editServiciu(index, Serviciu(denumire: denumire, pret: pret));
+              vm.editServiciu(index, Serviciu(id: vm.servicii[index].id, denumire: denumire, pret: pret));
               Navigator.pop(dialogContext);
             },
             child: Text("Salveaza"),

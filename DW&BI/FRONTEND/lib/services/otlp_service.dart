@@ -19,129 +19,143 @@ class OtlpService {
   List<Angajat> angajati = [];
   List<Eveniment> evenimente = [];
 
-  OtlpService() {
-    _loadMockData();
+  Future<List<Client>> fetchClients() async {
+    final response = await bookingApi.fetchClients();
+    return response;
   }
 
-  void _loadMockData() {
-    clients = [
-      Client(id: 1, nume: "Popescu", prenume: "Ana", email: "ana.popescu@email.ro"),
-      Client(id: 2, nume: "Ionescu", prenume: "Maria", email: "maria.ionescu@email.ro"),
-    ];
-    rezervari = [
-      Rezervare(id: 1, clientName: "Popescu Ana", data: DateTime(2025, 12, 1)),
-      Rezervare(id: 2, clientName: "Ionescu Maria", data: DateTime(2025, 12, 3)),
-    ];
-    camere = [
-      Camera(nr: 101, tip: "Single", pret: 150),
-      Camera(nr: 102, tip: "Double", pret: 250),
-    ];
-    servicii = [
-      Serviciu(denumire: "Spa", pret: 150),
-      Serviciu(denumire: "Room Service", pret: 50),
-    ];
-    plati = [
-      Plata(id: 1, suma: 450, metoda: "Card"),
-      Plata(id: 2, suma: 500, metoda: "Cash"),
-    ];
-    angajati = [
-      Angajat(nume: "Popa Andrei", functie: "Recepționer"),
-      Angajat(nume: "Ionescu Mihai", functie: "Bucătar Șef"),
-    ];
-    evenimente = [
-      Eveniment(nume: "Concert Rock", data: DateTime(2025, 12, 1)),
-      Eveniment(nume: "Festival Jazz", data: DateTime(2025, 12, 5)),
-    ];
+  Future<List<Rezervare>> fetchRezervari() async {
+    final response = await bookingApi.fetchRezervari();
+    return response;
+  }
+
+  Future<void> loadCamere() async {
+    // camere = await bookingApi.fetchCamere();
+  }
+
+  Future<void> loadServicii() async {
+    servicii = await bookingApi.fetchServicii();
+  }
+
+  Future<void> loadPlati() async {
+    plati = await bookingApi.fetchPlati();
+  }
+
+  Future<void> loadAngajati() async {
+    angajati = await bookingApi.fetchAngajati();
+  }
+
+  Future<void> loadEvenimente() async {
+    evenimente = await bookingApi.fetchEvenimente();
   }
 
   // CLIENT CRUD
-  void addClient(Client client) {
-    clients.add(client);
+  Future<Client> addClient(Client client) async {
+    final addedClient = await bookingApi.addClient(client);
+    return addedClient;
   }
 
-  void editClient(int index, Client updatedClient) {
-    clients[index] = updatedClient;
+  Future<Client> editClient(Client updatedClient) async {
+    final updated = await bookingApi.updateClient(updatedClient);
+    return updated;
   }
 
-  void deleteClient(int index) {
-    clients.removeAt(index);
-  }
-
-  // CAMERA CRUD
-  void addCamera(Camera camera) {
-    camere.add(camera);
-  }
-
-  void editCamera(int index, Camera updatedCamera) {
-    camere[index] = updatedCamera;
-  }
-
-  void deleteCamera(int index) {
-    camere.removeAt(index);
+  Future<void> deleteClient(int id_client) async {
+    await bookingApi.deleteClient(id_client);
   }
 
   // REZERVARE CRUD
-  void addRezervare(Rezervare rezervare) {
-    rezervari.add(rezervare);
+  Future<Rezervare> addRezervare(Rezervare rezervare) async {
+    final addedRezervare = await bookingApi.addRezervare(rezervare);
+    return addedRezervare;
   }
 
-  void editRezervare(int index, Rezervare updatedRezervare) {
-    rezervari[index] = updatedRezervare;
+  Future<Rezervare> editRezervare(Rezervare rezervare) async {
+    final updatedRezervare = await bookingApi.updateRezervare(rezervare);
+    return updatedRezervare;
   }
 
-  void deleteRezervare(int index) {
-    rezervari.removeAt(index);
+  Future<void> deleteRezervare(int id_rezervare) async {
+    await bookingApi.deleteRezervare(id_rezervare);
+  }
+
+  // CAMERA CRUD
+  Future<void> addCamera(Camera camera) async {
+    await bookingApi.addCamera(camera);
+    camere.add(camera);
+  }
+
+  Future<void> editCamera(int index, Camera updatedCamera) async {
+    await bookingApi.updateCamera(updatedCamera);
+    camere[index] = updatedCamera;
+  }
+
+  Future<void> deleteCamera(int index) async {
+    await bookingApi.deleteCamera(camere[index].nr);
+    camere.removeAt(index);
   }
 
   // SERVICIU CRUD
-  void addServiciu(Serviciu serviciu) {
+  Future<void> addServiciu(Serviciu serviciu) async {
+    await bookingApi.addServiciu(serviciu);
     servicii.add(serviciu);
   }
 
-  void editServiciu(int index, Serviciu updatedServiciu) {
+  Future<void> editServiciu(int index, Serviciu updatedServiciu) async {
+    await bookingApi.updateServiciu(updatedServiciu);
     servicii[index] = updatedServiciu;
   }
 
-  void deleteServiciu(int index) {
+  Future<void> deleteServiciu(int index) async {
+    await bookingApi.deleteServiciu(servicii[index].id);
     servicii.removeAt(index);
   }
 
   // PLATA CRUD
-  void addPlata(Plata plata) {
+  Future<void> addPlata(Plata plata) async {
+    await bookingApi.addPlata(plata);
     plati.add(plata);
   }
 
-  void editPlata(int index, Plata updatedPlata) {
+  Future<void> editPlata(int index, Plata updatedPlata) async {
+    await bookingApi.updatePlata(updatedPlata);
     plati[index] = updatedPlata;
   }
 
-  void deletePlata(int index) {
+  Future<void> deletePlata(int index) async {
+    await bookingApi.deletePlata(plati[index].id);
     plati.removeAt(index);
   }
 
   // ANGAJAT CRUD
-  void addAngajat(Angajat angajat) {
+  Future<void> addAngajat(Angajat angajat) async {
+    await bookingApi.addAngajat(angajat);
     angajati.add(angajat);
   }
 
-  void editAngajat(int index, Angajat updatedAngajat) {
+  Future<void> editAngajat(int index, Angajat updatedAngajat) async {
+    await bookingApi.updateAngajat(updatedAngajat);
     angajati[index] = updatedAngajat;
   }
 
-  void deleteAngajat(int index) {
+  Future<void> deleteAngajat(int index) async {
+    await bookingApi.deleteAngajat(angajati[index].id);
     angajati.removeAt(index);
   }
 
   // EVENIMENT CRUD
-  void addEveniment(Eveniment eveniment) {
+  Future<void> addEveniment(Eveniment eveniment) async {
+    await bookingApi.addEveniment(eveniment);
     evenimente.add(eveniment);
   }
 
-  void editEveniment(int index, Eveniment updatedEveniment) {
+  Future<void> editEveniment(int index, Eveniment updatedEveniment) async {
+    await bookingApi.updateEveniment(updatedEveniment);
     evenimente[index] = updatedEveniment;
   }
 
-  void deleteEveniment(int index) {
+  Future<void> deleteEveniment(int index) async {
+    await bookingApi.deleteEveniment(evenimente[index].id);
     evenimente.removeAt(index);
   }
 }

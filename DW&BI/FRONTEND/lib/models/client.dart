@@ -17,7 +17,7 @@ class Client {
   static Client fromJson(JSON jsonBody) {
     return Client(
         email: jsonBody["email"],
-        id: jsonBody["id"],
+        id: jsonBody["id_client"],
         nume: jsonBody["nume"],
         prenume: jsonBody["prenume"]);
   }
