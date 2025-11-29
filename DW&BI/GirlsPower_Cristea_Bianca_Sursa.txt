@@ -974,3 +974,4 @@ select count(*)
   from dim_timp;
 select count(*)
   from fact_rezervari;
+

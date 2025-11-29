@@ -96,7 +96,7 @@ create table eveniment_client (
       references eveniment ( id_eveniment ),
    foreign key ( id_client )
       references client ( id_client )
-);
+-- );
 
 -- =====================================================
 -- Trigger pentru calcularea automata a sumei la plata
@@ -115,7 +115,7 @@ begin
      into v_id_client
      from rezervare
     where id_rezervare = :new.id_rezervare;
-    
+
     -- Calculează prețul rezervării (suma tuturor camerelor * nr_nopti)
    select nvl(
       sum(rc.pret_rezervare),
@@ -124,7 +124,7 @@ begin
      into v_pret_rezervare
      from rezervare_camera rc
     where rc.id_rezervare = :new.id_rezervare;
-    
+
     -- Calculează prețul serviciilor utilizate de client
    select nvl(
       sum(s.pret_serviciu),
@@ -135,13 +135,13 @@ begin
      join serviciu s
    on cs.id_serviciu = s.id_serviciu
     where cs.id_client = v_id_client;
-    
+
     -- Setează suma totală
    :new.suma := v_pret_rezervare + v_pret_servicii;
 end;
 /
 
- 
+
 -- =====================================================
 -- Inserare date exemple
 -- =====================================================
@@ -974,3 +974,125 @@ select count(*)
   from dim_timp;
 select count(*)
   from fact_rezervari;
+
+
+-- 6. Definirea indecșilor și a cererilor SQL însoțite de planul de execuție al acestora (din care să reiasă ca optimizorul utilizează eficient indecșii definiți)
+-- Cerere SQL: Veniturile totate incasate pana in momentul de fata pentru camerele de tip Double
+create index idx_fact_camera on
+   fact_rezervari (
+      camera_key
+   );
+
+create index idx_fact_camera on
+   fact_rezervari (
+      camera_key
+   );
+
+EXPLAIN PLAN FOR
+SELECT
+    SUM(fr.suma_totala) AS venit_double
+FROM
+    fact_rezervari fr
+JOIN
+    dim_camera dc
+ON
+    fr.camera_key = dc.camera_key
+WHERE
+    dc.tip_camera = 'Double';
+
+-- Planul de Execuție
+SELECT
+    PLAN_TABLE_OUTPUT
+FROM
+    TABLE ( DBMS_XPLAN.DISPLAY ( ) );
+
+--7. Definirea obiectelor de tip dimensiune, validarea acestora (din care să reiasă că datele respectă constrângerile impuse prin aceste tipuri de obiecte)
+-- VALIDARE DIM_CLIENT
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_client
+WHERE nume IS NULL OR prenume IS NULL;
+
+-- VALIDARE DIM_CAMERA
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_camera
+WHERE pret <= 0 OR tip_camera IS NULL;
+
+-- VALIDARE DIM_SERVICIU
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_serviciu
+WHERE pret_serviciu < 0;
+
+-- VALIDARE DIM_EVENIMENT
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_eveniment
+WHERE nume_eveniment IS NULL;
+
+-- VALIDARE DIM_TIMP
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_timp
+WHERE (zi NOT BETWEEN 1 AND 31) OR (luna NOT BETWEEN 1 AND 12) OR (an NOT BETWEEN 1900 AND 2100);
+
+
+-- VALIDARE DIM_METODA_PLATA
+SELECT COUNT(*) AS Numar_valori_invalide
+FROM dim_metoda_plata
+WHERE metoda_plata IS NULL OR tip_tranzactie IS NULL;
+
+-- 8. Definirea partițiilor; definirea cererilor SQL însoțite de planul de execuție al acestora din care să reiasă ca optimizorul utilizează eficient partițiile
+-- Cerere SQL: Volumul total de vanzari si comisionul bancar estimat (1.5%) doar pentru platile electronice (Card si Transfer) grupate dupa tipul platii si ordonate descrescator.
+
+DROP TABLE fact_rezervari CASCADE CONSTRAINTS;
+
+create table fact_rezervari (
+   rezervare_key     number primary key,
+   id_rezervare_oltp number,
+   client_key        number,
+   camera_key        number,
+   serviciu_key      number,
+   eveniment_key     number,
+   timp_key          number,
+   metoda_plata_key  number,
+   suma_totala       number(10,2),
+   foreign key ( client_key )
+      references dim_client ( client_key ),
+   foreign key ( camera_key )
+      references dim_camera ( camera_key ),
+   foreign key ( serviciu_key )
+      references dim_serviciu ( serviciu_key ),
+   foreign key ( eveniment_key )
+      references dim_eveniment ( eveniment_key ),
+   foreign key ( timp_key )
+      references dim_timp ( timp_key ),
+   foreign key ( metoda_plata_key )
+      references dim_metoda_plata ( metoda_plata_key )
+)
+PARTITION BY LIST (metoda_plata_key) (
+    -- PARTITIA 1: Plati Electronice (Card + Transfer)
+    -- Presupunem ID 1=Card, 3=Transfer.
+    PARTITION p_plati_electronice VALUES (1, 3),
+
+    -- PARTITIA 2: Plati Numerar (Cash)
+    -- Presupunem ID 2=Cash.
+    PARTITION p_plati_cash VALUES (2)
+);
+
+EXPLAIN PLAN FOR
+SELECT
+    dmp.metoda_plata AS Tip_Plata,
+    COUNT(fr.rezervare_key) AS Numar_Tranzactii,
+    SUM(fr.suma_totala) AS Volum_Total_Procesat,
+    ROUND(SUM(fr.suma_totala) * 0.015, 2) AS Comision_Bancar_Estimat
+FROM
+    fact_rezervari fr
+JOIN
+    dim_metoda_plata dmp ON fr.metoda_plata_key = dmp.metoda_plata_key
+WHERE
+    fr.metoda_plata_key IN (1, 3)
+GROUP BY
+    dmp.metoda_plata
+ORDER BY
+    Volum_Total_Procesat DESC;
+-- Plan executie
+SELECT PLAN_TABLE_OUTPUT FROM TABLE(DBMS_XPLAN.DISPLAY());
+
+-- Crearea rapoartelor cu complexitate diferită (la acest nivel vor fi scripturi SQL, fără reprezentare grafică)
