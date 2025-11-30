@@ -1095,4 +1095,61 @@ ORDER BY
 -- Plan executie
 SELECT PLAN_TABLE_OUTPUT FROM TABLE(DBMS_XPLAN.DISPLAY());
 
--- Crearea rapoartelor cu complexitate diferită (la acest nivel vor fi scripturi SQL, fără reprezentare grafică)
+-- 10. Crearea rapoartelor cu complexitate diferită (la acest nivel vor fi scripturi SQL, fără reprezentare grafică)
+-- 1.Afișează suma totală plătită pentru fiecare tip de cameră, pe lunile decembrie 2025.
+select dc.tip_camera       as Tip_Camara,
+       sum(fr.suma_totala) as Suma_Totala_Platita_Dec_2025
+from fact_rezervari fr
+         join dim_camera dc on fr.camera_key = dc.camera_key
+         join dim_timp dt on fr.timp_key = dt.timp_key
+where dt.an = 2025
+  and dt.luna = 12
+group by dc.tip_camera;
+
+-- 2.Afișează numărul de rezervări și suma totală plătită de fiecare client care a participat la evenimente în decembrie 2025.
+select dc.nume || ' ' || dc.prenume Client,
+       count(fr.rezervare_key)      Numar_Rezervari,
+       sum(fr.suma_totala)          Suma_Platita
+from fact_rezervari fr
+         join dim_client dc on fr.client_key = dc.client_key
+         join dim_eveniment de on fr.eveniment_key = de.eveniment_key
+         join dim_timp dt on fr.timp_key = dt.timp_key
+where dt.an = 2025
+  and dt.luna = 12
+group by dc.client_key, dc.nume, dc.prenume;
+
+-- 3.Afișează evoluția veniturilor generate de serviciile prestate în fiecare săptămână din luna decembrie 2025.
+select to_char(dt.data_completa, 'WW') Saptamana,
+       sum(ds.pret_serviciu)           Venit_Servicii
+from fact_rezervari fr
+         join dim_timp dt on fr.timp_key = dt.timp_key
+         join dim_serviciu ds on fr.serviciu_key = ds.serviciu_key
+where dt.an = 2025
+  and dt.luna = 12
+group by to_char(dt.data_completa, 'WW')
+order by Saptamana;
+
+-- 4.Afișează suma totală plătită pentru rezervări, grupată pe tipul camerei și tipul metodei de plată, pentru clienții care au participat la evenimente.
+select dc.tip_camera       Tip_Camera,
+       dmp.metoda_plata    Metoda_Plata,
+       sum(fr.suma_totala) Suma_Totala_Rezervari
+from fact_rezervari fr
+         join dim_camera dc on fr.camera_key = dc.camera_key
+         join dim_metoda_plata dmp on fr.metoda_plata_key = dmp.metoda_plata_key
+where fr.eveniment_key is not null
+group by dc.tip_camera, dmp.metoda_plata_key, dmp.metoda_plata
+order by dc.tip_camera;
+
+-- 5.Afișează top 5 clienți care au cheltuit cel mai mult în hotel în decembrie 2025, împreună cu numărul de rezervări și suma totală plătită, ordonate descrescător după suma totală.
+select dc.nume || ' ' || dc.prenume Client,
+       count(fr.rezervare_key)      Numar_Rezervari,
+       sum(fr.suma_totala)          Suma_Platita
+from fact_rezervari fr
+         join dim_client dc on fr.client_key = dc.client_key
+         join dim_eveniment de on fr.eveniment_key = de.eveniment_key
+         join dim_timp dt on fr.timp_key = dt.timp_key
+where dt.an = 2025
+  and dt.luna = 12
+group by dc.client_key, dc.nume, dc.prenume
+order by Suma_Platita desc
+    fetch first 5 rows only;
