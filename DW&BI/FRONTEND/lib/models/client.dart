@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Client {
   final int id;
@@ -30,7 +32,13 @@ class Client {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Adauga Client"),
+        title: Text(
+          "Adauga client",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -48,13 +56,36 @@ class Client {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
-              vm.addClient(Client(id: vm.clients.length + 1, nume: nume, prenume: prenume, email: email));
+              vm.addClient(Client(
+                  id: vm.clients.length + 1,
+                  nume: nume,
+                  prenume: prenume,
+                  email: email));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),
@@ -70,7 +101,13 @@ class Client {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Modifica Client"),
+        title: Text(
+          "Modifica client",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -94,14 +131,38 @@ class Client {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
               vm.editClient(
-                  index, Client(id: vm.clients[index].id, nume: nume, prenume: prenume, email: email));
+                  index,
+                  Client(
+                      id: vm.clients[index].id,
+                      nume: nume,
+                      prenume: prenume,
+                      email: email));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),

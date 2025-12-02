@@ -43,14 +43,15 @@ class _BottomNavBarItem extends StatelessWidget {
                   height: 24,
                 ),
                 SizedBox(height: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppColors.oliveColor : AppColors.contentPrimary,
-                  ),
-                ),
+                Text(label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight:
+                          isSelected ? FontWeight.w900 : FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.oliveColor
+                          : AppColors.blackForestColor,
+                    )),
               ],
             ),
           ),
@@ -104,8 +105,8 @@ class BottomNavBar extends StatelessWidget {
                         child: Text("Hotel Manager",
                             style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.contentPrimary)),
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.blackForestColor)),
                       ),
                       Row(
                         children: [
@@ -130,8 +131,10 @@ class BottomNavBar extends StatelessWidget {
                             iconResource: ImageResource.bottomNavReports,
                             selectedIconResource:
                                 ImageResource.bottomNavReportsSelected,
-                            isSelected: viewModel.activeTab == AppTabType.rapoarte,
-                            onTap: () => viewModel.selectTab(AppTabType.rapoarte),
+                            isSelected:
+                                viewModel.activeTab == AppTabType.rapoarte,
+                            onTap: () =>
+                                viewModel.selectTab(AppTabType.rapoarte),
                           ),
                         ],
                       ),

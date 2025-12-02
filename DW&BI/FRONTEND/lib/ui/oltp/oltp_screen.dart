@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
 import 'package:mvvm_flutter/models/angajat.dart';
 import 'package:mvvm_flutter/models/camera.dart';
 import 'package:mvvm_flutter/models/client.dart';
@@ -7,6 +8,7 @@ import 'package:mvvm_flutter/models/plata.dart';
 import 'package:mvvm_flutter/models/rezervare.dart';
 import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
 import 'package:provider/provider.dart';
 
 class OltpScreen extends StatelessWidget {
@@ -16,7 +18,11 @@ class OltpScreen extends StatelessWidget {
       create: (_) => OLTPViewModel(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text("OLTP - Hotel Manager"),
+          title: Text("OLTP - Hotel Manager",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.blackForestColor)),
         ),
         body: Consumer<OLTPViewModel>(
           builder: (context, vm, _) {
@@ -136,27 +142,63 @@ class OltpScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ElevatedButton(onPressed: onAdd, child: Text("Adauga")),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.blackForestColor)),
+              ElevatedButton(
+                onPressed: onAdd,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightCaramelColor,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  "Adauga",
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor),
+                ),
+              ),
             ],
           ),
           SizedBox(height: 8),
           ...items.asMap().entries.map(
-                (entry) => Card(
-                  child: ListTile(
-                    title: Text(entry.value),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => onEdit(entry.key),
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.oliveColor.withTransparency(0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        entry.value,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.contentPrimary,
                         ),
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => onDelete(entry.key),
-                        ),
-                      ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: AppColors.blackForestColor),
+                            onPressed: () => onEdit(entry.key),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: AppColors.reddishBrownColor),
+                            onPressed: () => onDelete(entry.key),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

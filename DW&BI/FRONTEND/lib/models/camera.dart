@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Camera {
   final int id;
@@ -30,7 +32,13 @@ class Camera {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Adauga Camera"),
+        title: Text(
+          "Adauga camera",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -52,14 +60,33 @@ class Camera {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
               vm.addCamera(Camera(
                   id: vm.camere.length + 1, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),
@@ -75,7 +102,13 @@ class Camera {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Modifica Camera"),
+        title: Text(
+          "Modifica camera",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -101,7 +134,11 @@ class Camera {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
               vm.editCamera(
@@ -110,7 +147,22 @@ class Camera {
                       id: vm.camere[index].id, nr: nr, tip: tip, pret: pret));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),

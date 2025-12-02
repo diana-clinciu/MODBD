@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Rezervare {
   final int id;
@@ -31,7 +33,11 @@ class Rezervare {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Adauga Rezervare"),
+        title: Text("Adauga rezervare",
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -72,7 +78,11 @@ class Rezervare {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
               vm.addRezervare(Rezervare(
@@ -81,7 +91,22 @@ class Rezervare {
                   data: data));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),
@@ -96,7 +121,11 @@ class Rezervare {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Modifica Rezervare"),
+        title: Text("Modifica rezervare",
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -138,7 +167,11 @@ class Rezervare {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza")),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
               vm.editRezervare(
@@ -149,7 +182,22 @@ class Rezervare {
                       data: data));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),

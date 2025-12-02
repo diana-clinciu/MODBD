@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Eveniment {
   final int id;
@@ -32,7 +34,11 @@ class Eveniment {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Adauga Eveniment"),
+        title: Text("Adauga eveniment",
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -71,7 +77,11 @@ class Eveniment {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text("Anuleaza"),
+            child: Text("Anuleaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -83,14 +93,30 @@ class Eveniment {
               ));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),
     );
   }
 
-  static void showEditEvenimentDialog(BuildContext context, OLTPViewModel vm, int index) {
+  static void showEditEvenimentDialog(
+      BuildContext context, OLTPViewModel vm, int index) {
     String nume = vm.evenimente[index].nume;
     String? descriere = vm.evenimente[index].descriere;
     DateTime data = vm.evenimente[index].data;
@@ -98,7 +124,11 @@ class Eveniment {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Modifica Eveniment"),
+        title: Text("Modifica eveniment",
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -139,19 +169,40 @@ class Eveniment {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text("Anuleaza"),
+            child: Text("Anuleaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
           ElevatedButton(
             onPressed: () {
-              vm.editEveniment(index, Eveniment(
-                id: vm.evenimente[index].id,
-                nume: nume,
-                data: data,
-                descriere: descriere,
-              ));
+              vm.editEveniment(
+                  index,
+                  Eveniment(
+                    id: vm.evenimente[index].id,
+                    nume: nume,
+                    data: data,
+                    descriere: descriere,
+                  ));
               Navigator.pop(dialogContext);
             },
-            child: Text("Salveaza"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
           ),
         ],
       ),
