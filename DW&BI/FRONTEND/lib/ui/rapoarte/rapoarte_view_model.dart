@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:mvvm_flutter/models/report_data.dart';
 import 'package:mvvm_flutter/services/reports_service.dart';
-
-class ReportData {
-  final String label;
-  final double value;
-  ReportData(this.label, this.value);
-}
 
 class ReportsViewModel extends ChangeNotifier {
   final ReportsService _service = GetIt.instance.get<ReportsService>();
@@ -31,17 +26,18 @@ class ReportsViewModel extends ChangeNotifier {
       final raport5 = await _service.fetchRaport5();
 
       allReports = {
-        'Raport 1': raport1.map(_mapToReportData1).toList(),
-        'Raport 2': raport2.map(_mapToReportData2).toList(),
-        'Raport 3': raport3.map(_mapToReportData3).toList(),
-        'Raport 4': raport4.map(_mapToReportData4).toList(),
-        'Raport 5': raport5.map(_mapToReportData5).toList(),
+        '1. Total Platit / Camera': raport1.map(_mapToReportData1).toList(),
+        '2. Total Platit / Client (Evenimente)': raport2.map(_mapToReportData2).toList(),
+        '3. Evolutie Venituri Servicii (Sapt.)': raport3.map(_mapToReportData3).toList(),
+        '4. Plati / Camera & Metoda': raport4.map(_mapToReportData4).toList(),
+        '5. Top 5 Clienti Cheltuitori': raport5.map(_mapToReportData5).toList(),
       };
 
       errorMessage = null;
     } catch (e) {
       errorMessage = e.toString();
       allReports = {};
+      print("Eroare ViewModel: $e");
     } finally {
       isLoading = false;
       notifyListeners();
@@ -50,36 +46,38 @@ class ReportsViewModel extends ChangeNotifier {
 
   ReportData _mapToReportData1(Map<String, dynamic> e) {
     return ReportData(
-      e['Tip_Camara']?.toString() ?? '',
-      (e['Suma_Totala_Platita_Dec_2025'] as num?)?.toDouble() ?? 0.0,
+      e['tip_camera']?.toString() ?? 'N/A', 
+      (e['suma_totala_platita_dec_2025'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   ReportData _mapToReportData2(Map<String, dynamic> e) {
     return ReportData(
-      e['Alt_Label']?.toString() ?? '',
-      (e['Alt_Value'] as num?)?.toDouble() ?? 0.0,
+      e['client']?.toString() ?? 'Anonim',
+      (e['suma_platita'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   ReportData _mapToReportData3(Map<String, dynamic> e) {
     return ReportData(
-      e['Label3']?.toString() ?? '',
-      (e['Value3'] as num?)?.toDouble() ?? 0.0,
+      "Sapt ${e['saptamana']}", 
+      (e['venit_servicii'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   ReportData _mapToReportData4(Map<String, dynamic> e) {
+    final camera = e['tip_camera']?.toString() ?? '';
+    final plata = e['metoda_plata']?.toString() ?? '';
     return ReportData(
-      e['Label4']?.toString() ?? '',
-      (e['Value4'] as num?)?.toDouble() ?? 0.0,
+      "$camera\n($plata)", 
+      (e['suma_totala_rezervari'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   ReportData _mapToReportData5(Map<String, dynamic> e) {
     return ReportData(
-      e['Label5']?.toString() ?? '',
-      (e['Value5'] as num?)?.toDouble() ?? 0.0,
+      e['client']?.toString() ?? 'Anonim',
+      (e['suma_platita'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

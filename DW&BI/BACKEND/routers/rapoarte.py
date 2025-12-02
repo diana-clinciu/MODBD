@@ -1,91 +1,106 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Dict, List
-from session import get_db
 from sqlalchemy import text
+from typing import Dict, List
+from session import get_db 
 
-router = APIRouter(prefix="/dw", tags=["DW"])
+router = APIRouter(prefix="/dw", tags=["DW - Rapoarte"])
 
 def run_query(db: Session, query: str) -> List[Dict]:
-    result = db.execute(text(query))
-    columns = result.keys()
-    return [dict(zip(columns, row)) for row in result.fetchall()]
+    try:
+        result = db.execute(text(query))
+        
+        columns = result.keys()
+        rows = result.fetchall()
 
-# --- RAPORT 1 ---
-@router.get("/raport1")
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+        
+        return dict_rows
+
+    except Exception as e:
+        print(f"EROARE SQL: {e}")
+        raise HTTPException(status_code=400, detail=f"Eroare executie raport: {str(e)}")
+
+@router.get("/raport1_camere_decembrie")
 def raport1(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
-    select dc.tip_camera as tip_camera,
+    SELECT dc.tip_camera as tip_camera,
            sum(fr.suma_totala) as suma_totala_platita_dec_2025
-    from fact_rezervari fr
-             join dim_camera dc on fr.camera_key = dc.camera_key
-             join dim_timp dt on fr.timp_key = dt.timp_key
-    where dt.an = 2025 and dt.luna = 12
-    group by dc.tip_camera
+      FROM fact_rezervari fr
+      JOIN dim_camera dc ON fr.camera_key = dc.camera_key
+      JOIN dim_timp dt   ON fr.timp_key = dt.timp_key
+     WHERE dt.an = 2025
+       AND dt.luna = 12
+     GROUP BY dc.tip_camera
     """
     return run_query(db, query)
 
-# --- RAPORT 2 ---
-@router.get("/raport2")
+@router.get("/raport2_clienti_evenimente")
 def raport2(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
-    select dc.nume || ' ' || dc.prenume as client,
+    SELECT dc.nume || ' ' || dc.prenume as client,
            count(fr.rezervare_key) as numar_rezervari,
            sum(fr.suma_totala) as suma_platita
-    from fact_rezervari fr
-             join dim_client dc on fr.client_key = dc.client_key
-             join dim_eveniment de on fr.eveniment_key = de.eveniment_key
-             join dim_timp dt on fr.timp_key = dt.timp_key
-    where dt.an = 2025 and dt.luna = 12
-    group by dc.client_key, dc.nume, dc.prenume
+      FROM fact_rezervari fr
+      JOIN dim_client dc    ON fr.client_key = dc.client_key
+      JOIN dim_eveniment de ON fr.eveniment_key = de.eveniment_key
+      JOIN dim_timp dt      ON fr.timp_key = dt.timp_key
+     WHERE dt.an = 2025
+       AND dt.luna = 12
+     GROUP BY dc.client_key,
+              dc.nume,
+              dc.prenume
     """
     return run_query(db, query)
 
-# --- RAPORT 3 ---
-@router.get("/raport3")
+@router.get("/raport3_evolutie_servicii")
 def raport3(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
-    select to_char(dt.data_completa, 'WW') as saptamana,
+    SELECT to_char(dt.data_completa, 'WW') as saptamana,
            sum(ds.pret_serviciu) as venit_servicii
-    from fact_rezervari fr
-             join dim_timp dt on fr.timp_key = dt.timp_key
-             join dim_serviciu ds on fr.serviciu_key = ds.serviciu_key
-    where dt.an = 2025 and dt.luna = 12
-    group by to_char(dt.data_completa, 'WW')
-    order by saptamana
+      FROM fact_rezervari fr
+      JOIN dim_timp dt      ON fr.timp_key = dt.timp_key
+      JOIN dim_serviciu ds  ON fr.serviciu_key = ds.serviciu_key
+     WHERE dt.an = 2025
+       AND dt.luna = 12
+     GROUP BY to_char(dt.data_completa, 'WW')
+     ORDER BY saptamana
     """
     return run_query(db, query)
 
-# --- RAPORT 4 ---
-@router.get("/raport4")
+@router.get("/raport4_metode_plata")
 def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
-    select dc.tip_camera as tip_camera,
+    SELECT dc.tip_camera as tip_camera,
            dmp.metoda_plata as metoda_plata,
            sum(fr.suma_totala) as suma_totala_rezervari
-    from fact_rezervari fr
-             join dim_camera dc on fr.camera_key = dc.camera_key
-             join dim_metoda_plata dmp on fr.metoda_plata_key = dmp.metoda_plata_key
-    where fr.eveniment_key is not null
-    group by dc.tip_camera, dmp.metoda_plata_key, dmp.metoda_plata
-    order by dc.tip_camera
+      FROM fact_rezervari fr
+      JOIN dim_camera dc        ON fr.camera_key = dc.camera_key
+      JOIN dim_metoda_plata dmp ON fr.metoda_plata_key = dmp.metoda_plata_key
+     WHERE fr.eveniment_key is not null
+     GROUP BY dc.tip_camera,
+              dmp.metoda_plata_key,
+              dmp.metoda_plata
+     ORDER BY dc.tip_camera
     """
     return run_query(db, query)
 
-# --- RAPORT 5 ---
-@router.get("/raport5")
+@router.get("/raport5_top_clienti")
 def raport5(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
-    select dc.nume || ' ' || dc.prenume as client,
+    SELECT dc.nume || ' ' || dc.prenume as client,
            count(fr.rezervare_key) as numar_rezervari,
            sum(fr.suma_totala) as suma_platita
-    from fact_rezervari fr
-             join dim_client dc on fr.client_key = dc.client_key
-             join dim_eveniment de on fr.eveniment_key = de.eveniment_key
-             join dim_timp dt on fr.timp_key = dt.timp_key
-    where dt.an = 2025 and dt.luna = 12
-    group by dc.client_key, dc.nume, dc.prenume
-    order by suma_platita desc
-    fetch first 5 rows only
+      FROM fact_rezervari fr
+      JOIN dim_client dc    ON fr.client_key = dc.client_key
+      JOIN dim_eveniment de ON fr.eveniment_key = de.eveniment_key
+      JOIN dim_timp dt      ON fr.timp_key = dt.timp_key
+     WHERE dt.an = 2025
+       AND dt.luna = 12
+     GROUP BY dc.client_key,
+              dc.nume,
+              dc.prenume
+     ORDER BY suma_platita desc
+     FETCH FIRST 5 ROWS ONLY
     """
     return run_query(db, query)
