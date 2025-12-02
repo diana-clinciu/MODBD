@@ -96,7 +96,7 @@ create table eveniment_client (
       references eveniment ( id_eveniment ),
    foreign key ( id_client )
       references client ( id_client )
--- );
+ );
 
 -- =====================================================
 -- Trigger pentru calcularea automata a sumei la plata

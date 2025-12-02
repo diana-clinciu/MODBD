@@ -11,14 +11,6 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 class OtlpService {
   final OtlpApi bookingApi = GetIt.instance.get<OtlpApi>();
 
-  List<Client> clients = [];
-  List<Rezervare> rezervari = [];
-  List<Camera> camere = [];
-  List<Serviciu> servicii = [];
-  List<Plata> plati = [];
-  List<Angajat> angajati = [];
-  List<Eveniment> evenimente = [];
-
   Future<List<Client>> fetchClients() async {
     final response = await bookingApi.fetchClients();
     return response;
