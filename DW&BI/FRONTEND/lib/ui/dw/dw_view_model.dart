@@ -18,7 +18,8 @@ class DWViewModel extends ChangeNotifier {
 
     try {
       final result = await dwService.syncDw();
-      dwResults = result; 
+      dwResults = result;
+      filteredResults = Map.from(dwResults);
       syncCompleted = true;
     } catch (e) {
       syncCompleted = false;
@@ -27,5 +28,20 @@ class DWViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Map<String, int> filteredResults = {};
+
+  void filterResults(String query) {
+    if (query.isEmpty) {
+      filteredResults = Map.from(dwResults);
+    } else {
+      filteredResults = Map.fromEntries(
+        dwResults.entries.where(
+          (entry) => entry.key.toLowerCase().contains(query.toLowerCase()),
+        ),
+      );
+    }
+    notifyListeners();
   }
 }

@@ -26,6 +26,23 @@ class DWScreenContent extends StatelessWidget {
     return Column(
       children: [
         Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: "Cauta in rezultate...",
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              fillColor: Colors.white,
+              filled: true,
+            ),
+            onChanged: (query) {
+              vm.filterResults(query);
+            },
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: SizedBox(
             width: double.infinity,
@@ -74,10 +91,13 @@ class DWScreenContent extends StatelessWidget {
           SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
-              itemCount: vm.dwResults.length,
+              itemCount: vm.filteredResults.length,
               itemBuilder: (context, index) {
-                final key = vm.dwResults.keys.elementAt(index);
-                final value = vm.dwResults[key];
+                // Convertim Map în List pentru indexare
+                final entries = vm.filteredResults.entries.toList();
+                final key = entries[index].key;
+                final value = entries[index].value;
+
                 return Card(
                   color: AppColors.oliveColor.withTransparency(0.5),
                   elevation: 2,
