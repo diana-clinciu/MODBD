@@ -2,10 +2,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 def propagate_dw(db: Session):
-    """
-    Propagarea modificărilor din OLTP către DW.
-    Returnează un dicționar cu numărul de înregistrări propagate pentru fiecare dimensiune.
-    """
     results = {}
 
     # DIM_CLIENT
