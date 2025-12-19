@@ -8,8 +8,9 @@ class DWViewModel extends ChangeNotifier {
   bool isLoading = false;
   bool syncCompleted = false;
 
-  Map<String, int> dwResults =
-      {}; // Numarul de randuri propagate pe fiecare dimensiune
+  Map<String, int> insertedResults = {};
+  Map<String, int> totalResults = {};
+  Map<String, int> filteredInsertedResults = {};
 
   Future<void> syncToDW() async {
     isLoading = true;
@@ -18,8 +19,19 @@ class DWViewModel extends ChangeNotifier {
 
     try {
       final result = await dwService.syncDw();
-      dwResults = result;
-      filteredResults = Map.from(dwResults);
+
+      insertedResults = {};
+      totalResults = {};
+
+      result.forEach((key, value) {
+        if (key.endsWith('_inserted')) {
+          insertedResults[key] = value;
+        } else {
+          totalResults[key] = value;
+        }
+      });
+
+      filteredInsertedResults = Map.from(insertedResults);
       syncCompleted = true;
     } catch (e) {
       syncCompleted = false;
@@ -34,10 +46,10 @@ class DWViewModel extends ChangeNotifier {
 
   void filterResults(String query) {
     if (query.isEmpty) {
-      filteredResults = Map.from(dwResults);
+      filteredInsertedResults = Map.from(insertedResults);
     } else {
-      filteredResults = Map.fromEntries(
-        dwResults.entries.where(
+      filteredInsertedResults = Map.fromEntries(
+        insertedResults.entries.where(
           (entry) => entry.key.toLowerCase().contains(query.toLowerCase()),
         ),
       );

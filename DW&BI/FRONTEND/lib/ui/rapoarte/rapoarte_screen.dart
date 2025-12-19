@@ -6,7 +6,19 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:mvvm_flutter/internal_models/app_colors.dart';
 
 class ReportsView extends StatelessWidget {
-  const ReportsView({super.key});
+  final List<Color> chartColors = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.brown,
+    Colors.pink,
+    Colors.indigo,
+  ];
+
+  ReportsView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,27 +70,7 @@ class ReportsView extends StatelessWidget {
                         SizedBox(height: 10),
                         SizedBox(
                           height: 300,
-                          child: SfCartesianChart(
-                            primaryXAxis: CategoryAxis(
-                              labelIntersectAction:
-                                  AxisLabelIntersectAction.rotate45,
-                              labelStyle: const TextStyle(fontSize: 10),
-                            ),
-                            primaryYAxis: NumericAxis(
-                              title: AxisTitle(text: 'RON'),
-                            ),
-                            tooltipBehavior: TooltipBehavior(enable: true),
-                            series: <CartesianSeries>[
-                              ColumnSeries<ReportData, String>(
-                                dataSource: data,
-                                xValueMapper: (d, _) => d.label,
-                                yValueMapper: (d, _) => d.value,
-                                color: AppColors.reddishBrownColor,
-                                dataLabelSettings:
-                                    DataLabelSettings(isVisible: true),
-                              )
-                            ],
-                          ),
+                          child: _buildChart(reportName, data),
                         ),
                       ],
                     ),
@@ -90,5 +82,94 @@ class ReportsView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _buildChart(String reportName, List<ReportData> data) {
+    switch (reportName) {
+      case '1. Total Platit / Camera':
+        return SfCartesianChart(
+          primaryXAxis: CategoryAxis(),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <CartesianSeries>[
+            ColumnSeries<ReportData, String>(
+              dataSource: data,
+              xValueMapper: (d, _) => d.label,
+              yValueMapper: (d, _) => d.value,
+              pointColorMapper: (d, index) =>
+                  chartColors[index % chartColors.length],
+              dataLabelSettings: DataLabelSettings(isVisible: true),
+            )
+          ],
+        );
+
+      case '2. Total Platit / Client (Evenimente)':
+        return SfCircularChart(
+          legend: Legend(
+              isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <CircularSeries>[
+            PieSeries<ReportData, String>(
+              dataSource: data,
+              xValueMapper: (d, _) => d.label,
+              yValueMapper: (d, _) => d.value,
+              pointColorMapper: (d, index) =>
+                  chartColors[index % chartColors.length],
+              dataLabelSettings: DataLabelSettings(isVisible: true),
+            )
+          ],
+        );
+
+      case '3. Evolutie Venituri Servicii (Sapt.)':
+        return SfCartesianChart(
+          primaryXAxis: CategoryAxis(),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <CartesianSeries>[
+            LineSeries<ReportData, String>(
+              dataSource: data,
+              xValueMapper: (d, _) => d.label,
+              yValueMapper: (d, _) => d.value,
+              markerSettings: MarkerSettings(isVisible: true),
+              color: Colors.green,
+            )
+          ],
+        );
+
+      case '4. Plati / Camera & Metoda':
+        return SfCartesianChart(
+          primaryXAxis: CategoryAxis(
+            labelIntersectAction: AxisLabelIntersectAction.rotate45,
+          ),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <CartesianSeries>[
+            ColumnSeries<ReportData, String>(
+              dataSource: data,
+              xValueMapper: (d, _) => d.label,
+              yValueMapper: (d, _) => d.value,
+              pointColorMapper: (d, index) =>
+                  chartColors[index % chartColors.length],
+              dataLabelSettings: DataLabelSettings(isVisible: true),
+            )
+          ],
+        );
+
+      case '5. Top 5 Clienti Cheltuitori':
+        return SfCartesianChart(
+          primaryXAxis: CategoryAxis(),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <CartesianSeries>[
+            BarSeries<ReportData, String>(
+              dataSource: data,
+              xValueMapper: (d, _) => d.label,
+              yValueMapper: (d, _) => d.value,
+              pointColorMapper: (d, index) =>
+                  chartColors[index % chartColors.length],
+              dataLabelSettings: DataLabelSettings(isVisible: true),
+            )
+          ],
+        );
+
+      default:
+        return Center(child: Text("Tip de raport necunoscut"));
+    }
   }
 }

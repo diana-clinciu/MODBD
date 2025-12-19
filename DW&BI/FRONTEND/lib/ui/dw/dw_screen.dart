@@ -23,105 +23,159 @@ class DWScreenContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<DWViewModel>();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: "Cauta in rezultate...",
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              fillColor: Colors.white,
-              filled: true,
-            ),
-            onChanged: (query) {
-              vm.filterResults(query);
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.lightCaramelColor,
-                foregroundColor: AppColors.blackForestColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Cauta in rezultate...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
+                fillColor: Colors.white,
+                filled: true,
               ),
-              onPressed: vm.isLoading ? null : vm.syncToDW,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.sync),
-                  SizedBox(width: 10),
-                  Text(
-                    vm.isLoading
-                        ? "Se sincronizeaza..."
-                        : "Sincronizeaza OLTP → DW",
-                    style: TextStyle(
+              onChanged: vm.filterResults,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightCaramelColor,
+                  foregroundColor: AppColors.blackForestColor,
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: vm.isLoading ? null : vm.syncToDW,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.sync),
+                    const SizedBox(width: 10),
+                    Text(
+                      vm.isLoading
+                          ? "Se sincronizeaza..."
+                          : "Sincronizeaza OLTP → DW",
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.blackForestColor),
-                  ),
-                ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        if (vm.isLoading) ...[
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-        ],
-        if (vm.syncCompleted) ...[
-          SizedBox(height: 16),
-          Text(
-            "Rezultate in DW:",
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.blackForestColor),
-          ),
-          SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              itemCount: vm.filteredResults.length,
+          if (vm.isLoading) ...[
+            Center(child: CircularProgressIndicator()),
+            SizedBox(height: 16),
+          ],
+          if (vm.syncCompleted) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                "Rezultate in DW",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            ListView.builder(
+              itemCount: vm.filteredInsertedResults.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
-                // Convertim Map în List pentru indexare
-                final entries = vm.filteredResults.entries.toList();
+                final entries = vm.filteredInsertedResults.entries.toList();
                 final key = entries[index].key;
                 final value = entries[index].value;
+
+                final label = key
+                    .replaceAll('_inserted', '')
+                    .replaceAll('dim_', '')
+                    .replaceAll('_', ' ')
+                    .toUpperCase();
 
                 return Card(
                   color: AppColors.oliveColor.withTransparency(0.5),
                   elevation: 2,
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                  margin: EdgeInsets.symmetric(vertical: 4, horizontal: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: ListTile(
+                    leading: Icon(
+                      Icons.check_circle,
+                      color: AppColors.blackForestColor,
+                    ),
                     title: Text(
-                      "$key: $value randuri propagate",
-                      style: TextStyle(
+                      label,
+                      style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.contentPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                    subtitle: Text("Randuri noi propagate: $value"),
                   ),
                 );
               },
             ),
-          ),
-        ]
-      ],
+            SizedBox(height: 20),
+            if (vm.totalResults.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightCaramelColor.withTransparency(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withTransparency(0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Total inregistrari in DW",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      ...vm.totalResults.entries.map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(
+                            "• ${e.key}: ${e.value}",
+                            textAlign: TextAlign.left,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }

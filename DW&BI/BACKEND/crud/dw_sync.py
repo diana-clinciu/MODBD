@@ -15,6 +15,7 @@ def propagate_dw(db: Session):
             WHERE d.id_client_oltp = c.id_client
         )
     """))
+    results['dim_client_inserted'] = res.rowcount
     results['dim_client'] = db.execute(text("SELECT COUNT(*) FROM dim_client")).scalar()
 
     # DIM_CAMERA
@@ -28,6 +29,7 @@ def propagate_dw(db: Session):
             WHERE d.id_camera_oltp = c.id_camera
         )
     """))
+    results['dim_camera_inserted'] = res.rowcount
     results['dim_camera'] = db.execute(text("SELECT COUNT(*) FROM dim_camera")).scalar()
 
     # DIM_SERVICIU
@@ -41,6 +43,7 @@ def propagate_dw(db: Session):
             WHERE d.id_serviciu_oltp = s.id_serviciu
         )
     """))
+    results['dim_serviciu_inserted'] = res.rowcount
     results['dim_serviciu'] = db.execute(text("SELECT COUNT(*) FROM dim_serviciu")).scalar()
 
     # DIM_EVENIMENT
@@ -54,6 +57,7 @@ def propagate_dw(db: Session):
             WHERE d.id_eveniment_oltp = e.id_eveniment
         )
     """))
+    results['dim_eveniment_inserted'] = res.rowcount
     results['dim_eveniment'] = db.execute(text("SELECT COUNT(*) FROM dim_eveniment")).scalar()
 
     # DIM_TIMP
@@ -71,6 +75,7 @@ def propagate_dw(db: Session):
             WHERE dt.data_completa = r.data_rezervare
         )
     """))
+    results['dim_timp_inserted'] = res.rowcount
     results['dim_timp'] = db.execute(text("SELECT COUNT(*) FROM dim_timp")).scalar()
 
     # DIM_METODA_PLATA
@@ -89,6 +94,7 @@ def propagate_dw(db: Session):
             WHERE d.metoda_plata = p.metoda_plata
         )
     """))
+    results['dim_metoda_plata_inserted'] = res.rowcount
     results['dim_metoda_plata'] = db.execute(text("SELECT COUNT(*) FROM dim_metoda_plata")).scalar()
 
     db.commit()

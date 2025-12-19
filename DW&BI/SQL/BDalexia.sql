@@ -1015,56 +1015,6 @@ alter table dim_metoda_plata modify
 alter table dim_metoda_plata modify
    tip_tranzactie not null;
 
--- Indexuri pentru performanta la interogari
-create index idx_dim_client_nume on
-   dim_client (
-      nume,
-      prenume
-   );
-create index idx_dim_camera_tip on
-   dim_camera (
-      tip_camera
-   );
-create index idx_dim_serviciu_denumire on
-   dim_serviciu (
-      denumire
-   );
-create index idx_dim_eveniment_nume on
-   dim_eveniment (
-      nume_eveniment
-   );
-create index idx_dim_timp_data on
-   dim_timp (
-      data_completa
-   );
-
-create index idx_fact_client on
-   fact_rezervari (
-      client_key
-   );
-create index idx_fact_serviciu on
-   fact_rezervari (
-      serviciu_key
-   );
-create index idx_fact_eveniment on
-   fact_rezervari (
-      eveniment_key
-   );
-create index idx_fact_timp on
-   fact_rezervari (
-      timp_key
-   );
-
-create index idx_dim_metoda_plata_metoda on
-   dim_metoda_plata (
-      metoda_plata
-   );
-
-create index idx_dim_metoda_plata_tip on
-   dim_metoda_plata (
-      tip_tranzactie
-   );
-
 -- Verificare suma_totala pozitiva
 alter table fact_rezervari modify
    suma_totala check ( suma_totala >= 0 );
