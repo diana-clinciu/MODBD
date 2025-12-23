@@ -982,42 +982,92 @@ insert into fact_rezervari (
 --5. Definirea constrângerilor
 -- DIM CLIENT
 alter table dim_client modify
+   client_key not null;
+alter table dim_client modify
    nume not null;
 alter table dim_client modify
    prenume not null;
 
+alter table dim_client add constraint uq_dim_client_email unique ( email );
+
 -- DIM CAMERA
 alter table dim_camera modify
-   tip_camera not null;
+   camera_key not null;
 alter table dim_camera modify
-   pret check ( pret > 0 );
+   tip_camera not null;
+
+alter table dim_camera add constraint uq_dim_camera_nr unique ( nr_camera );
+
+alter table dim_camera add constraint chk_dim_camera_pret check ( pret > 0 );
 
 -- DIM SERVICIU
 alter table dim_serviciu modify
-   pret_serviciu check ( pret_serviciu >= 0 );
+   serviciu_key not null;
+
+alter table dim_serviciu add constraint chk_dim_serviciu_pret check ( pret_serviciu >= 0 );
 
 -- DIM EVENIMENT
+alter table dim_eveniment modify
+   eveniment_key not null;
 alter table dim_eveniment modify
    nume_eveniment not null;
 
 -- DIM TIMP
 alter table dim_timp modify
-   zi check ( zi between 1 and 31 );
-alter table dim_timp modify
-   luna check ( luna between 1 and 12 );
-alter table dim_timp modify
-   an check ( an between 1900 and 2100 );
+   timp_key not null;
+
+alter table dim_timp
+   add constraint chk_dim_timp_zi check ( zi between 1 and 31 );
+
+alter table dim_timp
+   add constraint chk_dim_timp_luna check ( luna between 1 and 12 );
+
+alter table dim_timp
+   add constraint chk_dim_timp_an check ( an between 1900 and 2100 );
 
 -- DIM METODA_PLATA
 alter table dim_metoda_plata modify
+   metoda_plata_key not null;
+alter table dim_metoda_plata modify
    metoda_plata not null;
-
 alter table dim_metoda_plata modify
    tip_tranzactie not null;
 
--- Verificare suma_totala pozitiva
+-- FACT_REZERVARI
 alter table fact_rezervari modify
-   suma_totala check ( suma_totala >= 0 );
+   rezervare_key not null;
+
+-- Verificare suma_totala pozitiva
+alter table fact_rezervari add constraint chk_fact_suma check ( suma_totala >= 0 );
+
+-- =====================================================
+-- Definire chei externe (FK) 
+-- DEFINITE LOGIC, DEZACTIVATE
+-- ===================================================== 
+
+alter table fact_rezervari
+   add constraint fk_fact_client foreign key ( client_key )
+      references dim_client ( client_key );
+
+alter table fact_rezervari
+   add constraint fk_fact_camera foreign key ( camera_key )
+      references dim_camera ( camera_key );
+
+alter table fact_rezervari
+   add constraint fk_fact_serviciu foreign key ( serviciu_key )
+      references dim_serviciu ( serviciu_key );
+
+alter table fact_rezervari
+   add constraint fk_fact_eveniment foreign key ( eveniment_key )
+      references dim_eveniment ( eveniment_key );
+
+alter table fact_rezervari
+   add constraint fk_fact_timp foreign key ( timp_key )
+      references dim_timp ( timp_key );
+
+alter table fact_rezervari
+   add constraint fk_fact_metoda_plata foreign key ( metoda_plata_key )
+      references dim_metoda_plata ( metoda_plata_key );
 
 -- =====================================================
 -- Verificari finale
