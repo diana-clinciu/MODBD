@@ -254,7 +254,7 @@ create sequence metoda_plata_seq start with 1 increment by 1 nocache
 nocycle;
 /
 -- =====================================================
--- Inserare date exemple
+-- Inserare date
 -- =====================================================
 
 -- EVENIMENTE
@@ -819,6 +819,16 @@ create table fact_rezervari (
       references dim_metoda_plata ( metoda_plata_key )
 );
 
+-- Ajustare cheie primara pentru FACT_REZERVARI, deoarece granularitatea tabelului de fapte este
+-- REZERVARE – CAMERA, o rezervare poate aparea de mai multe ori in fact table.
+-- Cheia primara este definita ca fiind compusa din id-ul rezervarii din OLTP si cheia camerei,
+-- asigurand unicitatea fiecarui rand.
+alter table fact_rezervari drop primary key;
+
+alter table fact_rezervari
+add constraint pk_fact_rezervari
+primary key (id_rezervare_oltp, camera_key);
+
 -- =====================================================
 -- Populare dimensiuni din OLTP
 -- =====================================================
@@ -888,92 +898,40 @@ insert into dim_metoda_plata
         from plata
    );
 
--- Populare fact table
--- Se selecteaza datele din OLTP si se leaga cu dimensiunile prin subquery-uri
+-- Populare tabel de fapte FACT_REZERVARI
+-- Granularitate: o linie pentru fiecare combinatie: REZERVARE – CAMERA.
+-- Pentru fiecare rezervare se insereaza cate un rand pentru fiecare camera asociata rezervarii.
+-- Aceasta abordare permite analiza veniturilor in functie de camera, tip camera si perioada de timp.
 insert into fact_rezervari (
    rezervare_key,
    id_rezervare_oltp,
    client_key,
    camera_key,
-   serviciu_key,
-   eveniment_key,
    timp_key,
    metoda_plata_key,
    suma_totala
 )
-   select r.id_rezervare,                               -- Surrogate key
-          r.id_rezervare,                               -- OLTP id
-
-   -- client_key din dim_client
-          (
-             select client_key
-               from dim_client d
-              where d.id_client_oltp = r.id_client
-          ),
-
-   -- prima camera folosită în rezervare
-          (
-             select camera_key
-               from dim_camera d
-              where d.id_camera_oltp = (
-                select rc.id_camera
-                  from rezervare_camera rc
-                 where rc.id_rezervare = r.id_rezervare
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- primul serviciu folosit de client
-          (
-             select serviciu_key
-               from dim_serviciu d
-              where d.id_serviciu_oltp = (
-                select cs.id_serviciu
-                  from client_serviciu cs
-                 where cs.id_client = r.id_client
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- primul eveniment la care a participat clientul
-          (
-             select eveniment_key
-               from dim_eveniment d
-              where d.id_eveniment_oltp = (
-                select ec.id_eveniment
-                  from eveniment_client ec
-                 where ec.id_client = r.id_client
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- timp_key bazat pe data rezervarii
-          (
-             select timp_key
-               from dim_timp dt
-              where dt.data_completa = r.data_rezervare
-          ),
-
-   -- metoda_plata_key
-          (
-             select metoda_plata_key
-               from dim_metoda_plata dmp
-              where dmp.metoda_plata = (
-                select p.metoda_plata
-                  from plata p
-                 where p.id_rezervare = r.id_rezervare
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- suma totala (din plata)
-          (
-             select suma
-               from plata p
-              where p.id_rezervare = r.id_rezervare
-              fetch first 1 rows only
-          )
-     from rezervare r;
+select
+   r.id_rezervare,
+   r.id_rezervare,
+   dc.client_key,
+   dcam.camera_key,
+   dt.timp_key,
+   dmp.metoda_plata_key,
+   rc.pret_rezervare
+from rezervare r
+join dim_client dc
+   on dc.id_client_oltp = r.id_client
+join rezervare_camera rc
+   on rc.id_rezervare = r.id_rezervare
+join dim_camera dcam
+   on dcam.id_camera_oltp = rc.id_camera
+join dim_timp dt
+   on dt.data_completa = r.data_rezervare
+join plata p
+   on p.id_rezervare = r.id_rezervare
+join dim_metoda_plata dmp
+   on dmp.metoda_plata = p.metoda_plata;
 
 -- =====================================================
 -- Creare constrangeri suplimentare si indexuri
@@ -986,19 +944,42 @@ alter table dim_client modify
 alter table dim_client modify
    prenume not null;
 
+-- Un client OLTP nu poate aparea de mai multe ori in dim_client
+alter table dim_client
+add constraint uq_dim_client_oltp
+unique (id_client_oltp);
+
 -- DIM CAMERA
 alter table dim_camera modify
    tip_camera not null;
 alter table dim_camera modify
    pret check ( pret > 0 );
 
+-- O camera OLTP nu poate aparea de mai multe ori in dim_camera
+alter table dim_camera
+add constraint uq_dim_camera_oltp
+unique (id_camera_oltp);
+
 -- DIM SERVICIU
 alter table dim_serviciu modify
    pret_serviciu check ( pret_serviciu >= 0 );
 
+alter table dim_serviciu
+add constraint uq_dim_serviciu_oltp
+unique (id_serviciu_oltp);
+
 -- DIM EVENIMENT
 alter table dim_eveniment modify
    nume_eveniment not null;
+
+alter table dim_eveniment
+add constraint uq_dim_eveniment_oltp
+unique (id_eveniment_oltp);
+
+-- Doua evenimente nu pot avea acelasi nume si aceeasi data
+alter table dim_eveniment
+add constraint uq_dim_eveniment_nume_data
+unique (nume_eveniment, data_eveniment);
 
 -- DIM TIMP
 alter table dim_timp modify
@@ -1008,12 +989,22 @@ alter table dim_timp modify
 alter table dim_timp modify
    an check ( an between 1900 and 2100 );
 
+-- O zi apare o singura data in dim_timp
+alter table dim_timp
+add constraint uq_dim_timp_data
+unique (data_completa);
+
 -- DIM METODA_PLATA
 alter table dim_metoda_plata modify
    metoda_plata not null;
 
 alter table dim_metoda_plata modify
    tip_tranzactie not null;
+
+-- O metoda de plata apare o singura data in dim_metoda_plata
+alter table dim_metoda_plata
+add constraint uq_dim_metoda_plata
+unique (metoda_plata);
 
 -- Verificare suma_totala pozitiva
 alter table fact_rezervari modify
@@ -1138,90 +1129,42 @@ create table fact_rezervari (
 
 alter table fact_rezervari add partition p_necunoscut values ( null );
 
+alter table fact_rezervari drop primary key;
+
+alter table fact_rezervari
+add constraint pk_fact_rezervari
+primary key (id_rezervare_oltp, camera_key);
+
 insert into fact_rezervari (
    rezervare_key,
    id_rezervare_oltp,
    client_key,
    camera_key,
-   serviciu_key,
-   eveniment_key,
    timp_key,
    metoda_plata_key,
    suma_totala
 )
-   select r.id_rezervare,                               -- Surrogate key
-          r.id_rezervare,                               -- OLTP id
-
-   -- client_key din dim_client
-          (
-             select client_key
-               from dim_client d
-              where d.id_client_oltp = r.id_client
-          ),
-
-   -- prima camera folosită în rezervare
-          (
-             select camera_key
-               from dim_camera d
-              where d.id_camera_oltp = (
-                select rc.id_camera
-                  from rezervare_camera rc
-                 where rc.id_rezervare = r.id_rezervare
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- primul serviciu folosit de client
-          (
-             select serviciu_key
-               from dim_serviciu d
-              where d.id_serviciu_oltp = (
-                select cs.id_serviciu
-                  from client_serviciu cs
-                 where cs.id_client = r.id_client
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- primul eveniment la care a participat clientul
-          (
-             select eveniment_key
-               from dim_eveniment d
-              where d.id_eveniment_oltp = (
-                select ec.id_eveniment
-                  from eveniment_client ec
-                 where ec.id_client = r.id_client
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- timp_key bazat pe data rezervarii
-          (
-             select timp_key
-               from dim_timp dt
-              where dt.data_completa = r.data_rezervare
-          ),
-
-   -- metoda_plata_key
-          (
-             select metoda_plata_key
-               from dim_metoda_plata dmp
-              where dmp.metoda_plata = (
-                select p.metoda_plata
-                  from plata p
-                 where p.id_rezervare = r.id_rezervare
-                 fetch first 1 rows only
-             )
-          ),
-
-   -- suma totala (din plata)
-          (
-             select suma
-               from plata p
-              where p.id_rezervare = r.id_rezervare
-              fetch first 1 rows only
-          )
-     from rezervare r;
+select
+   r.id_rezervare,
+   r.id_rezervare,
+   dc.client_key,
+   dcam.camera_key,
+   dt.timp_key,
+   dmp.metoda_plata_key,
+   rc.pret_rezervare
+from rezervare r
+join dim_client dc
+   on dc.id_client_oltp = r.id_client
+join rezervare_camera rc
+   on rc.id_rezervare = r.id_rezervare
+join dim_camera dcam
+   on dcam.id_camera_oltp = rc.id_camera
+join dim_timp dt
+   on dt.data_completa = r.data_rezervare
+join plata p
+   on p.id_rezervare = r.id_rezervare
+join dim_metoda_plata dmp
+   on dmp.metoda_plata = p.metoda_plata;
 
 explain plan
    for
