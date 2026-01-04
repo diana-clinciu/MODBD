@@ -12,5 +12,5 @@ Task-uri realizate de fiecare membru al echipei:
                   -> Modulul Frontend (+ Descrierea aplicatiei)
 
 
-3. Diana 	      ->  Modulul analiza (6,7,8,9,10)
+3. Diana 	      ->  Modulul analiza (6,7,8,9,10) modificate
                   ->  Modulul backend (6,7,8,9,10)

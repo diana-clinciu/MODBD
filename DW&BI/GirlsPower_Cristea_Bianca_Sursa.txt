@@ -19,9 +19,11 @@ create table client (
 create table rezervare (
    id_rezervare   number primary key,
    id_client      number not null,
-   data_rezervare date not null,
+   data_start date not null,
+   data_final date not null,
    foreign key ( id_client )
-      references client ( id_client )
+      references client ( id_client ),
+   constraint interal_data_valid check ( data_start <= data_final )
 );
 
 create table serviciu (
@@ -36,6 +38,8 @@ create table camera (
    id_camera  number primary key,
    nr_camera  number unique not null,
    tip_camera varchar2(20) not null,
+   categorie_camera varchar2(20) not null,
+   clasa_confort varchar2(20) not null,
    pret       number(10,2) not null
 );
 
@@ -115,7 +119,7 @@ begin
      into v_id_client
      from rezervare
     where id_rezervare = :new.id_rezervare;
-    
+
     -- Calculează prețul rezervării (suma tuturor camerelor * nr_nopti)
    select nvl(
       sum(rc.pret_rezervare),
@@ -124,7 +128,7 @@ begin
      into v_pret_rezervare
      from rezervare_camera rc
     where rc.id_rezervare = :new.id_rezervare;
-    
+
     -- Calculează prețul serviciilor utilizate de client
    select nvl(
       sum(s.pret_serviciu),
@@ -135,7 +139,7 @@ begin
      join serviciu s
    on cs.id_serviciu = s.id_serviciu
     where cs.id_client = v_id_client;
-    
+
     -- Setează suma totală
    :new.suma := v_pret_rezervare + v_pret_servicii;
 end;
@@ -397,42 +401,62 @@ insert into serviciu values ( 10,
 insert into camera values ( 1,
                             101,
                             'Single',
+                           'Basic',
+                           'Standard',
                             150 );
 insert into camera values ( 2,
                             102,
                             'Double',
+                           'Family',
+                           'Standard',
                             250 );
 insert into camera values ( 3,
                             103,
                             'Suite',
+                           'Economy',
+                           'Standard',
                             450 );
 insert into camera values ( 4,
                             104,
                             'Single',
+                           'Basic',
+                           'Standard',
                             150 );
 insert into camera values ( 5,
                             105,
                             'Double',
+                           'Family',
+                           'Standard',
                             250 );
 insert into camera values ( 6,
                             106,
-                            'Suite Premium',
+                            'Suite',
+                           'Deluxe',
+                           'Luxury',
                             550 );
 insert into camera values ( 7,
                             107,
                             'Single',
+                           'Deluxe',
+                           'Luxury',
                             180 );
 insert into camera values ( 8,
                             108,
                             'Double',
+                           'Royal',
+                           'Luxury',
                             280 );
 insert into camera values ( 9,
                             109,
-                            'Suite Deluxe',
+                            'Suite',
+                           'Royal',
+                           'Luxury',
                             600 );
 insert into camera values ( 10,
                             110,
                             'Double',
+                           'Deluxe',
+                           'Luxury',
                             260 );
 
 -- ANGAJAȚI
@@ -500,78 +524,88 @@ insert into angajat values ( 10,
 -- REZERVĂRI
 insert into rezervare values ( 1,
                                1,
-                               to_date('2025-12-01','YYYY-MM-DD') );
+                               to_date('2025-12-01','YYYY-MM-DD'),
+                               to_date('2025-12-07','YYYY-MM-DD') );
 insert into rezervare values ( 2,
                                2,
-                               to_date('2025-12-03','YYYY-MM-DD') );
+                               to_date('2025-12-03','YYYY-MM-DD'),
+                               to_date('2025-12-10','YYYY-MM-DD') );
 insert into rezervare values ( 3,
                                3,
-                               to_date('2025-12-05','YYYY-MM-DD') );
+                               to_date('2025-12-05','YYYY-MM-DD'),
+                               to_date('2025-12-07','YYYY-MM-DD') );
 insert into rezervare values ( 4,
                                4,
-                               to_date('2025-12-07','YYYY-MM-DD') );
+                               to_date('2025-12-07','YYYY-MM-DD'),
+                               to_date('2025-12-14','YYYY-MM-DD') );
 insert into rezervare values ( 5,
                                5,
-                               to_date('2025-12-10','YYYY-MM-DD') );
+                               to_date('2025-12-10','YYYY-MM-DD'),
+                               to_date('2025-12-14','YYYY-MM-DD') );
 insert into rezervare values ( 6,
                                6,
-                               to_date('2025-12-12','YYYY-MM-DD') );
+                               to_date('2025-12-12','YYYY-MM-DD'),
+                               to_date('2025-12-21','YYYY-MM-DD') );
 insert into rezervare values ( 7,
                                7,
-                               to_date('2025-12-15','YYYY-MM-DD') );
+                               to_date('2025-12-15','YYYY-MM-DD'),
+                               to_date('2025-12-20','YYYY-MM-DD') );
 insert into rezervare values ( 8,
                                8,
-                               to_date('2025-12-18','YYYY-MM-DD') );
+                               to_date('2025-12-18','YYYY-MM-DD'),
+                               to_date('2025-12-23','YYYY-MM-DD') );
 insert into rezervare values ( 9,
                                9,
-                               to_date('2025-12-20','YYYY-MM-DD') );
+                               to_date('2025-12-20','YYYY-MM-DD'),
+                               to_date('2025-12-30','YYYY-MM-DD') );
 insert into rezervare values ( 10,
                                10,
-                               to_date('2025-12-23','YYYY-MM-DD') );
+                               to_date('2025-12-23','YYYY-MM-DD'),
+                               to_date('2025-12-28','YYYY-MM-DD') );
 
--- REZERVARE_CAMERA 
-insert into rezervare_camera values ( 1,
-                                      1,
-                                      3,
-                                      450 );   -- 3 nopți × 150
-insert into rezervare_camera values ( 2,
-                                      2,
-                                      2,
-                                      500 );   -- 2 nopți × 250
-insert into rezervare_camera values ( 3,
-                                      3,
-                                      1,
-                                      450 );   -- 1 noapte × 450
-insert into rezervare_camera values ( 4,
-                                      4,
-                                      4,
-                                      600 );   -- 4 nopți × 150
-insert into rezervare_camera values ( 5,
-                                      5,
-                                      2,
-                                      500 );   -- 2 nopți × 250
-insert into rezervare_camera values ( 6,
-                                      6,
-                                      3,
-                                      1650 );  -- 3 nopți × 550
-insert into rezervare_camera values ( 7,
-                                      7,
-                                      2,
-                                      360 );   -- 2 nopți × 180
-insert into rezervare_camera values ( 8,
-                                      8,
-                                      3,
-                                      840 );   -- 3 nopți × 280
-insert into rezervare_camera values ( 9,
-                                      9,
-                                      2,
-                                      1200 );  -- 2 nopți × 600
-insert into rezervare_camera values ( 10,
-                                      10,
-                                      4,
-                                      1040 );-- 4 nopți × 260
+-- REZERVARE_CAMERA
+insert into rezervare_camera values (1,
+                                     1,
+                                     6,
+                                     900); -- 6 nopți * 150
+insert into rezervare_camera values (2,
+                                     2,
+                                     7,
+                                     1750); -- 7 nopți * 250
+insert into rezervare_camera values (3,
+                                     3,
+                                     2,
+                                     900); -- 2 nopți * 450
+insert into rezervare_camera values (4,
+                                     4,
+                                     7,
+                                     1050); -- 7 nopți * 150
+insert into rezervare_camera values (5,
+                                     5,
+                                     4,
+                                     1000); -- 4 nopți * 250
+insert into rezervare_camera values (6,
+                                     6,
+                                     9,
+                                     4950); -- 9 nopți * 550
+insert into rezervare_camera values (7,
+                                     7,
+                                     5,
+                                     900); -- 5 nopți * 180
+insert into rezervare_camera values (8,
+                                     8,
+                                     5,
+                                     1400); -- 5 nopți * 280
+insert into rezervare_camera values (9,
+                                     9,
+                                     10,
+                                     6000); -- 10 nopți * 600
+insert into rezervare_camera values (10,
+                                     10,
+                                     5,
+                                     1300); -- 5 nopți * 260
 
--- CLIENT_SERVICIU  
+-- CLIENT_SERVICIU
 insert into client_serviciu values ( 1,
                                      1,
                                      to_date('2025-12-02','YYYY-MM-DD') );  -- Spa
@@ -742,11 +776,11 @@ select owner,
 -- Crearea tabelelor pentru depozitul de date (Data Warehouse)
 -- =====================================================
 -- Dimensiuni
--- 3. Crearea bazei de date depozit și a utilizatorilor 
+-- 3. Crearea bazei de date depozit și a utilizatorilor
 
 -- DIM CLIENT: tabel de dimensiune pentru clienti
 create table dim_client (
-   client_key     number primary key,
+   id_client_dim     number primary key,
    id_client_oltp number,
    nume           varchar2(30),
    prenume        varchar2(30),
@@ -755,16 +789,18 @@ create table dim_client (
 
 -- DIM CAMERA: tabel de dimensiune pentru camere
 create table dim_camera (
-   camera_key     number primary key,
+   id_camera_dim     number primary key,
    id_camera_oltp number,
    nr_camera      number,
    tip_camera     varchar2(20),
+   categorie_camera varchar2(20),
+   clasa_confort varchar2(20),
    pret           number(10,2)
 );
 
 -- DIM SERVICIU: tabel de dimensiune pentru servicii
 create table dim_serviciu (
-   serviciu_key     number primary key,
+   id_serviciu_dim     number primary key,
    id_serviciu_oltp number,
    denumire         varchar2(50),
    pret_serviciu    number(10,2)
@@ -772,7 +808,7 @@ create table dim_serviciu (
 
 -- DIM EVENIMENT: tabel de dimensiune pentru evenimente
 create table dim_eveniment (
-   eveniment_key     number primary key,
+   id_eveniment_dim     number primary key,
    id_eveniment_oltp number,
    nume_eveniment    varchar2(50),
    data_eveniment    date
@@ -780,43 +816,47 @@ create table dim_eveniment (
 
 -- DIM TIMP: tabel de dimensiune pentru timp
 create table dim_timp (
-   timp_key      number primary key,
-   data_completa date,
+   --id_timp_dim      number primary key,
+   data_completa date primary key,
    zi            number,
    luna          number,
-   an            number
+   an            number,
+   luna_an       varchar2(20)
 );
 
 -- DIM METODA PLATA: tabel de dimensiune pentru metoda de plata
 create table dim_metoda_plata (
-   metoda_plata_key number primary key,
+   id_metoda_plata_dim number primary key,
    metoda_plata     varchar2(20),
    tip_tranzactie   varchar2(30)
 );
 
 -- FACT: tabel de fapte pentru rezervari
 create table fact_rezervari (
-   rezervare_key     number primary key,
-   id_rezervare_oltp number,
-   client_key        number,
-   camera_key        number,
-   serviciu_key      number,
-   eveniment_key     number,
-   timp_key          number,
-   metoda_plata_key  number,
-   suma_totala       number(10,2),
-   foreign key ( client_key )
-      references dim_client ( client_key ),
-   foreign key ( camera_key )
-      references dim_camera ( camera_key ),
-   foreign key ( serviciu_key )
-      references dim_serviciu ( serviciu_key ),
-   foreign key ( eveniment_key )
-      references dim_eveniment ( eveniment_key ),
-   foreign key ( timp_key )
-      references dim_timp ( timp_key ),
-   foreign key ( metoda_plata_key )
-      references dim_metoda_plata ( metoda_plata_key )
+   id_rezervare         number primary key,
+   id_rezervare_oltp    number,
+   id_client_dim        number,
+   id_camera_dim        number,
+   id_serviciu_dim      number,
+   id_eveniment_dim     number,
+   id_data_start        date,
+   id_data_final        date,
+   id_metoda_plata_dim  number,
+   suma_totala          number(10,2),
+   foreign key ( id_client_dim )
+      references dim_client ( id_client_dim ),
+   foreign key ( id_camera_dim )
+      references dim_camera ( id_camera_dim ),
+   foreign key ( id_serviciu_dim )
+      references dim_serviciu ( id_serviciu_dim ),
+   foreign key ( id_eveniment_dim )
+      references dim_eveniment ( id_eveniment_dim ),
+   foreign key ( id_data_start )
+      references dim_timp ( data_completa ),
+   foreign key ( id_data_final )
+      references dim_timp ( data_completa ),
+   foreign key ( id_metoda_plata_dim )
+      references dim_metoda_plata ( id_metoda_plata_dim )
 );
 
 -- Ajustare cheie primara pentru FACT_REZERVARI, deoarece granularitatea tabelului de fapte este
@@ -827,7 +867,7 @@ alter table fact_rezervari drop primary key;
 
 alter table fact_rezervari
 add constraint pk_fact_rezervari
-primary key (id_rezervare_oltp, camera_key);
+primary key (id_rezervare_oltp, id_camera_dim);
 
 -- =====================================================
 -- Populare dimensiuni din OLTP
@@ -847,6 +887,8 @@ insert into dim_camera
           id_camera,
           nr_camera,
           tip_camera,
+          categorie_camera,
+          clasa_confort,
           pret
      from camera;
 
@@ -865,25 +907,26 @@ insert into dim_eveniment
      from eveniment;
 
 -- Dimensiune timp pe baza datei rezervarii
-insert into dim_timp
-   select dense_rank()
-          over(
-       order by data_rezervare
-          ),
-          data_rezervare,
-          extract(day from data_rezervare),
-          extract(month from data_rezervare),
-          extract(year from data_rezervare)
-     from (
-      select distinct data_rezervare
-        from rezervare
-   );
+INSERT INTO dim_timp
+SELECT
+    data_completa,
+    extract(day from data_completa)     AS zi,
+    EXTRACT(MONTH FROM data_completa)   AS luna,
+    EXTRACT(YEAR FROM data_completa)    AS an,
+    TO_CHAR(data_completa, 'YYYYMM')    AS luna_an
+FROM (
+    SELECT data_start as data_completa
+      FROM rezervare
+    UNION
+    SELECT data_final as data_completa
+      FROM rezervare
+);
 
 insert into dim_metoda_plata
    select dense_rank()
           over(
        order by metoda_plata
-          ) as metoda_plata_key,
+          ) as id_metoda_plata_dim,
           metoda_plata,
           case
              when metoda_plata = 'Card'     then
@@ -903,21 +946,23 @@ insert into dim_metoda_plata
 -- Pentru fiecare rezervare se insereaza cate un rand pentru fiecare camera asociata rezervarii.
 -- Aceasta abordare permite analiza veniturilor in functie de camera, tip camera si perioada de timp.
 insert into fact_rezervari (
-   rezervare_key,
+   id_rezervare,
    id_rezervare_oltp,
-   client_key,
-   camera_key,
-   timp_key,
-   metoda_plata_key,
+   id_client_dim,
+   id_camera_dim,
+   id_data_start,
+   id_data_final,
+   id_metoda_plata_dim,
    suma_totala
 )
 select
    r.id_rezervare,
    r.id_rezervare,
-   dc.client_key,
-   dcam.camera_key,
-   dt.timp_key,
-   dmp.metoda_plata_key,
+   dc.id_client_dim,
+   dcam.id_camera_dim,
+   dt_start.data_completa,
+   dt_final.data_completa,
+   dmp.id_metoda_plata_dim,
    rc.pret_rezervare
 from rezervare r
 join dim_client dc
@@ -926,12 +971,29 @@ join rezervare_camera rc
    on rc.id_rezervare = r.id_rezervare
 join dim_camera dcam
    on dcam.id_camera_oltp = rc.id_camera
-join dim_timp dt
-   on dt.data_completa = r.data_rezervare
+join dim_timp dt_start
+   on dt_start.data_completa = r.data_start
+join dim_timp dt_final
+   on dt_final.data_completa = r.data_final
 join plata p
    on p.id_rezervare = r.id_rezervare
 join dim_metoda_plata dmp
    on dmp.metoda_plata = p.metoda_plata;
+
+
+BEGIN
+    DBMS_STATS.GATHER_TABLE_STATS(
+        ownname => USER,
+        tabname => 'FACT_REZERVARI',
+        cascade => TRUE,
+        estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE
+    );
+    DBMS_STATS.GATHER_TABLE_STATS(ownname => USER, tabname => 'DIM_TIMP', cascade => TRUE);
+    DBMS_STATS.GATHER_TABLE_STATS(ownname => USER, tabname => 'DIM_CAMERA', cascade => TRUE);
+    DBMS_STATS.GATHER_TABLE_STATS(ownname => USER, tabname => 'DIM_METODA_PLATA', cascade => TRUE);
+    DBMS_STATS.GATHER_TABLE_STATS(ownname => USER, tabname => 'DIM_CLIENT', cascade => TRUE);
+END;
+/
 
 -- =====================================================
 -- Creare constrangeri suplimentare si indexuri
@@ -1027,251 +1089,197 @@ select count(*)
 select count(*)
   from fact_rezervari;
 
--- 6. Definirea indecșilor și a cererilor SQL însoțite de planul de execuție al acestora (din care să reiasă ca optimizorul utilizează eficient indecșii definiți)
--- Cerere SQL: Veniturile totate incasate pana in momentul de fata pentru camerele de tip Double
-create index idx_fact_camera on
-   fact_rezervari (
-      camera_key
+-- 6.
+-- Indecsi BITMAP pe cheile externe din tabela de fapte:
+ALTER SESSION SET STAR_TRANSFORMATION_ENABLED = TRUE;
+
+CREATE BITMAP INDEX bmp_fk_rezervari_clienti
+ON fact_rezervari(id_client_dim);
+ANALYZE INDEX bmp_fk_rezervari_clienti
+COMPUTE STATISTICS;
+
+-- cost fara index = 115
+-- cost cu index = 33
+EXPLAIN PLAN
+SET STATEMENT_ID = 'ex_6'
+FOR
+SELECT
+    dcl.nume  || ' ' || dcl.prenume as client,
+    DECODE(GROUPING(dc.clasa_confort), 1, 'Toate clasele de confort', dc.clasa_confort) AS clasa_confort,
+    DECODE(GROUPING(dc.categorie_camera), 1, 'Toate categoriile de camera', dc.categorie_camera) AS categorie_camera,
+    TO_CHAR(SUM(fr.suma_totala) / NULLIF(SUM(fr.id_data_final - fr.id_data_start), 0), 'FM999G999G990D00') AS venit_mediu_pe_noapte,
+    SUM(fr.suma_totala) AS total_incasari,
+    SUM(fr.id_data_final - fr.id_data_start) AS total_nopti_ocupate
+FROM
+    fact_rezervari fr
+JOIN dim_camera dc ON fr.id_camera_dim = dc.id_camera_dim
+JOIN dim_client dcl ON fr.id_client_dim = dcl.id_client_dim
+WHERE
+      dcl.id_client_dim = 15
+GROUP BY
+    ROLLUP (dc.clasa_confort, dc.categorie_camera), dcl.nume, dcl.prenume;
+
+-- afisare plan executie
+SELECT *
+FROM
+table(dbms_xplan.display('plan_table', 'ex_6','serial'));
+
+-- 7.
+-- GRANT CREATE DIMENSION, CREATE MATERIALIZED VIEW, QUERY REWRITE TO DIANA;
+
+-- clasa confort "Luxury" are categoriile de camere: "Deluxe", "Royal"
+-- clasa confort "Standard" are categoriile de camere: "Basic", "Economy", "Family"
+CREATE DIMENSION dim_camera_obj
+   LEVEL camera             IS dim_camera.id_camera_dim
+   LEVEL categorie          IS dim_camera.categorie_camera
+   LEVEL clasa_confort      IS dim_camera.clasa_confort
+
+   HIERARCHY camera_rollup (
+      camera        CHILD OF
+      categorie     CHILD OF
+      clasa_confort
    );
 
-create index idx_fact_camera on
-   fact_rezervari (
-      camera_key
+   ATTRIBUTE camera        DETERMINES (dim_camera.id_camera_oltp, dim_camera.nr_camera, dim_camera.tip_camera, dim_camera.pret)
+   ATTRIBUTE categorie     DETERMINES (dim_camera.categorie_camera)
+   ATTRIBUTE clasa_confort DETERMINES (dim_camera.clasa_confort);
+
+-- validare obiect dimensiune camera
+CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_camera_obj'), FALSE, TRUE, 'st_dim_camera_obj');
+SELECT * FROM DIMENSION_EXCEPTIONS WHERE STATEMENT_ID = 'st_dim_camera_obj'; -- zero exceptii == e valid
+
+CREATE DIMENSION dim_timp_obj
+   LEVEL zi    IS dim_timp.data_completa
+   LEVEL luna  IS dim_timp.luna_an
+   LEVEL an    IS dim_timp.an
+
+   HIERARCHY timp_rollup (
+      zi    CHILD OF
+      luna  CHILD OF
+      an
    );
 
-explain plan
-   for
-select sum(fr.suma_totala) as venit_double
-  from fact_rezervari fr
-  join dim_camera dc
-on fr.camera_key = dc.camera_key
- where dc.tip_camera = 'Double';
+   ATTRIBUTE zi DETERMINES (dim_timp.zi, dim_timp.data_completa)
+   ATTRIBUTE luna DETERMINES (dim_timp.luna)
+   ATTRIBUTE an DETERMINES (dim_timp.an);
 
--- Planul de Executie
-select plan_table_output
-  from table ( dbms_xplan.display() );
+-- validare obiect dimensiune timp
+CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_timp_obj'), FALSE, TRUE, 'st_dim_timp_obj');
+SELECT * FROM DIMENSION_EXCEPTIONS WHERE STATEMENT_ID = 'st_dim_timp_obj'; -- zero exceptii == e valid
 
---7. Definirea obiectelor de tip dimensiune, validarea acestora (din care să reiasă că datele respectă constrângerile impuse prin aceste tipuri de obiecte)
--- VALIDARE DIM_CLIENT
-select count(*) as numar_valori_invalide
-  from dim_client
- where nume is null
-    or prenume is null;
-
--- VALIDARE DIM_CAMERA
-select count(*) as numar_valori_invalide
-  from dim_camera
- where pret <= 0
-    or tip_camera is null;
-
--- VALIDARE DIM_SERVICIU
-select count(*) as numar_valori_invalide
-  from dim_serviciu
- where pret_serviciu < 0;
-
--- VALIDARE DIM_EVENIMENT
-select count(*) as numar_valori_invalide
-  from dim_eveniment
- where nume_eveniment is null;
-
--- VALIDARE DIM_TIMP
-select count(*) as numar_valori_invalide
-  from dim_timp
- where ( zi not between 1 and 31 )
-    or ( luna not between 1 and 12 )
-    or ( an not between 1900 and 2100 );
+-- toate obiectele dimensiune definite
+SELECT dimension_name FROM user_dimensions;
 
 
--- VALIDARE DIM_METODA_PLATA
-select count(*) as numar_valori_invalide
-  from dim_metoda_plata
- where metoda_plata is null
-    or tip_tranzactie is null;
+-- 8.
+CREATE TABLE fact_rezervari_part (
+   id_rezervare         NUMBER PRIMARY KEY,
+   id_rezervare_oltp    NUMBER,
+   id_client_dim        NUMBER,
+   id_camera_dim        NUMBER,
+   id_serviciu_dim      NUMBER,
+   id_eveniment_dim     NUMBER,
+   id_data_start        DATE NOT NULL,
+   id_data_final        DATE NOT NULL,
+   id_metoda_plata_dim  NUMBER,
+   suma_totala          NUMBER(10,2),
 
--- 8. Definirea partițiilor; definirea cererilor SQL însoțite de planul de execuție al acestora din care să reiasă ca optimizorul utilizează eficient partițiile
--- Cerere SQL: Volumul total de vanzari si comisionul bancar estimat (1.5%) doar pentru platile electronice (Card si Transfer) grupate dupa tipul platii si ordonate descrescator.
-
-drop table fact_rezervari cascade constraints;
-
-create table fact_rezervari (
-   rezervare_key     number primary key,
-   id_rezervare_oltp number,
-   client_key        number,
-   camera_key        number,
-   serviciu_key      number,
-   eveniment_key     number,
-   timp_key          number,
-   metoda_plata_key  number,
-   suma_totala       number(10,2),
-   foreign key ( client_key )
-      references dim_client ( client_key ),
-   foreign key ( camera_key )
-      references dim_camera ( camera_key ),
-   foreign key ( serviciu_key )
-      references dim_serviciu ( serviciu_key ),
-   foreign key ( eveniment_key )
-      references dim_eveniment ( eveniment_key ),
-   foreign key ( timp_key )
-      references dim_timp ( timp_key ),
-   foreign key ( metoda_plata_key )
-      references dim_metoda_plata ( metoda_plata_key )
+   CONSTRAINT fk_dim_client FOREIGN KEY (id_client_dim)
+      REFERENCES dim_client (id_client_dim),
+   CONSTRAINT fk_dim_camera FOREIGN KEY (id_camera_dim)
+      REFERENCES dim_camera (id_camera_dim),
+   CONSTRAINT fk_dim_serviciu FOREIGN KEY (id_serviciu_dim)
+      REFERENCES dim_serviciu (id_serviciu_dim),
+   CONSTRAINT fk_dim_eveniment FOREIGN KEY (id_eveniment_dim)
+      REFERENCES dim_eveniment (id_eveniment_dim),
+   CONSTRAINT fk_dim_data_start FOREIGN KEY (id_data_start)
+      REFERENCES dim_timp (data_completa),
+   CONSTRAINT fk_dim_data_final FOREIGN KEY (id_data_final)
+      REFERENCES dim_timp (data_completa),
+   CONSTRAINT fk_dim_metoda_plata FOREIGN KEY (id_metoda_plata_dim)
+      REFERENCES dim_metoda_plata (id_metoda_plata_dim)
 )
-   partition by list ( metoda_plata_key ) (
-    -- PARTITIA 1: Plati Electronice (Card + Transfer)
-    -- Presupunem ID 1=Card, 3=Transfer.
-    partition p_plati_electronice values ( 1,
-                                                                                   3 ),
+PARTITION BY RANGE (id_data_start) (
+   PARTITION p_timp_ani_anteriori VALUES LESS THAN (date '2023-01-01'),
+   PARTITION p_timp_2023 VALUES LESS THAN (date '2024-01-01'),
+   PARTITION p_timp_2024 VALUES LESS THAN (date '2025-01-01'),
+   PARTITION p_timp_2025 VALUES LESS THAN (date '2026-01-01')
+);
+insert into fact_rezervari_part  (select * from fact_rezervari);
 
-    -- PARTITIA 2: Plati Numerar (Cash)
-    -- Presupunem ID 2=Cash.
-      partition p_plati_cash values ( 2 )
-   );
+BEGIN
+    DBMS_STATS.GATHER_TABLE_STATS(
+    ownname => USER,
+    tabname => 'FACT_REZERVARI_PART',
+    cascade => TRUE
+  );
+END;
+/
 
-alter table fact_rezervari add partition p_necunoscut values ( null );
-
-alter table fact_rezervari drop primary key;
-
-alter table fact_rezervari
-add constraint pk_fact_rezervari
-primary key (id_rezervare_oltp, camera_key);
-
-insert into fact_rezervari (
-   rezervare_key,
-   id_rezervare_oltp,
-   client_key,
-   camera_key,
-   timp_key,
-   metoda_plata_key,
-   suma_totala
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_8_part' FOR
+WITH Rezervari AS (
+    SELECT
+        dc.id_client_dim,
+        dc.nume || ' ' || dc.prenume AS nume_client,
+        fr.id_data_start AS data_checkin,
+        SUM(fr.suma_totala) AS total_sejur
+    FROM fact_rezervari_part fr
+    JOIN dim_client dc ON fr.id_client_dim = dc.id_client_dim
+    WHERE id_data_start BETWEEN date '2025-01-01' AND date '2025-12-31'
+    GROUP BY fr.id_rezervare_oltp, dc.id_client_dim, dc.nume, dc.prenume, fr.id_data_start
 )
-select
-   r.id_rezervare,
-   r.id_rezervare,
-   dc.client_key,
-   dcam.camera_key,
-   dt.timp_key,
-   dmp.metoda_plata_key,
-   rc.pret_rezervare
-from rezervare r
-join dim_client dc
-   on dc.id_client_oltp = r.id_client
-join rezervare_camera rc
-   on rc.id_rezervare = r.id_rezervare
-join dim_camera dcam
-   on dcam.id_camera_oltp = rc.id_camera
-join dim_timp dt
-   on dt.data_completa = r.data_rezervare
-join plata p
-   on p.id_rezervare = r.id_rezervare
-join dim_metoda_plata dmp
-   on dmp.metoda_plata = p.metoda_plata;
+SELECT
+    nume_client,
+    data_checkin,
+    total_sejur,
+    NVL(LAG(data_checkin, 1) OVER (
+        PARTITION BY id_client_dim
+        ORDER BY data_checkin
+    ), data_checkin) AS data_vizita_anterioara,
+    data_checkin - NVL(LAG(data_checkin, 1) OVER (
+        PARTITION BY id_client_dim
+        ORDER BY data_checkin
+    ), data_checkin) AS zile_de_la_ultima_vizita
+FROM Rezervari
+ORDER BY nume_client, data_checkin;
 
-explain plan
-   for
-select dmp.metoda_plata as tip_plata,
-       count(fr.rezervare_key) as numar_tranzactii,
-       sum(fr.suma_totala) as volum_total_procesat,
-       round(
-          sum(fr.suma_totala) * 0.015,
-          2
-       ) as comision_bancar_estimat
-  from fact_rezervari fr
-  join dim_metoda_plata dmp
-on fr.metoda_plata_key = dmp.metoda_plata_key
- where fr.metoda_plata_key in ( 1,
-                                3 )
- group by dmp.metoda_plata
- order by volum_total_procesat desc;
--- Plan executie
-select plan_table_output
-  from table ( dbms_xplan.display() );
-
--- 10. Crearea rapoartelor cu complexitate diferită (la acest nivel vor fi scripturi SQL, fără reprezentare grafică)
--- 1.Afișează suma totală plătită pentru fiecare tip de cameră, pe lunile decembrie 2025.
-select dc.tip_camera as tip_camara,
-       sum(fr.suma_totala) as suma_totala_platita_dec_2025
-  from fact_rezervari fr
-  join dim_camera dc
-on fr.camera_key = dc.camera_key
-  join dim_timp dt
-on fr.timp_key = dt.timp_key
- where dt.an = 2025
-   and dt.luna = 12
- group by dc.tip_camera;
-
--- 2.Afișează numărul de rezervări și suma totală plătită de fiecare client care a participat la evenimente în decembrie 2025.
-select dc.nume
-       || ' '
-       || dc.prenume client,
-       count(fr.rezervare_key) numar_rezervari,
-       sum(fr.suma_totala) suma_platita
-  from fact_rezervari fr
-  join dim_client dc
-on fr.client_key = dc.client_key
-  join dim_eveniment de
-on fr.eveniment_key = de.eveniment_key
-  join dim_timp dt
-on fr.timp_key = dt.timp_key
- where dt.an = 2025
-   and dt.luna = 12
- group by dc.client_key,
-          dc.nume,
-          dc.prenume;
-
--- 3.Afișează evoluția veniturilor generate de serviciile prestate în fiecare săptămână din luna decembrie 2025.
-select to_char(
-   dt.data_completa,
-   'WW'
-) saptamana,
-       sum(ds.pret_serviciu) venit_servicii
-  from fact_rezervari fr
-  join dim_timp dt
-on fr.timp_key = dt.timp_key
-  join dim_serviciu ds
-on fr.serviciu_key = ds.serviciu_key
- where dt.an = 2025
-   and dt.luna = 12
- group by to_char(
-   dt.data_completa,
-   'WW'
-)
- order by saptamana;
-
--- 4.Afișează suma totală plătită pentru rezervări, grupată pe tipul camerei și tipul metodei de plată, pentru clienții care au participat la evenimente.
-select dc.tip_camera tip_camera,
-       dmp.metoda_plata metoda_plata,
-       sum(fr.suma_totala) suma_totala_rezervari
-  from fact_rezervari fr
-  join dim_camera dc
-on fr.camera_key = dc.camera_key
-  join dim_metoda_plata dmp
-on fr.metoda_plata_key = dmp.metoda_plata_key
- where fr.eveniment_key is not null
- group by dc.tip_camera,
-          dmp.metoda_plata_key,
-          dmp.metoda_plata
- order by dc.tip_camera;
-
--- 5.Afișează top 5 clienți care au cheltuit cel mai mult în hotel în decembrie 2025, împreună cu numărul de rezervări și suma totală plătită, ordonate descrescător după suma totală.
-select dc.nume
-       || ' '
-       || dc.prenume client,
-       count(fr.rezervare_key) numar_rezervari,
-       sum(fr.suma_totala) suma_platita
-  from fact_rezervari fr
-  join dim_client dc
-on fr.client_key = dc.client_key
-  join dim_eveniment de
-on fr.eveniment_key = de.eveniment_key
-  join dim_timp dt
-on fr.timp_key = dt.timp_key
- where dt.an = 2025
-   and dt.luna = 12
- group by dc.client_key,
-          dc.nume,
-          dc.prenume
- order by suma_platita desc
- fetch first 5 rows only;
+-- afiare plan executie
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_8_part','serial'));
 
 
-commit;
+-- 9
+-- optimizare prin index bitmap
+CREATE BITMAP INDEX idx_fact_camera
+ON fact_rezervari (id_camera_dim);
+
+BEGIN
+DBMS_STATS.GATHER_TABLE_STATS('DIANA', 'FACT_REZERVARI', cascade=>TRUE);
+DBMS_STATS.GATHER_TABLE_STATS('DIANA', 'DIM_TIMP', cascade=>TRUE);
+END;
+/
+
+-- definire cerere
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
+SELECT f.id_camera_dim,
+       dm.metoda_plata,
+       dm.tip_tranzactie,
+       dt.an,
+       dt.luna,
+       SUM(f.suma_totala)                                                          AS venit_metoda_plata,
+       ROUND(
+               (SUM(f.suma_totala) /
+                SUM(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna)) * 100,
+               2)                                                                  AS procent_din_venit_total,
+       SUM(f.suma_totala) -
+       AVG(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna) AS deviata_fata_de_media_camerei
+FROM fact_rezervari f
+         JOIN dim_metoda_plata dm ON f.id_metoda_plata_dim = dm.id_metoda_plata_dim
+         JOIN dim_timp dt ON f.id_data_start = dt.data_completa
+WHERE f.id_metoda_plata_dim IN (2, 3)
+  AND f.id_camera_dim BETWEEN 1 AND 5
+  AND dt.an = 2024
+GROUP BY f.id_camera_dim, dm.metoda_plata, dm.tip_tranzactie, dt.an, dt.luna
+ORDER BY f.id_camera_dim, dt.an, dt.luna, venit_metoda_plata DESC;
+
+-- afisare plan executie
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_9','serial'));
