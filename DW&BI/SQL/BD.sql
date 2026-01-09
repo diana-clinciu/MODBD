@@ -1296,42 +1296,6 @@ SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_8_part','serial'));
 -- GROUP BY dt.an, dc.nume;
 
 -- 9
--- optimizare prin index bitmap
-CREATE BITMAP INDEX idx_fact_camera
-ON fact_rezervari (id_camera_dim);
-
-BEGIN
-DBMS_STATS.GATHER_TABLE_STATS('DIANA', 'FACT_REZERVARI', cascade=>TRUE);
-DBMS_STATS.GATHER_TABLE_STATS('DIANA', 'DIM_TIMP', cascade=>TRUE);
-END;
-/
-
--- definire cerere
-EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
-SELECT f.id_camera_dim,
-       dm.metoda_plata,
-       dm.tip_tranzactie,
-       dt.an,
-       dt.luna,
-       SUM(f.suma_totala)                                                          AS venit_metoda_plata,
-       ROUND(
-               (SUM(f.suma_totala) /
-                SUM(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna)) * 100,
-               2)                                                                  AS procent_din_venit_total,
-       SUM(f.suma_totala) -
-       AVG(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna) AS deviata_fata_de_media_camerei
-FROM fact_rezervari f
-         JOIN dim_metoda_plata dm ON f.id_metoda_plata_dim = dm.id_metoda_plata_dim
-         JOIN dim_timp dt ON f.id_data_start = dt.data_completa
-WHERE f.id_metoda_plata_dim IN (2, 3)
-  AND f.id_camera_dim BETWEEN 1 AND 5
-  AND dt.an = 2024
-GROUP BY f.id_camera_dim, dm.metoda_plata, dm.tip_tranzactie, dt.an, dt.luna
-ORDER BY f.id_camera_dim, dt.an, dt.luna, venit_metoda_plata DESC;
-
--- afisare plan executie
-SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_9','serial'));
-
 
 -- EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
 -- WITH venit_lunar AS (
@@ -1384,3 +1348,79 @@ SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_9','serial'));
 --         ) AS diferenta_lunara
 -- FROM venit_lunar
 -- ORDER BY categorie_camera, an, luna;
+
+
+-- 10.
+-- cerere 1:
+WITH venituri_lunare AS (
+    SELECT
+        t.luna,
+        SUM(CASE WHEN t.an = 2024 THEN f.suma_totala ELSE 0 END) as venit_lunar_2024,
+        SUM(CASE WHEN t.an = 2025 THEN f.suma_totala ELSE 0 END) as venit_lunar_2025
+    FROM fact_rezervari f
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an IN (2024, 2025)
+    GROUP BY t.luna
+)
+SELECT
+    luna,
+    SUM(venit_lunar_2024) OVER (
+        ORDER BY luna
+        ROWS UNBOUNDED PRECEDING
+    ) as cumulat_2024,
+    SUM(venit_lunar_2025) OVER (
+        ORDER BY luna
+        ROWS UNBOUNDED PRECEDING
+    ) as cumulat_2025
+FROM venituri_lunare
+ORDER BY luna;
+
+
+-- cerere 2:
+SELECT f.id_camera_dim,
+       dm.metoda_plata,
+       dm.tip_tranzactie,
+       dt.an,
+       dt.luna,
+       SUM(f.suma_totala)                                                          AS venit_metoda_plata,
+       ROUND(
+               (SUM(f.suma_totala) /
+                SUM(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna)) * 100,
+               2)                                                                  AS procent_din_venit_total,
+       SUM(f.suma_totala) -
+       AVG(SUM(f.suma_totala)) OVER (PARTITION BY f.id_camera_dim, dt.an, dt.luna) AS deviata_fata_de_media_camerei
+FROM fact_rezervari f
+         JOIN dim_metoda_plata dm ON f.id_metoda_plata_dim = dm.id_metoda_plata_dim
+         JOIN dim_timp dt ON f.id_data_start = dt.data_completa
+WHERE f.id_metoda_plata_dim IN (2, 3)
+  AND dt.an = 2024
+GROUP BY f.id_camera_dim, dm.metoda_plata, dm.tip_tranzactie, dt.an, dt.luna
+ORDER BY f.id_camera_dim, dt.an, dt.luna, venit_metoda_plata DESC;
+
+-- cerere 3:
+WITH clienti_vip AS (
+    SELECT id_client_dim
+    FROM (
+        SELECT
+            id_client_dim,
+            SUM(suma_totala) as total_cheltuit,
+            NTILE(20) OVER (ORDER BY SUM(suma_totala) DESC) as tile -- impartim in grupuri de 5%
+        FROM fact_rezervari
+        GROUP BY id_client_dim
+    )
+    WHERE tile = 1 -- primii 5%
+),
+numar_rezervari_per_categorie AS (
+    SELECT
+        c.categorie_camera,
+        COUNT(*) as numar_rezervari
+    FROM clienti_vip tc
+    JOIN fact_rezervari f ON f.id_client_dim = tc.id_client_dim
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    GROUP BY c.categorie_camera
+)
+SELECT
+    categorie_camera,
+    numar_rezervari,
+    ROUND(RATIO_TO_REPORT(numar_rezervari) OVER () * 100, 2) as procent
+FROM numar_rezervari_per_categorie;
