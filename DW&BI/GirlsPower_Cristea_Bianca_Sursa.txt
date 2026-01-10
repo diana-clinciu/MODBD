@@ -1246,6 +1246,91 @@ ORDER BY nume_client, data_checkin;
 -- afiare plan executie
 SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_8_part','serial'));
 
+-- 9
+-- cerere de optimizat:
+-- pentru fiecare client care a rezervat camera 1001 sa se afle:
+--      - venitul lunar generat pentru acea camera
+--      - clasamentul sau in cadrul lunii in functie de venitul lunar generat
+-- vom clasifica clientii ca fiind:
+--      -"VIP luna" daca sunt pe locul 1,
+--      - "Top 3" daca sunt pe primele 3 locuri
+--      - "Standard" altfel
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
+WITH
+vanzari_per_client AS (
+    SELECT
+        t.an,
+        t.luna,
+        cl.nume,
+        SUM(f.suma_totala) AS venit_generat
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_client cl ON f.id_client_dim = cl.id_client_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE c.nr_camera = 1001
+    GROUP BY t.an, t.luna, cl.nume
+),
+clasamente AS (
+    SELECT
+        an,
+        luna,
+        nume,
+        venit_generat,
+        DENSE_RANK() OVER (
+            PARTITION BY an, luna
+            ORDER BY venit_generat DESC
+        ) AS rang_lunar
+    FROM vanzari_per_client
+)
+SELECT
+    an,
+    luna,
+    nume,
+    venit_generat,
+    rang_lunar,
+    CASE
+        WHEN rang_lunar = 1 THEN 'VIP Luna'
+        WHEN rang_lunar <= 3 THEN 'Top 3'
+        ELSE 'Standard'
+    END AS status_client
+FROM clasamente
+ORDER BY an, luna, rang_lunar;
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_9','serial'));
+
+-- optimizare 1: Bitmap join index pe numar camera
+CREATE BITMAP INDEX bji_rezervari_camera
+ON fact_rezervari(c.nr_camera)
+FROM fact_rezervari f, dim_camera c
+WHERE f.id_camera_dim = c.id_camera_dim;
+
+-- optimizare 2: materialized view
+GRANT QUERY REWRITE TO DIANA;
+ALTER SESSION SET QUERY_REWRITE_ENABLED = TRUE;
+
+CREATE MATERIALIZED VIEW materialized_view_client_1001
+BUILD IMMEDIATE
+REFRESH COMPLETE ON DEMAND
+ENABLE QUERY REWRITE -- foloseste automat vizualizarea materializata
+AS
+SELECT
+    c.nr_camera,
+    cl.nume,
+    t.an,
+    t.luna,
+    SUM(f.suma_totala) AS venit_total
+FROM fact_rezervari f
+JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+JOIN dim_client cl ON f.id_client_dim = cl.id_client_dim
+JOIN dim_timp t ON f.id_data_start = t.data_completa
+WHERE c.nr_camera = 1001
+GROUP BY c.nr_camera, cl.nume, t.an, t.luna;
+
+-- actualizare view manual
+BEGIN
+    DBMS_MVIEW.REFRESH('materialized_view_client_1001');
+END;
+/
+
 -- 10.
 -- cerere 1:
 WITH venituri_lunare AS (

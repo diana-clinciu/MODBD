@@ -1175,20 +1175,6 @@ SELECT dimension_name FROM user_dimensions;
 
 
 -- 8.
--- CREATE TABLE dim_timp_part (
---    data_completa DATE PRIMARY KEY,
---    zi            NUMBER,
---    luna          NUMBER,
---    an            NUMBER,
---    luna_an       VARCHAR2(20)
--- )
--- PARTITION BY RANGE (an) (
---    PARTITION p_timp_ani_anteriori VALUES LESS THAN (2023),
---    PARTITION p_timp_2023 VALUES LESS THAN (2024),
---    PARTITION p_timp_2024 VALUES LESS THAN (2025),
---    PARTITION p_timp_2025 VALUES LESS THAN (2026)
--- );
-
 CREATE TABLE fact_rezervari_part (
    id_rezervare         NUMBER PRIMARY KEY,
    id_rezervare_oltp    NUMBER,
@@ -1222,11 +1208,7 @@ PARTITION BY RANGE (id_data_start) (
    PARTITION p_timp_2024 VALUES LESS THAN (date '2025-01-01'),
    PARTITION p_timp_2025 VALUES LESS THAN (date '2026-01-01')
 );
---insert into dim_timp_part  (select * from dim_timp);
 insert into fact_rezervari_part  (select * from fact_rezervari);
-
--- CREATE INDEX idx_fr_data_start_local ON fact_rezervari_part(id_data_start) LOCAL;
--- CREATE BITMAP INDEX idx_fr_client_local ON fact_rezervari_part(id_client_dim) LOCAL;
 
 BEGIN
     DBMS_STATS.GATHER_TABLE_STATS(
@@ -1281,74 +1263,90 @@ ORDER BY nume_client, data_checkin;
 -- afiare plan executie
 SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_8_part','serial'));
 
--- EXPLAIN PLAN SET STATEMENT_ID = 'ex_8' FOR
--- SELECT
---     dt.an,
---     dc.nume,
---     SUM(fr.suma_totala) as total_cheltuit,
---     DENSE_RANK() OVER (PARTITION BY dt.an ORDER BY SUM(fr.suma_totala) DESC) as rang_client,
---     RATIO_TO_REPORT(SUM(fr.suma_totala)) OVER (PARTITION BY dt.an) * 100 as procent_din_venit,
---     SUM(fr.suma_totala) - AVG(SUM(fr.suma_totala)) OVER (PARTITION BY dt.an) as diferenta_fata_de_medie
--- FROM fact_rezervari fr
--- JOIN dim_timp dt ON fr.id_data_start = dt.id_timp_dim
--- JOIN dim_client dc ON fr.id_client_dim = dc.id_client_dim
--- WHERE dt.an = 2025 -- Filtrul Critic
--- GROUP BY dt.an, dc.nume;
-
 -- 9
+-- cerere de optimizat:
+-- pentru fiecare client care a rezervat camera 1001 sa se afle:
+--      - venitul lunar generat pentru acea camera
+--      - clasamentul sau in cadrul lunii in functie de venitul lunar generat
+-- vom clasifica clientii ca fiind:
+--      -"VIP luna" daca sunt pe locul 1,
+--      - "Top 3" daca sunt pe primele 3 locuri
+--      - "Standard" altfel
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
+WITH
+vanzari_per_client AS (
+    SELECT
+        t.an,
+        t.luna,
+        cl.nume,
+        SUM(f.suma_totala) AS venit_generat
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_client cl ON f.id_client_dim = cl.id_client_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE c.nr_camera = 1001
+    GROUP BY t.an, t.luna, cl.nume
+),
+clasamente AS (
+    SELECT
+        an,
+        luna,
+        nume,
+        venit_generat,
+        DENSE_RANK() OVER (
+            PARTITION BY an, luna
+            ORDER BY venit_generat DESC
+        ) AS rang_lunar
+    FROM vanzari_per_client
+)
+SELECT
+    an,
+    luna,
+    nume,
+    venit_generat,
+    rang_lunar,
+    CASE
+        WHEN rang_lunar = 1 THEN 'VIP Luna'
+        WHEN rang_lunar <= 3 THEN 'Top 3'
+        ELSE 'Standard'
+    END AS status_client
+FROM clasamente
+ORDER BY an, luna, rang_lunar;
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_9','serial'));
 
--- EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
--- WITH venit_lunar AS (
---     SELECT
---         t.an,
---         t.luna,
---         t.luna_an,
---         cam.categorie_camera,
---         SUM(f.suma_totala) AS venit
---     FROM fact_rezervari f, dim_camera cam, dim_timp t
---     WHERE t.an = 2025
---       AND t.luna IN (12, 1, 2)
---       AND f.id_metoda_plata_dim = 2
---       AND f.id_camera_dim = 1
---       --AND f.id_client_dim = 1
---       AND f.id_camera_dim = cam.id_camera_dim
---       AND f.id_data_start = t.id_timp_dim
---     GROUP BY t.an, t.luna, t.luna_an, cam.categorie_camera
--- )
--- SELECT
---     an,
---     luna,
---     luna_an,
---     categorie_camera,
---     venit,
---
---     -- procent din totalul lunar
---     ROUND(
---         venit / SUM(venit) OVER (PARTITION BY an, luna) * 100,
---         2
---     ) AS procent_din_luna,
---
---     -- rank lunar
---     RANK() OVER (
---         PARTITION BY an, luna
---         ORDER BY venit DESC
---     ) AS rank_lunar,
---
---     -- venit luna anterioara (pentru aceeasi categorie)
---     LAG(venit) OVER (
---         PARTITION BY categorie_camera
---         ORDER BY an, luna
---     ) AS venit_luna_anterioara,
---
---     -- diferenta fata de luna precedenta
---     venit
---       - LAG(venit) OVER (
---             PARTITION BY categorie_camera
---             ORDER BY an, luna
---         ) AS diferenta_lunara
--- FROM venit_lunar
--- ORDER BY categorie_camera, an, luna;
+-- optimizare 1: Bitmap join index pe numar camera => Cost = 13
+CREATE BITMAP INDEX bji_rezervari_camera
+ON fact_rezervari(c.nr_camera)
+FROM fact_rezervari f, dim_camera c
+WHERE f.id_camera_dim = c.id_camera_dim;
 
+-- optimizare 2: materialized view
+GRANT QUERY REWRITE TO DIANA;
+ALTER SESSION SET QUERY_REWRITE_ENABLED = TRUE;
+
+CREATE MATERIALIZED VIEW materialized_view_client_1001
+BUILD IMMEDIATE
+REFRESH COMPLETE ON DEMAND
+ENABLE QUERY REWRITE -- foloseste automat vizualizarea materializata
+AS
+SELECT
+    c.nr_camera,
+    cl.nume,
+    t.an,
+    t.luna,
+    SUM(f.suma_totala) AS venit_total
+FROM fact_rezervari f
+JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+JOIN dim_client cl ON f.id_client_dim = cl.id_client_dim
+JOIN dim_timp t ON f.id_data_start = t.data_completa
+WHERE c.nr_camera = 1001
+GROUP BY c.nr_camera, cl.nume, t.an, t.luna;
+
+-- actualizare view manual
+BEGIN
+    DBMS_MVIEW.REFRESH('materialized_view_client_1001');
+END;
+/
 
 -- 10.
 -- cerere 1:
