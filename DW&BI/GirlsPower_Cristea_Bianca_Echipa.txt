@@ -3,8 +3,8 @@ Echipa Girls' Power (3 persoane)
 
 Task-uri realizate de fiecare membru al echipei:
 
-1. Cristea Bianca -> Modul analiza (1,2,3,4)
-                  -> crearea bazei de date OLTP si inserare date
+1. Cristea Bianca -> Modul analiza (1,2,3,4,jumătate din 10)
+		  -> Modul backend (1,2)
 
 
 2. Aldea Alexia   -> Modulul analiza (5)
@@ -12,5 +12,5 @@ Task-uri realizate de fiecare membru al echipei:
                   -> Modulul Frontend (+ Descrierea aplicatiei)
 
 
-3. Diana 	      ->  Modulul analiza (6,7,8,9,10) modificate
+3. Diana 	  ->  Modulul analiza (6,7,8,9,10) modificate
                   ->  Modulul backend (6,7,8,9,10)
