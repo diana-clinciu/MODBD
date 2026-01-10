@@ -1052,11 +1052,6 @@ alter table dim_timp modify
 alter table dim_timp modify
    an check ( an between 1900 and 2100 );
 
--- O zi apare o singura data in dim_timp
-alter table dim_timp
-add constraint uq_dim_timp_data
-unique (data_completa);
-
 -- DIM METODA_PLATA
 alter table dim_metoda_plata modify
    metoda_plata not null;
@@ -1137,15 +1132,15 @@ CREATE DIMENSION dim_camera_obj
    LEVEL categorie          IS dim_camera.categorie_camera
    LEVEL clasa_confort      IS dim_camera.clasa_confort
 
+   ATTRIBUTE camera        DETERMINES (dim_camera.id_camera_oltp, dim_camera.nr_camera, dim_camera.tip_camera, dim_camera.pret)
+   ATTRIBUTE categorie     DETERMINES (dim_camera.categorie_camera)
+   ATTRIBUTE clasa_confort DETERMINES (dim_camera.clasa_confort)
+
    HIERARCHY camera_rollup (
       camera        CHILD OF
       categorie     CHILD OF
       clasa_confort
    );
-
-   ATTRIBUTE camera        DETERMINES (dim_camera.id_camera_oltp, dim_camera.nr_camera, dim_camera.tip_camera, dim_camera.pret)
-   ATTRIBUTE categorie     DETERMINES (dim_camera.categorie_camera)
-   ATTRIBUTE clasa_confort DETERMINES (dim_camera.clasa_confort);
 
 -- validare obiect dimensiune camera
 CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_camera_obj'), FALSE, TRUE, 'st_dim_camera_obj');
@@ -1156,15 +1151,15 @@ CREATE DIMENSION dim_timp_obj
    LEVEL luna  IS dim_timp.luna_an
    LEVEL an    IS dim_timp.an
 
+   ATTRIBUTE zi DETERMINES (dim_timp.zi, dim_timp.data_completa)
+   ATTRIBUTE luna DETERMINES (dim_timp.luna)
+   ATTRIBUTE an DETERMINES (dim_timp.an)
+
    HIERARCHY timp_rollup (
       zi    CHILD OF
       luna  CHILD OF
       an
    );
-
-   ATTRIBUTE zi DETERMINES (dim_timp.zi, dim_timp.data_completa)
-   ATTRIBUTE luna DETERMINES (dim_timp.luna)
-   ATTRIBUTE an DETERMINES (dim_timp.an);
 
 -- validare obiect dimensiune timp
 CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_timp_obj'), FALSE, TRUE, 'st_dim_timp_obj');
@@ -1424,3 +1419,135 @@ SELECT
     numar_rezervari,
     ROUND(RATIO_TO_REPORT(numar_rezervari) OVER () * 100, 2) as procent
 FROM numar_rezervari_per_categorie;
+
+-- cerere 4:
+WITH venituri_anuale AS (
+    SELECT 
+        c.categorie_camera,
+        AVG(f.suma_totala) as venit_mediu_anual
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY c.categorie_camera
+),
+venituri_trimestriale AS (
+    SELECT 
+        c.categorie_camera,
+        CEIL(t.luna / 3.0) as trimestru,
+        COUNT(*) as numar_rezervari,
+        AVG(f.suma_totala) as venit_mediu_rezervare
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY c.categorie_camera, CEIL(t.luna / 3.0)
+)
+SELECT 
+    vt.categorie_camera,
+    vt.trimestru,
+    vt.numar_rezervari,
+    ROUND(vt.venit_mediu_rezervare, 2) as venit_mediu_rezervare,
+    ROUND(
+        ((vt.venit_mediu_rezervare - va.venit_mediu_anual) / va.venit_mediu_anual) * 100, 
+        2
+    ) as diferenta_procentuala_fata_de_medie_anuala
+FROM venituri_trimestriale vt
+JOIN venituri_anuale va ON vt.categorie_camera = va.categorie_camera
+ORDER BY vt.categorie_camera, vt.trimestru;
+
+-- cerere 5:
+WITH camere_count AS (
+    SELECT 
+        f.id_metoda_plata_dim,
+        f.id_camera_dim,
+        COUNT(*) AS numar_rezervari,
+        SUM(f.suma_totala) AS venit_total
+    FROM fact_rezervari f
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY f.id_metoda_plata_dim, f.id_camera_dim
+),
+
+top_camere AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        numar_rezervari,
+        venit_total,
+        ROW_NUMBER() OVER (
+            PARTITION BY id_metoda_plata_dim
+            ORDER BY numar_rezervari DESC
+        ) AS rank_camera
+    FROM camere_count
+),
+
+venituri_lunare AS (
+    SELECT 
+        tc.id_metoda_plata_dim,
+        tc.id_camera_dim,
+        t.luna,
+        SUM(f.suma_totala) AS venit_lunar
+    FROM top_camere tc
+    JOIN fact_rezervari f 
+        ON tc.id_camera_dim = f.id_camera_dim 
+       AND tc.id_metoda_plata_dim = f.id_metoda_plata_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE tc.rank_camera <= 3 AND t.an = 2024
+    GROUP BY tc.id_metoda_plata_dim, tc.id_camera_dim, t.luna
+),
+
+rate_crestere AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        AVG(
+            CASE 
+                WHEN prev_venit > 0 THEN ((venit_lunar - prev_venit)/prev_venit)*100
+                ELSE 0
+            END
+        ) AS rata_crestere_medie
+    FROM (
+        SELECT 
+            id_metoda_plata_dim,
+            id_camera_dim,
+            luna,
+            venit_lunar,
+            LAG(venit_lunar) OVER (
+                PARTITION BY id_metoda_plata_dim, id_camera_dim 
+                ORDER BY luna
+            ) AS prev_venit
+        FROM venituri_lunare
+    )
+    GROUP BY id_metoda_plata_dim, id_camera_dim
+),
+
+procent_contributie AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        venit_total,
+        (venit_total / SUM(venit_total) OVER (PARTITION BY id_metoda_plata_dim)) * 100 AS contributie_procentuala
+    FROM top_camere
+    WHERE rank_camera <= 3
+)
+
+SELECT 
+    mp.metoda_plata,
+    c.categorie_camera,
+    c.nr_camera,
+    tc.numar_rezervari,
+    ROUND(pc.venit_total, 2) AS valoare_totala,
+    ROUND(pc.contributie_procentuala, 2) AS contributie_procentuala,
+    ROUND(rc.rata_crestere_medie, 2) AS rata_crestere_lunara_medie
+FROM top_camere tc
+JOIN procent_contributie pc 
+    ON tc.id_metoda_plata_dim = pc.id_metoda_plata_dim 
+   AND tc.id_camera_dim = pc.id_camera_dim
+JOIN rate_crestere rc 
+    ON tc.id_metoda_plata_dim = rc.id_metoda_plata_dim 
+   AND tc.id_camera_dim = rc.id_camera_dim
+JOIN dim_camera c ON tc.id_camera_dim = c.id_camera_dim
+JOIN dim_metoda_plata mp ON tc.id_metoda_plata_dim = mp.id_metoda_plata_dim
+WHERE tc.rank_camera <= 3
+ORDER BY mp.metoda_plata, tc.numar_rezervari DESC;

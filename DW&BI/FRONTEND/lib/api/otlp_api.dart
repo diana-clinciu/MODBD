@@ -71,12 +71,23 @@ final class OtlpApi extends ClientApi {
   }
 
   Future<Rezervare> addRezervare(Rezervare rezervare) async {
+    if (rezervare.dataStart.isAfter(rezervare.dataFinal)) {
+      throw Exception("Data start nu poate fi după data final");
+    }
+
     try {
       return await multiPartRequest(
         path: "rezervari",
         multipartEncoding: (form) {
           form.append(rezervare.clientId.toString(), withName: "id_client");
-          form.append(rezervare.data.toIso8601String(), withName: "data");
+          form.append(
+            rezervare.dataStart.toIso8601String(),
+            withName: "data_start",
+          );
+          form.append(
+            rezervare.dataFinal.toIso8601String(),
+            withName: "data_final",
+          );
         },
         deserializer: (json) {
           return Rezervare.fromJson(json);
@@ -89,12 +100,19 @@ final class OtlpApi extends ClientApi {
   }
 
   Future<Rezervare> updateRezervare(Rezervare rezervare) async {
+    if (rezervare.dataStart.isAfter(rezervare.dataFinal)) {
+      throw Exception("Data start nu poate fi după data final");
+    }
+
     try {
       return await multiPartRequest(
         path: "rezervari/update/${rezervare.id}",
         multipartEncoding: (form) {
           form.append(rezervare.clientId.toString(), withName: "id_client");
-          form.append(rezervare.data.toIso8601String(), withName: "data");
+          form.append(rezervare.dataStart.toIso8601String(),
+              withName: "data_start");
+          form.append(rezervare.dataFinal.toIso8601String(),
+              withName: "data_final");
         },
         deserializer: (json) {
           return Rezervare.fromJson(json);
@@ -344,8 +362,9 @@ final class OtlpApi extends ClientApi {
         path: "evenimente/add",
         multipartEncoding: (form) {
           form.append(eveniment.nume, withName: "nume_eveniment");
-          form.append(eveniment.data.toIso8601String(), withName: "data_eveniment");
-          form.append(eveniment.descriere ?? '', withName: "descriere"); 
+          form.append(eveniment.data.toIso8601String(),
+              withName: "data_eveniment");
+          form.append(eveniment.descriere ?? '', withName: "descriere");
         },
         deserializer: (json) {
           return Eveniment.fromJSON(json);
@@ -363,8 +382,9 @@ final class OtlpApi extends ClientApi {
         path: "evenimente/${eveniment.id}",
         multipartEncoding: (form) {
           form.append(eveniment.nume, withName: "nume_eveniment");
-          form.append(eveniment.data.toIso8601String(), withName: "data_eveniment");
-          form.append(eveniment.descriere ?? '', withName: "descriere"); 
+          form.append(eveniment.data.toIso8601String(),
+              withName: "data_eveniment");
+          form.append(eveniment.descriere ?? '', withName: "descriere");
         },
         deserializer: (json) {
           return Eveniment.fromJSON(json);

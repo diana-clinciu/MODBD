@@ -8,12 +8,16 @@ class Camera {
   final int id;
   final int nr;
   final String tip;
+  final String categorie;
+  final String clasaConfort;
   final double pret;
 
   Camera(
       {required this.id,
       required this.nr,
       required this.tip,
+      required this.categorie,
+      required this.clasaConfort,
       required this.pret});
 
   static Camera fromJson(JSON jsonBody) {
@@ -21,12 +25,16 @@ class Camera {
         id: jsonBody["id_camera"],
         nr: jsonBody["nr_camera"],
         tip: jsonBody["tip_camera"],
+        categorie: jsonBody["categorie_camera"],
+        clasaConfort: jsonBody["clasa_confort"],
         pret: jsonBody["pret"]);
   }
 
   static void showAddCameraDialog(BuildContext context, OLTPViewModel vm) {
     int nr = 0;
     String tip = '';
+    String categorie = '';
+    String clasaConfort = '';
     double pret = 0.0;
 
     showDialog(
@@ -51,6 +59,14 @@ class Camera {
                 onChanged: (v) => tip = v,
                 decoration: InputDecoration(labelText: "Tip camera")),
             TextField(
+              onChanged: (v) => categorie = v,
+              decoration: InputDecoration(labelText: "Categorie"),
+            ),
+            TextField(
+              onChanged: (v) => clasaConfort = v,
+              decoration: InputDecoration(labelText: "Clasa confort"),
+            ),
+            TextField(
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
               decoration: InputDecoration(labelText: "Pret camera"),
@@ -68,7 +84,12 @@ class Camera {
           ElevatedButton(
             onPressed: () {
               vm.addCamera(Camera(
-                  id: vm.camere.length + 1, nr: nr, tip: tip, pret: pret));
+                  id: vm.camere.length + 1,
+                  nr: nr,
+                  tip: tip,
+                  categorie: categorie,
+                  clasaConfort: clasaConfort,
+                  pret: pret));
               Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
@@ -97,6 +118,8 @@ class Camera {
       BuildContext context, OLTPViewModel vm, int index) {
     int nr = vm.camere[index].nr;
     String tip = vm.camere[index].tip;
+    String categorie = vm.camere[index].categorie;
+    String clasaConfort = vm.camere[index].clasaConfort;
     double pret = vm.camere[index].pret;
 
     showDialog(
@@ -124,6 +147,16 @@ class Camera {
               decoration: InputDecoration(labelText: "Tip camera"),
             ),
             TextField(
+              controller: TextEditingController(text: categorie),
+              onChanged: (v) => categorie = v,
+              decoration: InputDecoration(labelText: "Categorie camera"),
+            ),
+            TextField(
+              controller: TextEditingController(text: clasaConfort),
+              onChanged: (v) => clasaConfort = v,
+              decoration: InputDecoration(labelText: "Clasa confort"),
+            ),
+            TextField(
               controller: TextEditingController(text: pret.toString()),
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
@@ -144,7 +177,12 @@ class Camera {
               vm.editCamera(
                   index,
                   Camera(
-                      id: vm.camere[index].id, nr: nr, tip: tip, pret: pret));
+                      id: vm.camere[index].id,
+                      nr: nr,
+                      tip: tip,
+                      categorie: categorie,
+                      clasaConfort: clasaConfort,
+                      pret: pret));
               Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(

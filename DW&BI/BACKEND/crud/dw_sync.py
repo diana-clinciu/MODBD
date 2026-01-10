@@ -6,7 +6,7 @@ def propagate_dw(db: Session):
 
     # DIM_CLIENT
     res = db.execute(text("""
-        INSERT INTO dim_client (client_key, id_client_oltp, nume, prenume, email)
+        INSERT INTO dim_client (id_client_dim, id_client_oltp, nume, prenume, email)
         SELECT CLIENT_SEQ.NEXTVAL, c.id_client, c.nume, c.prenume, c.email
         FROM client c
         WHERE NOT EXISTS (
@@ -20,8 +20,8 @@ def propagate_dw(db: Session):
 
     # DIM_CAMERA
     res = db.execute(text("""
-        INSERT INTO dim_camera (camera_key, id_camera_oltp, nr_camera, tip_camera, pret)
-        SELECT CAMERA_SEQ.NEXTVAL, c.id_camera, c.nr_camera, c.tip_camera, c.pret
+        INSERT INTO dim_camera (id_camera_dim, id_camera_oltp, nr_camera, tip_camera, categorie_camera, clasa_confort, pret)
+        SELECT CAMERA_SEQ.NEXTVAL, c.id_camera, c.nr_camera, c.tip_camera, c.categorie_camera, c.clasa_confort, c.pret
         FROM camera c
         WHERE NOT EXISTS (
             SELECT 1
@@ -34,7 +34,7 @@ def propagate_dw(db: Session):
 
     # DIM_SERVICIU
     res = db.execute(text("""
-        INSERT INTO dim_serviciu (serviciu_key, id_serviciu_oltp, denumire, pret_serviciu)
+        INSERT INTO dim_serviciu (id_serviciu_dim, id_serviciu_oltp, denumire, pret_serviciu)
         SELECT SERVICIU_SEQ.NEXTVAL, s.id_serviciu, s.denumire, s.pret_serviciu
         FROM serviciu s
         WHERE NOT EXISTS (
@@ -48,7 +48,7 @@ def propagate_dw(db: Session):
 
     # DIM_EVENIMENT
     res = db.execute(text("""
-        INSERT INTO dim_eveniment (eveniment_key, id_eveniment_oltp, nume_eveniment, data_eveniment)
+        INSERT INTO dim_eveniment (id_eveniment_dim, id_eveniment_oltp, nume_eveniment, data_eveniment)
         SELECT EVENIMENT_SEQ.NEXTVAL, e.id_eveniment, e.nume_eveniment, e.data_eveniment
         FROM eveniment e
         WHERE NOT EXISTS (
@@ -62,17 +62,24 @@ def propagate_dw(db: Session):
 
     # DIM_TIMP
     res = db.execute(text("""
-        INSERT INTO dim_timp (timp_key, data_completa, zi, luna, an)
-        SELECT TIMP_SEQ.NEXTVAL,
-               r.data_rezervare,
-               EXTRACT(DAY FROM r.data_rezervare),
-               EXTRACT(MONTH FROM r.data_rezervare),
-               EXTRACT(YEAR FROM r.data_rezervare)
-        FROM rezervare r
+        INSERT INTO dim_timp (data_completa, zi, luna, an, luna_an)
+        SELECT
+            dt,
+            EXTRACT(DAY FROM dt),
+            EXTRACT(MONTH FROM dt),
+            EXTRACT(YEAR FROM dt),
+            TO_CHAR(dt, 'YYYYMM')
+        FROM (
+            SELECT DISTINCT r.data_start + LEVEL - 1 AS dt
+            FROM rezervare r
+            CONNECT BY LEVEL <= (r.data_final - r.data_start + 1)
+            AND PRIOR r.id_rezervare = r.id_rezervare
+            AND PRIOR SYS_GUID() IS NOT NULL
+        )
         WHERE NOT EXISTS (
             SELECT 1
-            FROM dim_timp dt
-            WHERE dt.data_completa = r.data_rezervare
+            FROM dim_timp d
+            WHERE d.data_completa = dt
         )
     """))
     results['dim_timp_inserted'] = res.rowcount
@@ -80,7 +87,7 @@ def propagate_dw(db: Session):
 
     # DIM_METODA_PLATA
     res = db.execute(text("""
-        INSERT INTO dim_metoda_plata (metoda_plata_key, metoda_plata, tip_tranzactie)
+        INSERT INTO dim_metoda_plata (id_metoda_plata_dim, metoda_plata, tip_tranzactie)
         SELECT METODA_PLATA_SEQ.NEXTVAL,
                p.metoda_plata,
                CASE

@@ -12,7 +12,8 @@ def get_rezervari(db: Session):
             RezervareResponse(
                 id_rezervare=r.id_rezervare,
                 clientName=client_name,
-                data=r.data
+                data_start=r.data_start,
+                data_final=r.data_final
             )
         )
     return result
@@ -20,7 +21,8 @@ def get_rezervari(db: Session):
 def create_rezervare(db: Session, rezervare: RezervareCreate):
     db_rez = RezervareModel(
         id_client=rezervare.id_client,
-        data=rezervare.data
+        data_start=rezervare.data_start,
+        data_final=rezervare.data_final
     )
     db.add(db_rez)
     db.commit()
@@ -29,7 +31,8 @@ def create_rezervare(db: Session, rezervare: RezervareCreate):
     return RezervareResponse(
         id_rezervare=db_rez.id_rezervare,
         clientName=client_name,
-        data=db_rez.data
+        data_start=db_rez.data_start,
+        data_final=db_rez.data_final
     )
 
 def update_rezervare(db: Session, id: int, rezervare_data: RezervareCreate):
@@ -37,14 +40,16 @@ def update_rezervare(db: Session, id: int, rezervare_data: RezervareCreate):
     if not rezervare:
         return None
     rezervare.id_client = rezervare_data.id_client
-    rezervare.data = rezervare_data.data
+    rezervare.data_start = rezervare_data.data_start
+    rezervare.data_final = rezervare_data.data_final
     db.commit()
     db.refresh(rezervare)
     
     return RezervareResponse(
         id_rezervare=rezervare.id_rezervare,
         clientName=rezervare.client.nume + " " + rezervare.client.prenume,
-        data=rezervare.data
+        data_start=rezervare.data_start,
+        data_final=rezervare.data_final,
     )
 
 def delete_rezervare(db: Session, id: int):

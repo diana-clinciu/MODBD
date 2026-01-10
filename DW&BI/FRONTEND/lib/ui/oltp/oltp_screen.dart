@@ -45,8 +45,11 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Rezervari",
                     vm.rezervari
-                        .map((c) =>
-                            "${c.clientName} - ${c.data.toShortDateString()}")
+                        .map(
+                          (c) => "${c.clientName} - "
+                              "${c.dataStart.toShortDateString()} → "
+                              "${c.dataFinal.toShortDateString()}",
+                        )
                         .toList(),
                     () => Rezervare.showAddReservationDialog(context, vm),
                     (index) =>
@@ -190,11 +193,13 @@ class OltpScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: Icon(Icons.edit, color: AppColors.blackForestColor),
+                            icon: Icon(Icons.edit,
+                                color: AppColors.blackForestColor),
                             onPressed: () => onEdit(entry.key),
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete, color: AppColors.reddishBrownColor),
+                            icon: Icon(Icons.delete,
+                                color: AppColors.reddishBrownColor),
                             onPressed: () => onDelete(entry.key),
                           ),
                         ],

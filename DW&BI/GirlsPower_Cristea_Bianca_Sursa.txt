@@ -605,7 +605,7 @@ insert into rezervare_camera values (10,
                                      5,
                                      1300); -- 5 nopți * 260
 
--- CLIENT_SERVICIU
+-- CLIENT_SERVICIU  
 insert into client_serviciu values ( 1,
                                      1,
                                      to_date('2025-12-02','YYYY-MM-DD') );  -- Spa
@@ -764,6 +764,7 @@ select p.id_plata,
 
 select *
   from client;
+
 select owner,
        table_name
   from all_tables
@@ -776,7 +777,7 @@ select owner,
 -- Crearea tabelelor pentru depozitul de date (Data Warehouse)
 -- =====================================================
 -- Dimensiuni
--- 3. Crearea bazei de date depozit și a utilizatorilor
+-- 3. Crearea bazei de date depozit și a utilizatorilor 
 
 -- DIM CLIENT: tabel de dimensiune pentru clienti
 create table dim_client (
@@ -1051,11 +1052,6 @@ alter table dim_timp modify
 alter table dim_timp modify
    an check ( an between 1900 and 2100 );
 
--- O zi apare o singura data in dim_timp
-alter table dim_timp
-add constraint uq_dim_timp_data
-unique (data_completa);
-
 -- DIM METODA_PLATA
 alter table dim_metoda_plata modify
    metoda_plata not null;
@@ -1088,6 +1084,8 @@ select count(*)
   from dim_timp;
 select count(*)
   from fact_rezervari;
+
+-- EXERCITII REFACUTE:
 
 -- 6.
 -- Indecsi BITMAP pe cheile externe din tabela de fapte:
@@ -1125,7 +1123,7 @@ FROM
 table(dbms_xplan.display('plan_table', 'ex_6','serial'));
 
 -- 7.
--- GRANT CREATE DIMENSION, CREATE MATERIALIZED VIEW, QUERY REWRITE TO DIANA;
+GRANT CREATE DIMENSION, CREATE MATERIALIZED VIEW, QUERY REWRITE TO DIANA;
 
 -- clasa confort "Luxury" are categoriile de camere: "Deluxe", "Royal"
 -- clasa confort "Standard" are categoriile de camere: "Basic", "Economy", "Family"
@@ -1134,15 +1132,15 @@ CREATE DIMENSION dim_camera_obj
    LEVEL categorie          IS dim_camera.categorie_camera
    LEVEL clasa_confort      IS dim_camera.clasa_confort
 
+   ATTRIBUTE camera        DETERMINES (dim_camera.id_camera_oltp, dim_camera.nr_camera, dim_camera.tip_camera, dim_camera.pret)
+   ATTRIBUTE categorie     DETERMINES (dim_camera.categorie_camera)
+   ATTRIBUTE clasa_confort DETERMINES (dim_camera.clasa_confort)
+
    HIERARCHY camera_rollup (
       camera        CHILD OF
       categorie     CHILD OF
       clasa_confort
    );
-
-   ATTRIBUTE camera        DETERMINES (dim_camera.id_camera_oltp, dim_camera.nr_camera, dim_camera.tip_camera, dim_camera.pret)
-   ATTRIBUTE categorie     DETERMINES (dim_camera.categorie_camera)
-   ATTRIBUTE clasa_confort DETERMINES (dim_camera.clasa_confort);
 
 -- validare obiect dimensiune camera
 CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_camera_obj'), FALSE, TRUE, 'st_dim_camera_obj');
@@ -1153,15 +1151,15 @@ CREATE DIMENSION dim_timp_obj
    LEVEL luna  IS dim_timp.luna_an
    LEVEL an    IS dim_timp.an
 
+   ATTRIBUTE zi DETERMINES (dim_timp.zi, dim_timp.data_completa)
+   ATTRIBUTE luna DETERMINES (dim_timp.luna)
+   ATTRIBUTE an DETERMINES (dim_timp.an)
+
    HIERARCHY timp_rollup (
       zi    CHILD OF
       luna  CHILD OF
       an
    );
-
-   ATTRIBUTE zi DETERMINES (dim_timp.zi, dim_timp.data_completa)
-   ATTRIBUTE luna DETERMINES (dim_timp.luna)
-   ATTRIBUTE an DETERMINES (dim_timp.an);
 
 -- validare obiect dimensiune timp
 CALL DBMS_DIMENSION.VALIDATE_DIMENSION(UPPER('dim_timp_obj'), FALSE, TRUE, 'st_dim_timp_obj');
@@ -1172,6 +1170,20 @@ SELECT dimension_name FROM user_dimensions;
 
 
 -- 8.
+-- CREATE TABLE dim_timp_part (
+--    data_completa DATE PRIMARY KEY,
+--    zi            NUMBER,
+--    luna          NUMBER,
+--    an            NUMBER,
+--    luna_an       VARCHAR2(20)
+-- )
+-- PARTITION BY RANGE (an) (
+--    PARTITION p_timp_ani_anteriori VALUES LESS THAN (2023),
+--    PARTITION p_timp_2023 VALUES LESS THAN (2024),
+--    PARTITION p_timp_2024 VALUES LESS THAN (2025),
+--    PARTITION p_timp_2025 VALUES LESS THAN (2026)
+-- );
+
 CREATE TABLE fact_rezervari_part (
    id_rezervare         NUMBER PRIMARY KEY,
    id_rezervare_oltp    NUMBER,
@@ -1205,13 +1217,31 @@ PARTITION BY RANGE (id_data_start) (
    PARTITION p_timp_2024 VALUES LESS THAN (date '2025-01-01'),
    PARTITION p_timp_2025 VALUES LESS THAN (date '2026-01-01')
 );
+--insert into dim_timp_part  (select * from dim_timp);
 insert into fact_rezervari_part  (select * from fact_rezervari);
+
+-- CREATE INDEX idx_fr_data_start_local ON fact_rezervari_part(id_data_start) LOCAL;
+-- CREATE BITMAP INDEX idx_fr_client_local ON fact_rezervari_part(id_client_dim) LOCAL;
 
 BEGIN
     DBMS_STATS.GATHER_TABLE_STATS(
     ownname => USER,
     tabname => 'FACT_REZERVARI_PART',
     cascade => TRUE
+  );
+  DBMS_STATS.SET_TABLE_STATS(
+    ownname => USER,
+    tabname => 'FACT_REZERVARI_PART',
+    numrows => 10000000,
+    numblks => 150000,
+    avgrlen => 100
+  );
+  DBMS_STATS.SET_TABLE_STATS(
+    ownname => USER,
+    tabname => 'FACT_REZERVARI',
+    numrows => 10000000,
+    numblks => 150000,
+    avgrlen => 100
   );
 END;
 /
@@ -1245,6 +1275,75 @@ ORDER BY nume_client, data_checkin;
 
 -- afiare plan executie
 SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_8_part','serial'));
+
+-- EXPLAIN PLAN SET STATEMENT_ID = 'ex_8' FOR
+-- SELECT
+--     dt.an,
+--     dc.nume,
+--     SUM(fr.suma_totala) as total_cheltuit,
+--     DENSE_RANK() OVER (PARTITION BY dt.an ORDER BY SUM(fr.suma_totala) DESC) as rang_client,
+--     RATIO_TO_REPORT(SUM(fr.suma_totala)) OVER (PARTITION BY dt.an) * 100 as procent_din_venit,
+--     SUM(fr.suma_totala) - AVG(SUM(fr.suma_totala)) OVER (PARTITION BY dt.an) as diferenta_fata_de_medie
+-- FROM fact_rezervari fr
+-- JOIN dim_timp dt ON fr.id_data_start = dt.id_timp_dim
+-- JOIN dim_client dc ON fr.id_client_dim = dc.id_client_dim
+-- WHERE dt.an = 2025 -- Filtrul Critic
+-- GROUP BY dt.an, dc.nume;
+
+-- 9
+
+-- EXPLAIN PLAN SET STATEMENT_ID = 'ex_9' FOR
+-- WITH venit_lunar AS (
+--     SELECT
+--         t.an,
+--         t.luna,
+--         t.luna_an,
+--         cam.categorie_camera,
+--         SUM(f.suma_totala) AS venit
+--     FROM fact_rezervari f, dim_camera cam, dim_timp t
+--     WHERE t.an = 2025
+--       AND t.luna IN (12, 1, 2)
+--       AND f.id_metoda_plata_dim = 2
+--       AND f.id_camera_dim = 1
+--       --AND f.id_client_dim = 1
+--       AND f.id_camera_dim = cam.id_camera_dim
+--       AND f.id_data_start = t.id_timp_dim
+--     GROUP BY t.an, t.luna, t.luna_an, cam.categorie_camera
+-- )
+-- SELECT
+--     an,
+--     luna,
+--     luna_an,
+--     categorie_camera,
+--     venit,
+--
+--     -- procent din totalul lunar
+--     ROUND(
+--         venit / SUM(venit) OVER (PARTITION BY an, luna) * 100,
+--         2
+--     ) AS procent_din_luna,
+--
+--     -- rank lunar
+--     RANK() OVER (
+--         PARTITION BY an, luna
+--         ORDER BY venit DESC
+--     ) AS rank_lunar,
+--
+--     -- venit luna anterioara (pentru aceeasi categorie)
+--     LAG(venit) OVER (
+--         PARTITION BY categorie_camera
+--         ORDER BY an, luna
+--     ) AS venit_luna_anterioara,
+--
+--     -- diferenta fata de luna precedenta
+--     venit
+--       - LAG(venit) OVER (
+--             PARTITION BY categorie_camera
+--             ORDER BY an, luna
+--         ) AS diferenta_lunara
+-- FROM venit_lunar
+-- ORDER BY categorie_camera, an, luna;
+
 
 -- 10.
 -- cerere 1:
@@ -1320,3 +1419,135 @@ SELECT
     numar_rezervari,
     ROUND(RATIO_TO_REPORT(numar_rezervari) OVER () * 100, 2) as procent
 FROM numar_rezervari_per_categorie;
+
+-- cerere 4:
+WITH venituri_anuale AS (
+    SELECT 
+        c.categorie_camera,
+        AVG(f.suma_totala) as venit_mediu_anual
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY c.categorie_camera
+),
+venituri_trimestriale AS (
+    SELECT 
+        c.categorie_camera,
+        CEIL(t.luna / 3.0) as trimestru,
+        COUNT(*) as numar_rezervari,
+        AVG(f.suma_totala) as venit_mediu_rezervare
+    FROM fact_rezervari f
+    JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY c.categorie_camera, CEIL(t.luna / 3.0)
+)
+SELECT 
+    vt.categorie_camera,
+    vt.trimestru,
+    vt.numar_rezervari,
+    ROUND(vt.venit_mediu_rezervare, 2) as venit_mediu_rezervare,
+    ROUND(
+        ((vt.venit_mediu_rezervare - va.venit_mediu_anual) / va.venit_mediu_anual) * 100, 
+        2
+    ) as diferenta_procentuala_fata_de_medie_anuala
+FROM venituri_trimestriale vt
+JOIN venituri_anuale va ON vt.categorie_camera = va.categorie_camera
+ORDER BY vt.categorie_camera, vt.trimestru;
+
+-- cerere 5:
+WITH camere_count AS (
+    SELECT 
+        f.id_metoda_plata_dim,
+        f.id_camera_dim,
+        COUNT(*) AS numar_rezervari,
+        SUM(f.suma_totala) AS venit_total
+    FROM fact_rezervari f
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE t.an = 2024
+    GROUP BY f.id_metoda_plata_dim, f.id_camera_dim
+),
+
+top_camere AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        numar_rezervari,
+        venit_total,
+        ROW_NUMBER() OVER (
+            PARTITION BY id_metoda_plata_dim
+            ORDER BY numar_rezervari DESC
+        ) AS rank_camera
+    FROM camere_count
+),
+
+venituri_lunare AS (
+    SELECT 
+        tc.id_metoda_plata_dim,
+        tc.id_camera_dim,
+        t.luna,
+        SUM(f.suma_totala) AS venit_lunar
+    FROM top_camere tc
+    JOIN fact_rezervari f 
+        ON tc.id_camera_dim = f.id_camera_dim 
+       AND tc.id_metoda_plata_dim = f.id_metoda_plata_dim
+    JOIN dim_timp t ON f.id_data_start = t.data_completa
+    WHERE tc.rank_camera <= 3 AND t.an = 2024
+    GROUP BY tc.id_metoda_plata_dim, tc.id_camera_dim, t.luna
+),
+
+rate_crestere AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        AVG(
+            CASE 
+                WHEN prev_venit > 0 THEN ((venit_lunar - prev_venit)/prev_venit)*100
+                ELSE 0
+            END
+        ) AS rata_crestere_medie
+    FROM (
+        SELECT 
+            id_metoda_plata_dim,
+            id_camera_dim,
+            luna,
+            venit_lunar,
+            LAG(venit_lunar) OVER (
+                PARTITION BY id_metoda_plata_dim, id_camera_dim 
+                ORDER BY luna
+            ) AS prev_venit
+        FROM venituri_lunare
+    )
+    GROUP BY id_metoda_plata_dim, id_camera_dim
+),
+
+procent_contributie AS (
+    SELECT 
+        id_metoda_plata_dim,
+        id_camera_dim,
+        venit_total,
+        (venit_total / SUM(venit_total) OVER (PARTITION BY id_metoda_plata_dim)) * 100 AS contributie_procentuala
+    FROM top_camere
+    WHERE rank_camera <= 3
+)
+
+SELECT 
+    mp.metoda_plata,
+    c.categorie_camera,
+    c.nr_camera,
+    tc.numar_rezervari,
+    ROUND(pc.venit_total, 2) AS valoare_totala,
+    ROUND(pc.contributie_procentuala, 2) AS contributie_procentuala,
+    ROUND(rc.rata_crestere_medie, 2) AS rata_crestere_lunara_medie
+FROM top_camere tc
+JOIN procent_contributie pc 
+    ON tc.id_metoda_plata_dim = pc.id_metoda_plata_dim 
+   AND tc.id_camera_dim = pc.id_camera_dim
+JOIN rate_crestere rc 
+    ON tc.id_metoda_plata_dim = rc.id_metoda_plata_dim 
+   AND tc.id_camera_dim = rc.id_camera_dim
+JOIN dim_camera c ON tc.id_camera_dim = c.id_camera_dim
+JOIN dim_metoda_plata mp ON tc.id_metoda_plata_dim = mp.id_metoda_plata_dim
+WHERE tc.rank_camera <= 3
+ORDER BY mp.metoda_plata, tc.numar_rezervari DESC;

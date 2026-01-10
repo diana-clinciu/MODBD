@@ -20,7 +20,8 @@ class Rezervare(Base):
 
     id_rezervare = Column("ID_REZERVARE", Integer, primary_key=True, index=True)
     id_client = Column("ID_CLIENT", Integer, ForeignKey("ALEXIA.CLIENT.ID_CLIENT"), nullable=False)
-    data = Column("DATA_REZERVARE", DateTime, default=datetime.utcnow)
+    data_start = Column("DATA_START", Date, nullable=False)
+    data_final = Column("DATA_FINAL", Date, nullable=False)
 
     client = relationship("Client", back_populates="rezervari")
 
@@ -32,6 +33,8 @@ class Camera(Base):
     id_camera = Column("ID_CAMERA", Integer, primary_key=True, index=True)
     nr_camera = Column("NR_CAMERA", Integer, nullable=False)
     tip_camera = Column("TIP_CAMERA", String(50), nullable=False)
+    categorie_camera = Column("CATEGORIE_CAMERA", String(20), nullable=False)
+    clasa_confort = Column("CLASA_CONFORT", String(20), nullable=False)
     pret = Column("PRET", Float, nullable=False)
 
 class Serviciu(Base):

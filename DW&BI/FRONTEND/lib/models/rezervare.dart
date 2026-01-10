@@ -8,13 +8,15 @@ class Rezervare {
   final int id;
   final int? clientId;
   String? clientName;
-  final DateTime data;
+  DateTime dataStart;
+  DateTime dataFinal;
 
   Rezervare({
     required this.id,
     this.clientName,
     this.clientId,
-    required this.data,
+    required this.dataStart,
+    required this.dataFinal,
   });
 
   static Rezervare fromJson(JSON jsonBody) {
@@ -22,22 +24,20 @@ class Rezervare {
       id: jsonBody["id_rezervare"],
       clientId: jsonBody["id_client"],
       clientName: jsonBody["clientName"],
-      data: DateTime.parse(jsonBody["data"]),
+      dataStart: DateTime.parse(jsonBody["data_start"]),
+      dataFinal: DateTime.parse(jsonBody["data_final"]),
     );
   }
 
   static void showAddReservationDialog(BuildContext context, OLTPViewModel vm) {
     int? selectedClientId;
-    DateTime data = DateTime.now();
+    DateTime dataStart = DateTime.now();
+    DateTime dataFinal = DateTime.now().add(Duration(days: 1));
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Adauga rezervare",
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.blackForestColor)),
+        title: Text("Adauga rezervare"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -52,62 +52,35 @@ class Rezervare {
               onChanged: (value) => selectedClientId = value,
             ),
             SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text("${data.day}/${data.month}/${data.year}"),
-                ),
-                IconButton(
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: data,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      data = picked;
-                    }
-                  },
-                ),
-              ],
+            _datePicker(
+              dialogContext,
+              "Data start",
+              dataStart,
+              (d) => dataStart = d,
+            ),
+            _datePicker(
+              dialogContext,
+              "Data final",
+              dataFinal,
+              (d) => dataFinal = d,
             ),
           ],
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blackForestColor))),
           ElevatedButton(
             onPressed: () {
-              vm.addRezervare(Rezervare(
-                  id: vm.rezervari.length + 1,
+              vm.addRezervare(
+                Rezervare(
+                  id: 0,
                   clientId: selectedClientId!,
-                  data: data));
+                  dataStart: dataStart,
+                  dataFinal: dataFinal,
+                ),
+              );
               Navigator.pop(dialogContext);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  AppColors.lightCaramelColor.withTransparency(0.5),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text("Salveaza",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blackForestColor)),
-          ),
+            child: Text("Salveaza"),
+          )
         ],
       ),
     );
@@ -115,17 +88,21 @@ class Rezervare {
 
   static void showEditReservationDialog(
       BuildContext context, OLTPViewModel vm, int index) {
-    DateTime data = vm.rezervari[index].data;
+    DateTime dataStart = vm.rezervari[index].dataStart;
+    DateTime dataFinal = vm.rezervari[index].dataFinal;
     int? selectedClientId = vm.rezervari[index].clientId;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text("Modifica rezervare",
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.blackForestColor)),
+        title: Text(
+          "Modifica rezervare",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.blackForestColor,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -141,66 +118,99 @@ class Rezervare {
               onChanged: (value) => selectedClientId = value,
             ),
             SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text("${data.day}/${data.month}/${data.year}"),
-                ),
-                IconButton(
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: data,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      data = picked;
-                    }
-                  },
-                ),
-              ],
+            _datePicker(
+              dialogContext,
+              "Data start",
+              dataStart,
+              (d) => dataStart = d,
+            ),
+            _datePicker(
+              dialogContext,
+              "Data final",
+              dataFinal,
+              (d) => dataFinal = d,
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blackForestColor))),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              "Anuleaza",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor,
+              ),
+            ),
+          ),
           ElevatedButton(
             onPressed: () {
+              /// VALIDARE UI (foarte important)
+              if (dataStart.isAfter(dataFinal)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text("Data start nu poate fi după data final")),
+                );
+                return;
+              }
+
               vm.editRezervare(
-                  index,
-                  Rezervare(
-                      id: vm.rezervari[index].id,
-                      clientId: selectedClientId!,
-                      data: data));
+                index,
+                Rezervare(
+                  id: vm.rezervari[index].id,
+                  clientId: selectedClientId!,
+                  dataStart: dataStart,
+                  dataFinal: dataFinal,
+                ),
+              );
+
               Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor:
                   AppColors.lightCaramelColor.withTransparency(0.5),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text("Salveaza",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blackForestColor)),
+            child: Text(
+              "Salveaza",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackForestColor,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  static Widget _datePicker(
+    BuildContext context,
+    String label,
+    DateTime date,
+    Function(DateTime) onPicked,
+  ) {
+    return Row(
+      children: [
+        Expanded(child: Text("$label: ${date.day}/${date.month}/${date.year}")),
+        IconButton(
+          icon: Icon(Icons.calendar_today),
+          onPressed: () async {
+            DateTime? picked = await showDatePicker(
+              context: context,
+              initialDate: date,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (picked != null) onPicked(picked);
+          },
+        ),
+      ],
     );
   }
 }

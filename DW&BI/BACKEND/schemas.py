@@ -18,7 +18,8 @@ class Client(ClientBase):
 
 # Rezervare
 class RezervareBase(BaseModel):
-    data: datetime
+    data_start: date
+    data_final: date
 
 class RezervareCreate(RezervareBase):
     id_client: int
@@ -26,7 +27,8 @@ class RezervareCreate(RezervareBase):
 class RezervareResponse(BaseModel):
     id_rezervare: int
     clientName: str
-    data: datetime
+    data_start: date
+    data_final: date
 
     class Config:
         orm_mode = True
@@ -35,6 +37,8 @@ class RezervareResponse(BaseModel):
 class CameraBase(BaseModel):
     nr_camera: int
     tip_camera: str
+    categorie_camera: str
+    clasa_confort: str
     pret: float
 
 class CameraCreate(CameraBase):

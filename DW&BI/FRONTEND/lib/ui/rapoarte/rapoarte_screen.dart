@@ -85,8 +85,13 @@ class ReportsView extends StatelessWidget {
   }
 
   Widget _buildChart(String reportName, List<ReportData> data) {
+    if (data.length == 1 && data[0].label == 'Nu exista date') {
+      return Center(child: Text("Nu există date pentru acest raport"));
+    }
+
     switch (reportName) {
-      case '1. Total Platit / Camera':
+      case '1a. Venituri lunare cumulate 2024':
+      case '1b. Venituri lunare cumulate 2025':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
@@ -102,7 +107,7 @@ class ReportsView extends StatelessWidget {
           ],
         );
 
-      case '2. Total Platit / Client (Evenimente)':
+      case '2. Venit / Metoda Plata':
         return SfCircularChart(
           legend: Legend(
               isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
@@ -119,7 +124,7 @@ class ReportsView extends StatelessWidget {
           ],
         );
 
-      case '3. Evolutie Venituri Servicii (Sapt.)':
+      case '3. Top 5% Clienti VIP / Categorie':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
@@ -134,7 +139,7 @@ class ReportsView extends StatelessWidget {
           ],
         );
 
-      case '4. Plati / Camera & Metoda':
+      case '4. Variatia veniturilor trimestriale fata de media anuala':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(
             labelIntersectAction: AxisLabelIntersectAction.rotate45,
@@ -152,7 +157,7 @@ class ReportsView extends StatelessWidget {
           ],
         );
 
-      case '5. Top 5 Clienti Cheltuitori':
+      case '5. Top 3 Camere per Metoda Plata (2024)':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
