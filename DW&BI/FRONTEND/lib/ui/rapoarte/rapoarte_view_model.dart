@@ -26,11 +26,9 @@ class ReportsViewModel extends ChangeNotifier {
       final raport5 = await _service.fetchRaport5();
 
       allReports = {
-        '1a. Venituri lunare cumulate 2024':
-            raport1.map((e) => _mapToReportData1(e, pentru2024: true)).toList(),
-        '1b. Venituri lunare cumulate 2025': raport1
-            .map((e) => _mapToReportData1(e, pentru2024: false))
-            .toList(),
+        '1. Venituri lunare cumulate 2024 & 2025': raport1.isNotEmpty
+            ? _mapToReportData1(raport1)
+            : [ReportData('Nu exista date', 0)],
         '2. Venit / Metoda Plata': raport2.isNotEmpty
             ? raport2.map(_mapToReportData2).toList()
             : [ReportData('Nu exista date', 0.0)],
@@ -56,18 +54,20 @@ class ReportsViewModel extends ChangeNotifier {
     }
   }
 
-  ReportData _mapToReportData1(Map<String, dynamic> e,
-      {bool pentru2024 = true}) {
-    final luna = e['luna']?.toString() ?? 'N/A';
-    final value = pentru2024
-        ? (e['cumulat_2024'] != null
-            ? (e['cumulat_2024'] as num).toDouble()
-            : 0.0)
-        : (e['cumulat_2025'] != null
-            ? (e['cumulat_2025'] as num).toDouble()
-            : 0.0);
+  List<ReportData> _mapToReportData1(List<Map<String, dynamic>> data) {
+    final List<ReportData> result = [];
 
-    return ReportData("Luna $luna", value);
+    for (final e in data) {
+      final luna = e['luna']?.toString() ?? '';
+
+      final v2024 = (e['cumulat_2024'] as num?)?.toDouble() ?? 0.0;
+      final v2025 = (e['cumulat_2025'] as num?)?.toDouble() ?? 0.0;
+
+      result.add(ReportData('$luna 2024', v2024));
+      result.add(ReportData('$luna 2025', v2025));
+    }
+
+    return result;
   }
 
   ReportData _mapToReportData2(Map<String, dynamic> e) {

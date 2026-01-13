@@ -90,8 +90,7 @@ class ReportsView extends StatelessWidget {
     }
 
     switch (reportName) {
-      case '1a. Venituri lunare cumulate 2024':
-      case '1b. Venituri lunare cumulate 2025':
+      case '1. Venituri lunare cumulate 2024 & 2025':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
