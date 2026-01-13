@@ -1018,60 +1018,130 @@ end;
 
 --5. Definirea constrângerilor
 -- DIM CLIENT
-alter table dim_client modify
-   nume not null;
-alter table dim_client modify
-   prenume not null;
+alter table dim_client 
+modify nume not null enable validate;
+
+alter table dim_client 
+modify prenume not null enable validate;
 
 -- Un client OLTP nu poate aparea de mai multe ori in dim_client
-alter table dim_client add constraint uq_dim_client_oltp unique ( id_client_oltp );
+alter table dim_client 
+add constraint uq_dim_client_oltp 
+unique ( id_client_oltp )
+disable validate;
 
 -- DIM CAMERA
-alter table dim_camera modify
-   tip_camera not null;
-alter table dim_camera modify
-   pret check ( pret > 0 );
+alter table dim_camera 
+modify tip_camera not null enable validate;
+
+alter table dim_camera
+modify pret 
+check ( pret > 0 )
+enable validate;
 
 -- O camera OLTP nu poate aparea de mai multe ori in dim_camera
-alter table dim_camera add constraint uq_dim_camera_oltp unique ( id_camera_oltp );
+alter table dim_camera 
+add constraint uq_dim_camera_oltp 
+unique ( id_camera_oltp )
+disable validate;
 
 -- DIM SERVICIU
-alter table dim_serviciu modify
-   pret_serviciu check ( pret_serviciu >= 0 );
+alter table dim_serviciu
+modify pret_serviciu 
+check ( pret_serviciu >= 0 )
+enable validate;
 
-alter table dim_serviciu add constraint uq_dim_serviciu_oltp unique ( id_serviciu_oltp );
+alter table dim_serviciu 
+add constraint uq_dim_serviciu_oltp 
+unique ( id_serviciu_oltp )
+disable validate;
 
 -- DIM EVENIMENT
-alter table dim_eveniment modify
-   nume_eveniment not null;
+alter table dim_eveniment 
+modify nume_eveniment not null
+enable validate;
 
-alter table dim_eveniment add constraint uq_dim_eveniment_oltp unique ( id_eveniment_oltp );
+alter table dim_eveniment 
+add constraint uq_dim_eveniment_oltp 
+unique ( id_eveniment_oltp )
+disable validate;
 
 -- Doua evenimente nu pot avea acelasi nume si aceeasi data
-alter table dim_eveniment add constraint uq_dim_eveniment_nume_data unique ( nume_eveniment,
-                                                                             data_eveniment );
+alter table dim_eveniment 
+add constraint uq_dim_eveniment_nume_data 
+unique ( nume_eveniment, data_eveniment )
+disable validate;
 
 -- DIM TIMP
-alter table dim_timp modify
-   zi check ( zi between 1 and 31 );
-alter table dim_timp modify
-   luna check ( luna between 1 and 12 );
-alter table dim_timp modify
-   an check ( an between 1900 and 2100 );
+alter table dim_timp
+modify zi 
+check ( zi between 1 and 31 )
+enable validate;
+
+alter table dim_timp 
+modify luna
+check ( luna between 1 and 12 )
+enable validate;
+
+alter table dim_timp 
+modify an 
+check ( an between 1900 and 2100 )
+enable validate;
 
 -- DIM METODA_PLATA
-alter table dim_metoda_plata modify
-   metoda_plata not null;
+alter table dim_metoda_plata 
+modify metoda_plata not null
+enable validate;
 
-alter table dim_metoda_plata modify
-   tip_tranzactie not null;
+alter table dim_metoda_plata
+modify tip_tranzactie not null
+enable validate;
 
 -- O metoda de plata apare o singura data in dim_metoda_plata
-alter table dim_metoda_plata add constraint uq_dim_metoda_plata unique ( metoda_plata );
+alter table dim_metoda_plata 
+add constraint uq_dim_metoda_plata 
+unique ( metoda_plata )
+disable validate;
 
+-- FACT_REZERVARI
 -- Verificare suma_totala pozitiva
-alter table fact_rezervari modify
-   suma_totala check ( suma_totala >= 0 );
+alter table fact_rezervari 
+add constraint chk_fact_rezervari_suma
+check (suma_totala >= 0)
+enable validate;
+
+SELECT constraint_name
+FROM user_constraints
+WHERE table_name = 'FACT_REZERVARI'
+  AND constraint_type = 'R';
+
+alter table fact_rezervari
+modify constraint SYS_C007793
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007794
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007795
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007796
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007797
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007798
+enable novalidate;
+
+alter table fact_rezervari
+modify constraint SYS_C007799
+enable novalidate;
 
 -- =====================================================
 -- Verificari finale
