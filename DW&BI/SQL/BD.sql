@@ -924,6 +924,66 @@ insert into dim_timp
         from rezervare
    );
 
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-01-15',
+           15,
+           1,
+           2025,
+           'Ian 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-02-20',
+           20,
+           2,
+           2025,
+           'Feb 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-03-10',
+           10,
+           3,
+           2025,
+           'Mar 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-04-05',
+           5,
+           4,
+           2025,
+           'Apr 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-07-20',
+           20,
+           7,
+           2025,
+           'Iul 2025' );
+
 insert into dim_metoda_plata
    select dense_rank()
           over(
@@ -1018,130 +1078,110 @@ end;
 
 --5. Definirea constrângerilor
 -- DIM CLIENT
-alter table dim_client 
-modify nume not null enable validate;
+alter table dim_client modify
+   nume not null
+      enable validate;
 
-alter table dim_client 
-modify prenume not null enable validate;
+alter table dim_client modify
+   prenume not null
+      enable validate;
 
 -- Un client OLTP nu poate aparea de mai multe ori in dim_client
-alter table dim_client 
-add constraint uq_dim_client_oltp 
-unique ( id_client_oltp )
-disable validate;
+alter table dim_client add constraint uq_dim_client_oltp unique ( id_client_oltp )
+   disable validate;
 
 -- DIM CAMERA
-alter table dim_camera 
-modify tip_camera not null enable validate;
+alter table dim_camera modify
+   tip_camera not null
+      enable validate;
 
-alter table dim_camera
-modify pret 
-check ( pret > 0 )
-enable validate;
+alter table dim_camera modify
+   pret check ( pret > 0 )
+      enable validate;
 
 -- O camera OLTP nu poate aparea de mai multe ori in dim_camera
-alter table dim_camera 
-add constraint uq_dim_camera_oltp 
-unique ( id_camera_oltp )
-disable validate;
+alter table dim_camera add constraint uq_dim_camera_oltp unique ( id_camera_oltp )
+   disable validate;
 
 -- DIM SERVICIU
-alter table dim_serviciu
-modify pret_serviciu 
-check ( pret_serviciu >= 0 )
-enable validate;
+alter table dim_serviciu modify
+   pret_serviciu check ( pret_serviciu >= 0 )
+      enable validate;
 
-alter table dim_serviciu 
-add constraint uq_dim_serviciu_oltp 
-unique ( id_serviciu_oltp )
-disable validate;
+alter table dim_serviciu add constraint uq_dim_serviciu_oltp unique ( id_serviciu_oltp )
+   disable validate;
 
 -- DIM EVENIMENT
-alter table dim_eveniment 
-modify nume_eveniment not null
-enable validate;
+alter table dim_eveniment modify
+   nume_eveniment not null
+      enable validate;
 
-alter table dim_eveniment 
-add constraint uq_dim_eveniment_oltp 
-unique ( id_eveniment_oltp )
-disable validate;
+alter table dim_eveniment add constraint uq_dim_eveniment_oltp unique ( id_eveniment_oltp )
+   disable validate;
 
 -- Doua evenimente nu pot avea acelasi nume si aceeasi data
-alter table dim_eveniment 
-add constraint uq_dim_eveniment_nume_data 
-unique ( nume_eveniment, data_eveniment )
-disable validate;
+alter table dim_eveniment
+   add constraint uq_dim_eveniment_nume_data unique ( nume_eveniment,
+                                                      data_eveniment )
+      disable validate;
 
 -- DIM TIMP
-alter table dim_timp
-modify zi 
-check ( zi between 1 and 31 )
-enable validate;
+alter table dim_timp modify
+   zi check ( zi between 1 and 31 )
+      enable validate;
 
-alter table dim_timp 
-modify luna
-check ( luna between 1 and 12 )
-enable validate;
+alter table dim_timp modify
+   luna check ( luna between 1 and 12 )
+      enable validate;
 
-alter table dim_timp 
-modify an 
-check ( an between 1900 and 2100 )
-enable validate;
+alter table dim_timp modify
+   an check ( an between 1900 and 2100 )
+      enable validate;
 
 -- DIM METODA_PLATA
-alter table dim_metoda_plata 
-modify metoda_plata not null
-enable validate;
+alter table dim_metoda_plata modify
+   metoda_plata not null
+      enable validate;
 
-alter table dim_metoda_plata
-modify tip_tranzactie not null
-enable validate;
+alter table dim_metoda_plata modify
+   tip_tranzactie not null
+      enable validate;
 
 -- O metoda de plata apare o singura data in dim_metoda_plata
-alter table dim_metoda_plata 
-add constraint uq_dim_metoda_plata 
-unique ( metoda_plata )
-disable validate;
+alter table dim_metoda_plata add constraint uq_dim_metoda_plata unique ( metoda_plata )
+   disable validate;
 
 -- FACT_REZERVARI
 -- Verificare suma_totala pozitiva
-alter table fact_rezervari 
-add constraint chk_fact_rezervari_suma
-check (suma_totala >= 0)
-enable validate;
-
-SELECT constraint_name
-FROM user_constraints
-WHERE table_name = 'FACT_REZERVARI'
-  AND constraint_type = 'R';
-
 alter table fact_rezervari
-modify constraint SYS_C007793
-enable novalidate;
+   add constraint chk_fact_rezervari_suma check ( suma_totala >= 0 )
+      enable validate;
 
-alter table fact_rezervari
-modify constraint SYS_C007794
-enable novalidate;
+select constraint_name
+  from user_constraints
+ where table_name = 'FACT_REZERVARI'
+   and constraint_type = 'R';
 
-alter table fact_rezervari
-modify constraint SYS_C007795
-enable novalidate;
+alter table fact_rezervari modify constraint sys_c007793
+   enable novalidate;
 
-alter table fact_rezervari
-modify constraint SYS_C007796
-enable novalidate;
+alter table fact_rezervari modify constraint sys_c007794
+   enable novalidate;
 
-alter table fact_rezervari
-modify constraint SYS_C007797
-enable novalidate;
+alter table fact_rezervari modify constraint sys_c007795
+   enable novalidate;
 
-alter table fact_rezervari
-modify constraint SYS_C007798
-enable novalidate;
+alter table fact_rezervari modify constraint sys_c007796
+   enable novalidate;
 
-alter table fact_rezervari
-modify constraint SYS_C007799
-enable novalidate;
+alter table fact_rezervari modify constraint sys_c007797
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007798
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007799
+   enable novalidate;
 
 -- =====================================================
 -- Verificari finale
@@ -1583,7 +1623,7 @@ on f.id_metoda_plata_dim = dm.id_metoda_plata_dim
 on f.id_data_start = dt.data_completa
  where f.id_metoda_plata_dim in ( 2,
                                   3 )
-   and dt.an = 2024
+   and dt.an = 2025
  group by f.id_camera_dim,
           dm.metoda_plata,
           dm.tip_tranzactie,
@@ -1636,7 +1676,7 @@ with venituri_anuale as (
    on f.id_camera_dim = c.id_camera_dim
      join dim_timp t
    on f.id_data_start = t.data_completa
-    where t.an = 2024
+    where t.an = 2025
     group by c.categorie_camera
 ),venituri_trimestriale as (
    select c.categorie_camera,
@@ -1648,7 +1688,7 @@ with venituri_anuale as (
    on f.id_camera_dim = c.id_camera_dim
      join dim_timp t
    on f.id_data_start = t.data_completa
-    where t.an = 2024
+    where t.an = 2025
     group by c.categorie_camera,
              ceil(t.luna / 3.0)
 )
@@ -1678,7 +1718,7 @@ with camere_count as (
      from fact_rezervari f
      join dim_timp t
    on f.id_data_start = t.data_completa
-    where t.an = 2024
+    where t.an = 2025
     group by f.id_metoda_plata_dim,
              f.id_camera_dim
 ),top_camere as (
@@ -1703,7 +1743,7 @@ with camere_count as (
      join dim_timp t
    on f.id_data_start = t.data_completa
     where tc.rank_camera <= 3
-      and t.an = 2024
+      and t.an = 2025
     group by tc.id_metoda_plata_dim,
              tc.id_camera_dim,
              t.luna

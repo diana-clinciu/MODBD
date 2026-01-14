@@ -79,7 +79,7 @@ def raport2(db: Session = Depends(get_db)) -> List[Dict]:
             JOIN dim_metoda_plata dm ON f.id_metoda_plata_dim = dm.id_metoda_plata_dim
             JOIN dim_timp dt ON f.id_data_start = dt.data_completa
     WHERE f.id_metoda_plata_dim IN (2, 3)
-      AND dt.an = 2024
+      AND dt.an = 2025
     GROUP BY f.id_camera_dim, dm.metoda_plata, dm.tip_tranzactie, dt.an, dt.luna
     ORDER BY f.id_camera_dim, dt.an, dt.luna, venit_metoda_plata DESC
     """
@@ -127,7 +127,7 @@ def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     FROM fact_rezervari f
     JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
     JOIN dim_timp t ON f.id_data_start = t.data_completa
-    WHERE t.an = 2024
+    WHERE t.an = 2025
     GROUP BY c.categorie_camera
     ),
     venituri_trimestriale AS (
@@ -139,7 +139,7 @@ def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     FROM fact_rezervari f
     JOIN dim_camera c ON f.id_camera_dim = c.id_camera_dim
     JOIN dim_timp t ON f.id_data_start = t.data_completa
-    WHERE t.an = 2024
+    WHERE t.an = 2025
     GROUP BY c.categorie_camera, CEIL(t.luna / 3.0)
     )
     SELECT 
@@ -168,7 +168,7 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
           SUM(f.suma_totala) AS venit_total
       FROM fact_rezervari f
       JOIN dim_timp t ON f.id_data_start = t.data_completa
-      WHERE t.an = 2024
+      WHERE t.an = 2025
       GROUP BY f.id_metoda_plata_dim, f.id_camera_dim
   ),
 
@@ -196,7 +196,7 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
           ON tc.id_camera_dim = f.id_camera_dim 
         AND tc.id_metoda_plata_dim = f.id_metoda_plata_dim
       JOIN dim_timp t ON f.id_data_start = t.data_completa
-      WHERE tc.rank_camera <= 3 AND t.an = 2024
+      WHERE tc.rank_camera <= 3 AND t.an = 2025
       GROUP BY tc.id_metoda_plata_dim, tc.id_camera_dim, t.luna
   ),
 

@@ -124,16 +124,20 @@ class ReportsView extends StatelessWidget {
         );
 
       case '3. Top 5% Clienti VIP / Categorie':
-        return SfCartesianChart(
-          primaryXAxis: CategoryAxis(),
+        return SfCircularChart(
+          title: ChartTitle(text: 'Top 5% Clienți VIP / Categorie'),
           tooltipBehavior: TooltipBehavior(enable: true),
-          series: <CartesianSeries>[
-            LineSeries<ReportData, String>(
+          legend: Legend(isVisible: true),
+          series: <CircularSeries>[
+            DoughnutSeries<ReportData, String>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,
-              markerSettings: MarkerSettings(isVisible: true),
-              color: Colors.green,
+              innerRadius: '60%',
+              dataLabelSettings: DataLabelSettings(
+                isVisible: true,
+                labelPosition: ChartDataLabelPosition.outside,
+              ),
             )
           ],
         );
@@ -156,7 +160,7 @@ class ReportsView extends StatelessWidget {
           ],
         );
 
-      case '5. Top 3 Camere per Metoda Plata (2024)':
+      case '5. Top Camere per Metoda Plata (2025)':
         return SfCartesianChart(
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),

@@ -38,7 +38,7 @@ class ReportsViewModel extends ChangeNotifier {
             raport4.isNotEmpty
                 ? raport4.map(_mapToReportData4).toList()
                 : [ReportData('Nu exista date', 0.0)],
-        '5. Top 3 Camere per Metoda Plata (2024)': raport5.isNotEmpty
+        '5. Top Camere per Metoda Plata (2025)': raport5.isNotEmpty
             ? raport5.map(_mapToReportData5).toList()
             : [ReportData('Nu exista date', 0.0)],
       };
@@ -106,13 +106,17 @@ class ReportsViewModel extends ChangeNotifier {
     final trimestru = e['trimestru']?.toString() ?? '';
     final numarRezervari = e['numar_rezervari'] ?? 0;
 
-    final diferentaProcentuala =
-        (e['diferenta_procentuala_fata_de_medie_anuala'] as num?)?.toDouble() ??
-            0.0;
+    double venitMediuRezervare = 0.0;
+    final rawValue = e['venit_mediu_rezervare'];
+    if (rawValue is num) {
+      venitMediuRezervare = rawValue.toDouble();
+    } else if (rawValue is String) {
+      venitMediuRezervare = double.tryParse(rawValue) ?? 0.0;
+    }
 
     return ReportData(
       "$categorie\nTrimestru $trimestru\nRezervari: $numarRezervari",
-      diferentaProcentuala,
+      venitMediuRezervare,
     );
   }
 

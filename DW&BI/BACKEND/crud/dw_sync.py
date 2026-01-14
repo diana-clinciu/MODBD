@@ -5,6 +5,7 @@ def propagate_dw(db: Session):
     results = {}
 
     # DIM_CLIENT
+    db.execute(text("ALTER TABLE dim_client ENABLE CONSTRAINT UQ_DIM_CLIENT_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_client (id_client_dim, id_client_oltp, nume, prenume, email)
         SELECT CLIENT_SEQ.NEXTVAL, c.id_client, c.nume, c.prenume, c.email
@@ -19,6 +20,7 @@ def propagate_dw(db: Session):
     results['dim_client'] = db.execute(text("SELECT COUNT(*) FROM dim_client")).scalar()
 
     # DIM_CAMERA
+    db.execute(text("ALTER TABLE dim_camera ENABLE CONSTRAINT UQ_DIM_CAMERA_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_camera (id_camera_dim, id_camera_oltp, nr_camera, tip_camera, categorie_camera, clasa_confort, pret)
         SELECT CAMERA_SEQ.NEXTVAL, c.id_camera, c.nr_camera, c.tip_camera, c.categorie_camera, c.clasa_confort, c.pret
@@ -33,6 +35,7 @@ def propagate_dw(db: Session):
     results['dim_camera'] = db.execute(text("SELECT COUNT(*) FROM dim_camera")).scalar()
 
     # DIM_SERVICIU
+    db.execute(text("ALTER TABLE dim_serviciu ENABLE CONSTRAINT UQ_DIM_SERVICIU_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_serviciu (id_serviciu_dim, id_serviciu_oltp, denumire, pret_serviciu)
         SELECT SERVICIU_SEQ.NEXTVAL, s.id_serviciu, s.denumire, s.pret_serviciu
@@ -47,6 +50,8 @@ def propagate_dw(db: Session):
     results['dim_serviciu'] = db.execute(text("SELECT COUNT(*) FROM dim_serviciu")).scalar()
 
     # DIM_EVENIMENT
+    db.execute(text("ALTER TABLE dim_eveniment ENABLE CONSTRAINT UQ_DIM_EVENIMENT_OLTP"))
+    db.execute(text("ALTER TABLE dim_eveniment ENABLE CONSTRAINT UQ_DIM_EVENIMENT_NUME_DATA"))
     res = db.execute(text("""
         INSERT INTO dim_eveniment (id_eveniment_dim, id_eveniment_oltp, nume_eveniment, data_eveniment)
         SELECT EVENIMENT_SEQ.NEXTVAL, e.id_eveniment, e.nume_eveniment, e.data_eveniment
@@ -86,6 +91,7 @@ def propagate_dw(db: Session):
     results['dim_timp'] = db.execute(text("SELECT COUNT(*) FROM dim_timp")).scalar()
 
     # DIM_METODA_PLATA
+    db.execute(text("ALTER TABLE dim_metoda_plata ENABLE CONSTRAINT UQ_DIM_METODA_PLATA"))
     res = db.execute(text("""
         INSERT INTO dim_metoda_plata (id_metoda_plata_dim, metoda_plata, tip_tranzactie)
         SELECT METODA_PLATA_SEQ.NEXTVAL,
