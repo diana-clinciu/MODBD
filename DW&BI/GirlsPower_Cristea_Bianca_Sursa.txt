@@ -1200,64 +1200,95 @@ select count(*)
 select count(*)
   from fact_rezervari;
 
--- EXERCITII REFACUTE:
-
 -- 6.
 -- Indecsi BITMAP pe cheile externe din tabela de fapte:
 alter session set star_transformation_enabled = true;
 
-create bitmap index bmp_fk_rezervari_clienti on
+create bitmap index bmp_fk_rezervari_camere on
    fact_rezervari (
-      id_client_dim
+      id_camera_dim
    );
-analyze index bmp_fk_rezervari_clienti compute statistics;
+analyze index bmp_fk_rezervari_camere compute statistics;
 
--- cost fara index = 115
--- cost cu index = 33
-explain plan set statement_id = 'ex_6'
-   for
-select dcl.nume
-       || ' '
-       || dcl.prenume as client,
-       decode(
-          grouping(dc.clasa_confort),
-          1,
-          'Toate clasele de confort',
-          dc.clasa_confort
-       ) as clasa_confort,
-       decode(
-          grouping(dc.categorie_camera),
-          1,
-          'Toate categoriile de camera',
-          dc.categorie_camera
-       ) as categorie_camera,
-       to_char(
-          sum(fr.suma_totala) / nullif(
-             sum(fr.id_data_final - fr.id_data_start),
-             0
-          ),
-          'FM999G999G990D00'
-       ) as venit_mediu_pe_noapte,
-       sum(fr.suma_totala) as total_incasari,
-       sum(fr.id_data_final - fr.id_data_start) as total_nopti_ocupate
-  from fact_rezervari fr
-  join dim_camera dc
-on fr.id_camera_dim = dc.id_camera_dim
-  join dim_client dcl
-on fr.id_client_dim = dcl.id_client_dim
- where dcl.id_client_dim = 15
- group by rollup(dc.clasa_confort,
-                 dc.categorie_camera),
-          dcl.nume,
-          dcl.prenume;
+create bitmap index bmp_fk_rezervari_timp on
+   fact_rezervari (
+      id_data_start
+   );
+analyze index bmp_fk_rezervari_timp compute statistics;
 
--- afisare plan executie
-select *
-  from table ( dbms_xplan.display(
-   'plan_table',
-   'ex_6',
-   'serial'
-) );
+create bitmap index bmp_fk_rezervari_metoda_plata on
+   fact_rezervari (
+      id_metoda_plata_dim
+   );
+analyze index bmp_fk_rezervari_metoda_plata compute statistics;
+
+BEGIN
+   DBMS_STATS.SET_TABLE_STATS(
+      ownname => user,
+      tabname => 'FACT_REZERVARI',
+      numrows => 10000000,
+      numblks => 100000,
+      avgrlen => 100
+   );
+
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_CAMERA', numrows => 100, numblks => 5);
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_TIMP', numrows => 365, numblks => 10);
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_METODA_PLATA', numrows => 5, numblks => 1);
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_CAMERE',
+      numrows => 10000000,
+      numlblks => 1000,
+      numdist => 100
+   );
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_TIMP',
+      numrows => 10000000,
+      numlblks => 1000,
+      numdist => 365
+   );
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_METODA_PLATA',
+      numrows => 10000000,
+      numlblks => 500,
+      numdist => 5
+   );
+END;
+/
+
+-- cost fara index: 27198
+-- cost cu index: 42
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_6' FOR
+SELECT
+    dc.categorie_camera,
+    dmp.metoda_plata,
+    dt.luna,
+    SUM(fr.suma_totala) AS venit_lunar,
+    SUM(SUM(fr.suma_totala)) OVER (
+        PARTITION BY dc.categorie_camera, dmp.metoda_plata
+        ORDER BY dt.luna
+    ) AS venit_progresiv_anual,
+    ROUND(100 * RATIO_TO_REPORT(SUM(fr.suma_totala)) OVER (PARTITION BY dt.luna), 2) AS procent_din_luna
+FROM fact_rezervari fr
+JOIN dim_camera dc ON fr.id_camera_dim = dc.id_camera_dim
+JOIN dim_timp dt ON fr.id_data_start = dt.data_completa
+JOIN dim_metoda_plata dmp ON fr.id_metoda_plata_dim = dmp.id_metoda_plata_dim
+WHERE dc.clasa_confort = 'Luxury'
+  AND dt.an = 2025
+  AND dmp.tip_tranzactie = 'Electronic'
+GROUP BY
+    dc.categorie_camera,
+    dmp.metoda_plata,
+    dt.luna
+ORDER BY
+    dc.categorie_camera,
+    dt.luna;
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_6', 'serial'));
 
 -- 7.
 grant
@@ -1374,6 +1405,10 @@ create table fact_rezervari_part (
    partition p_timp_2025
       values less than ( date '2026-01-01' )
    );
+alter table fact_rezervari_part modify constraint fk_dim_client rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_camera rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_data_start rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_metoda_plata rely enable novalidate;
 insert into fact_rezervari_part
    (
       select *
