@@ -1634,7 +1634,6 @@ select luna,
   from venituri_lunare
  order by luna;
 
-
 -- cerere 2:
 select f.id_camera_dim,
        dm.metoda_plata,
