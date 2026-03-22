@@ -1,4 +1,4 @@
-# Proiect DW & BI – Gestiune Hotel
+# Proiect MODBD – Gestiune Hotel
 
 ### Descriere
 
