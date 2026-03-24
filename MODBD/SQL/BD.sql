@@ -1,0 +1,1849 @@
+-- =====================================================
+-- Crearea tabelelor OLTP pentru gestionarea hotelului
+-- =====================================================
+
+create table eveniment (
+   id_eveniment   number primary key,
+   nume_eveniment varchar2(50) not null,
+   data_eveniment date not null,
+   descriere      varchar2(200)
+);
+
+create table client (
+   id_client number primary key,
+   nume      varchar2(30) not null,
+   prenume   varchar2(30) not null,
+   email     varchar2(50) unique
+);
+
+create table rezervare (
+   id_rezervare number primary key,
+   id_client    number not null,
+   data_start   date not null,
+   data_final   date not null,
+   foreign key ( id_client )
+      references client ( id_client ),
+   constraint interal_data_valid check ( data_start <= data_final )
+);
+
+create table serviciu (
+   id_serviciu        number primary key,
+   denumire           varchar2(50) not null,
+   pret_serviciu      number(10,2) not null,
+   data_achizitionare date,
+   cantitate          number
+);
+
+create table camera (
+   id_camera        number primary key,
+   nr_camera        number unique not null,
+   tip_camera       varchar2(20) not null,
+   categorie_camera varchar2(20) not null,
+   clasa_confort    varchar2(20) not null,
+   pret             number(10,2) not null
+);
+
+create table rezervare_camera (
+   id_rezervare   number,
+   id_camera      number,
+   nr_nopti       number not null,
+   pret_rezervare number(10,2) not null,
+   primary key ( id_rezervare,
+                 id_camera ),
+   foreign key ( id_rezervare )
+      references rezervare ( id_rezervare ),
+   foreign key ( id_camera )
+      references camera ( id_camera )
+);
+
+create table client_serviciu (
+   id_client      number,
+   id_serviciu    number,
+   data_utilizare date default sysdate,
+   primary key ( id_client,
+                 id_serviciu ),
+   foreign key ( id_client )
+      references client ( id_client ),
+   foreign key ( id_serviciu )
+      references serviciu ( id_serviciu )
+);
+
+create table plata (
+   id_plata     number primary key,
+   id_rezervare number not null,
+   suma         number(10,2),
+   data_plata   date not null,
+   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash',
+                                                       'Card',
+                                                       'Transfer' ) ),
+   foreign key ( id_rezervare )
+      references rezervare ( id_rezervare )
+);
+
+create table angajat (
+   id_angajat  number primary key,
+   nume        varchar2(30) not null,
+   prenume     varchar2(30) not null,
+   functie     varchar2(30),
+   salariu     number(10,2),
+   id_serviciu number not null,
+   foreign key ( id_serviciu )
+      references serviciu ( id_serviciu )
+);
+
+create table eveniment_client (
+   id_eveniment number,
+   id_client    number,
+   primary key ( id_eveniment,
+                 id_client ),
+   foreign key ( id_eveniment )
+      references eveniment ( id_eveniment ),
+   foreign key ( id_client )
+      references client ( id_client )
+);
+
+-- =====================================================
+-- Trigger pentru calcularea automata a sumei la plata
+-- =====================================================
+
+create or replace trigger trg_calculeaza_suma_plata before
+   insert or update on plata
+   for each row
+declare
+   v_pret_rezervare number := 0;
+   v_pret_servicii  number := 0;
+   v_id_client      number;
+begin
+    -- Obține id_client din rezervare
+   select id_client
+     into v_id_client
+     from rezervare
+    where id_rezervare = :new.id_rezervare;
+
+    -- Calculează prețul rezervării (suma tuturor camerelor * nr_nopti)
+   select nvl(
+      sum(rc.pret_rezervare),
+      0
+   )
+     into v_pret_rezervare
+     from rezervare_camera rc
+    where rc.id_rezervare = :new.id_rezervare;
+
+    -- Calculează prețul serviciilor utilizate de client
+   select nvl(
+      sum(s.pret_serviciu),
+      0
+   )
+     into v_pret_servicii
+     from client_serviciu cs
+     join serviciu s
+   on cs.id_serviciu = s.id_serviciu
+    where cs.id_client = v_id_client;
+
+    -- Setează suma totală
+   :new.suma := v_pret_rezervare + v_pret_servicii;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului client
+create sequence client_seq start with 11 increment by 1 nocache;
+
+create or replace trigger client_id before
+   insert on client
+   for each row
+begin
+   if :new.id_client is null then
+      select client_seq.nextval
+        into :new.id_client
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului rezervare
+create sequence rezervare_seq start with 11 increment by 1 nocache;
+
+create or replace trigger rezervare_id before
+   insert on rezervare
+   for each row
+begin
+   if :new.id_rezervare is null then
+      select rezervare_seq.nextval
+        into :new.id_rezervare
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului camera
+create sequence camera_seq start with 11 increment by 1 nocache;
+
+create or replace trigger camera_id before
+   insert on camera
+   for each row
+begin
+   if :new.id_camera is null then
+      select camera_seq.nextval
+        into :new.id_camera
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului serviciu
+create sequence serviciu_seq start with 11 increment by 1 nocache;
+
+create or replace trigger serviciu_id before
+   insert on serviciu
+   for each row
+begin
+   if :new.id_serviciu is null then
+      select serviciu_seq.nextval
+        into :new.id_serviciu
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului plata
+create sequence plata_seq start with 11 increment by 1 nocache;
+
+create or replace trigger plata_id before
+   insert on plata
+   for each row
+begin
+   if :new.id_plata is null then
+      select plata_seq.nextval
+        into :new.id_plata
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului angajat
+create sequence angajat_seq start with 11 increment by 1 nocache;
+
+create or replace trigger angajat_id before
+   insert on angajat
+   for each row
+begin
+   if :new.id_angajat is null then
+      select angajat_seq.nextval
+        into :new.id_angajat
+        from dual;
+   end if;
+end;
+/
+
+-- Trigger pentru generarea automata a ID-ului eveniment
+create sequence eveniment_seq start with 11 increment by 1 nocache;
+
+create or replace trigger eveniment_id before
+   insert on eveniment
+   for each row
+begin
+   if :new.id_eveniment is null then
+      select eveniment_seq.nextval
+        into :new.id_eveniment
+        from dual;
+   end if;
+end;
+/
+
+create sequence timp_seq start with 1 increment by 1 nocache
+nocycle;
+/
+
+create sequence metoda_plata_seq start with 1 increment by 1 nocache
+nocycle;
+/
+-- =====================================================
+-- Inserare date
+-- =====================================================
+
+-- EVENIMENTE
+insert into eveniment values ( 1,
+                               'Concert Rock',
+                               to_date('2025-12-01','YYYY-MM-DD'),
+                               'Concert de rock cu trupe locale' );
+insert into eveniment values ( 2,
+                               'Festival Jazz',
+                               to_date('2025-12-05','YYYY-MM-DD'),
+                               'Festival de jazz internațional' );
+insert into eveniment values ( 3,
+                               'Gala de Revelion',
+                               to_date('2025-12-31','YYYY-MM-DD'),
+                               'Gala anuală de Revelion' );
+insert into eveniment values ( 4,
+                               'Team Building Corporativ',
+                               to_date('2025-12-12','YYYY-MM-DD'),
+                               'Eveniment pentru echipe corporative' );
+insert into eveniment values ( 5,
+                               'Expoziție de Artă',
+                               to_date('2025-12-15','YYYY-MM-DD'),
+                               'Expoziție de artă contemporană' );
+insert into eveniment values ( 6,
+                               'Petrecere de Crăciun',
+                               to_date('2025-12-25','YYYY-MM-DD'),
+                               'Petrecere tematică de Crăciun' );
+insert into eveniment values ( 7,
+                               'Seminar Business',
+                               to_date('2025-12-18','YYYY-MM-DD'),
+                               'Seminar pentru antreprenori' );
+insert into eveniment values ( 8,
+                               'Concert Clasic',
+                               to_date('2025-12-20','YYYY-MM-DD'),
+                               'Concert de muzică clasică' );
+insert into eveniment values ( 9,
+                               'Atelier Culinar',
+                               to_date('2025-12-22','YYYY-MM-DD'),
+                               'Atelier de gătit cu chef-ul hotelului' );
+insert into eveniment values ( 10,
+                               'Seară de Film',
+                               to_date('2025-12-28','YYYY-MM-DD'),
+                               'Proiecție de film pentru oaspeți' );
+
+-- CLIENȚI
+insert into client values ( 1,
+                            'Popescu',
+                            'Ana',
+                            'ana.popescu@email.ro' );
+insert into client values ( 2,
+                            'Ionescu',
+                            'Maria',
+                            'maria.ionescu@email.ro' );
+insert into client values ( 3,
+                            'Georgescu',
+                            'Ioana',
+                            'ioana.georgescu@email.ro' );
+insert into client values ( 4,
+                            'Dumitrescu',
+                            'Alina',
+                            'alina.dumitrescu@email.ro' );
+insert into client values ( 5,
+                            'Radu',
+                            'Cristina',
+                            'cristina.radu@email.ro' );
+insert into client values ( 6,
+                            'Marin',
+                            'Elena',
+                            'elena.marin@email.ro' );
+insert into client values ( 7,
+                            'Stan',
+                            'Gabriela',
+                            'gabriela.stan@email.ro' );
+insert into client values ( 8,
+                            'Vasilescu',
+                            'Laura',
+                            'laura.vasilescu@email.ro' );
+insert into client values ( 9,
+                            'Niculae',
+                            'Irina',
+                            'irina.niculae@email.ro' );
+insert into client values ( 10,
+                            'Florea',
+                            'Andreea',
+                            'andreea.florea@email.ro' );
+
+-- SERVICII
+insert into serviciu values ( 1,
+                              'Spa și Masaj Relaxant',
+                              150,
+                              to_date('2025-01-15','YYYY-MM-DD'),
+                              10 );
+insert into serviciu values ( 2,
+                              'Room Service 24/7',
+                              50,
+                              to_date('2025-01-10','YYYY-MM-DD'),
+                              20 );
+insert into serviciu values ( 3,
+                              'Masaj Terapeutic',
+                              120,
+                              to_date('2025-02-05','YYYY-MM-DD'),
+                              8 );
+insert into serviciu values ( 4,
+                              'Acces Piscină Interioară',
+                              40,
+                              to_date('2025-01-20','YYYY-MM-DD'),
+                              15 );
+insert into serviciu values ( 5,
+                              'Tur Ghidat București',
+                              180,
+                              to_date('2025-03-01','YYYY-MM-DD'),
+                              5 );
+insert into serviciu values ( 6,
+                              'Transport Aeroport',
+                              100,
+                              to_date('2025-01-15','YYYY-MM-DD'),
+                              10 );
+insert into serviciu values ( 7,
+                              'Curățenie Suplimentară',
+                              60,
+                              to_date('2025-01-10','YYYY-MM-DD'),
+                              25 );
+insert into serviciu values ( 8,
+                              'Spălătorie Express',
+                              45,
+                              to_date('2025-02-10','YYYY-MM-DD'),
+                              12 );
+insert into serviciu values ( 9,
+                              'Sală Fitness Premium',
+                              80,
+                              to_date('2025-01-25','YYYY-MM-DD'),
+                              15 );
+insert into serviciu values ( 10,
+                              'Cinema Privat',
+                              90,
+                              to_date('2025-02-20','YYYY-MM-DD'),
+                              6 );
+
+-- CAMERE
+insert into camera values ( 1,
+                            101,
+                            'Single',
+                            'Basic',
+                            'Standard',
+                            150 );
+insert into camera values ( 2,
+                            102,
+                            'Double',
+                            'Family',
+                            'Standard',
+                            250 );
+insert into camera values ( 3,
+                            103,
+                            'Suite',
+                            'Economy',
+                            'Standard',
+                            450 );
+insert into camera values ( 4,
+                            104,
+                            'Single',
+                            'Basic',
+                            'Standard',
+                            150 );
+insert into camera values ( 5,
+                            105,
+                            'Double',
+                            'Family',
+                            'Standard',
+                            250 );
+insert into camera values ( 6,
+                            106,
+                            'Suite',
+                            'Deluxe',
+                            'Luxury',
+                            550 );
+insert into camera values ( 7,
+                            107,
+                            'Single',
+                            'Deluxe',
+                            'Luxury',
+                            180 );
+insert into camera values ( 8,
+                            108,
+                            'Double',
+                            'Royal',
+                            'Luxury',
+                            280 );
+insert into camera values ( 9,
+                            109,
+                            'Suite',
+                            'Royal',
+                            'Luxury',
+                            600 );
+insert into camera values ( 10,
+                            110,
+                            'Double',
+                            'Deluxe',
+                            'Luxury',
+                            260 );
+
+-- ANGAJAȚI
+insert into angajat values ( 1,
+                             'Popa',
+                             'Andrei',
+                             'Recepționer',
+                             3500,
+                             2 );
+insert into angajat values ( 2,
+                             'Ionescu',
+                             'Mihai',
+                             'Bucătar Șef',
+                             4500,
+                             2 );
+insert into angajat values ( 3,
+                             'Marin',
+                             'Sorina',
+                             'Ospătar',
+                             3200,
+                             2 );
+insert into angajat values ( 4,
+                             'Dumitru',
+                             'Raluca',
+                             'Masor Terapeut',
+                             3800,
+                             3 );
+insert into angajat values ( 5,
+                             'Stan',
+                             'Vlad',
+                             'Instructor Fitness',
+                             3400,
+                             9 );
+insert into angajat values ( 6,
+                             'Vasilescu',
+                             'Ioan',
+                             'Șofer',
+                             3300,
+                             6 );
+insert into angajat values ( 7,
+                             'Niculae',
+                             'Elena',
+                             'Recepționer Senior',
+                             3800,
+                             2 );
+insert into angajat values ( 8,
+                             'Florea',
+                             'Cristina',
+                             'Supervizor Curățenie',
+                             3000,
+                             7 );
+insert into angajat values ( 9,
+                             'Georgescu',
+                             'Alin',
+                             'Responsabil Spălătorie',
+                             2900,
+                             8 );
+insert into angajat values ( 10,
+                             'Radu',
+                             'Laura',
+                             'Ghid Turistic',
+                             3200,
+                             5 );
+
+-- REZERVĂRI
+insert into rezervare values ( 1,
+                               1,
+                               to_date('2025-12-01','YYYY-MM-DD'),
+                               to_date('2025-12-07','YYYY-MM-DD') );
+insert into rezervare values ( 2,
+                               2,
+                               to_date('2025-12-03','YYYY-MM-DD'),
+                               to_date('2025-12-10','YYYY-MM-DD') );
+insert into rezervare values ( 3,
+                               3,
+                               to_date('2025-12-05','YYYY-MM-DD'),
+                               to_date('2025-12-07','YYYY-MM-DD') );
+insert into rezervare values ( 4,
+                               4,
+                               to_date('2025-12-07','YYYY-MM-DD'),
+                               to_date('2025-12-14','YYYY-MM-DD') );
+insert into rezervare values ( 5,
+                               5,
+                               to_date('2025-12-10','YYYY-MM-DD'),
+                               to_date('2025-12-14','YYYY-MM-DD') );
+insert into rezervare values ( 6,
+                               6,
+                               to_date('2025-12-12','YYYY-MM-DD'),
+                               to_date('2025-12-21','YYYY-MM-DD') );
+insert into rezervare values ( 7,
+                               7,
+                               to_date('2025-12-15','YYYY-MM-DD'),
+                               to_date('2025-12-20','YYYY-MM-DD') );
+insert into rezervare values ( 8,
+                               8,
+                               to_date('2025-12-18','YYYY-MM-DD'),
+                               to_date('2025-12-23','YYYY-MM-DD') );
+insert into rezervare values ( 9,
+                               9,
+                               to_date('2025-12-20','YYYY-MM-DD'),
+                               to_date('2025-12-30','YYYY-MM-DD') );
+insert into rezervare values ( 10,
+                               10,
+                               to_date('2025-12-23','YYYY-MM-DD'),
+                               to_date('2025-12-28','YYYY-MM-DD') );
+
+-- REZERVARE_CAMERA
+insert into rezervare_camera values ( 1,
+                                      1,
+                                      6,
+                                      900 ); -- 6 nopți * 150
+insert into rezervare_camera values ( 2,
+                                      2,
+                                      7,
+                                      1750 ); -- 7 nopți * 250
+insert into rezervare_camera values ( 3,
+                                      3,
+                                      2,
+                                      900 ); -- 2 nopți * 450
+insert into rezervare_camera values ( 4,
+                                      4,
+                                      7,
+                                      1050 ); -- 7 nopți * 150
+insert into rezervare_camera values ( 5,
+                                      5,
+                                      4,
+                                      1000 ); -- 4 nopți * 250
+insert into rezervare_camera values ( 6,
+                                      6,
+                                      9,
+                                      4950 ); -- 9 nopți * 550
+insert into rezervare_camera values ( 7,
+                                      7,
+                                      5,
+                                      900 ); -- 5 nopți * 180
+insert into rezervare_camera values ( 8,
+                                      8,
+                                      5,
+                                      1400 ); -- 5 nopți * 280
+insert into rezervare_camera values ( 9,
+                                      9,
+                                      10,
+                                      6000 ); -- 10 nopți * 600
+insert into rezervare_camera values ( 10,
+                                      10,
+                                      5,
+                                      1300 ); -- 5 nopți * 260
+
+-- CLIENT_SERVICIU  
+insert into client_serviciu values ( 1,
+                                     1,
+                                     to_date('2025-12-02','YYYY-MM-DD') );  -- Spa
+insert into client_serviciu values ( 2,
+                                     2,
+                                     to_date('2025-12-04','YYYY-MM-DD') );  -- Room Service
+insert into client_serviciu values ( 3,
+                                     3,
+                                     to_date('2025-12-06','YYYY-MM-DD') );  -- Masaj
+insert into client_serviciu values ( 4,
+                                     4,
+                                     to_date('2025-12-08','YYYY-MM-DD') );  -- Piscină
+insert into client_serviciu values ( 5,
+                                     5,
+                                     to_date('2025-12-11','YYYY-MM-DD') );  -- Tur Ghidat
+insert into client_serviciu values ( 6,
+                                     6,
+                                     to_date('2025-12-13','YYYY-MM-DD') );  -- Transport
+insert into client_serviciu values ( 7,
+                                     7,
+                                     to_date('2025-12-16','YYYY-MM-DD') );  -- Curățenie
+insert into client_serviciu values ( 8,
+                                     8,
+                                     to_date('2025-12-19','YYYY-MM-DD') );  -- Spălătorie
+insert into client_serviciu values ( 9,
+                                     9,
+                                     to_date('2025-12-21','YYYY-MM-DD') );  -- Fitness
+insert into client_serviciu values ( 10,
+                                     10,
+                                     to_date('2025-12-24','YYYY-MM-DD') );-- Cinema
+
+-- PLATI (suma se calculează automat prin trigger)
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 1,
+           1,
+           to_date('2025-11-25','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 2,
+           2,
+           to_date('2025-11-28','YYYY-MM-DD'),
+           'Cash' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 3,
+           3,
+           to_date('2025-12-01','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 4,
+           4,
+           to_date('2025-12-03','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 5,
+           5,
+           to_date('2025-12-06','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 6,
+           6,
+           to_date('2025-12-08','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 7,
+           7,
+           to_date('2025-12-11','YYYY-MM-DD'),
+           'Cash' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 8,
+           8,
+           to_date('2025-12-14','YYYY-MM-DD'),
+           'Card' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 9,
+           9,
+           to_date('2025-12-16','YYYY-MM-DD'),
+           'Transfer' );
+insert into plata (
+   id_plata,
+   id_rezervare,
+   data_plata,
+   metoda_plata
+) values ( 10,
+           10,
+           to_date('2025-12-19','YYYY-MM-DD'),
+           'Card' );
+
+-- EVENIMENT_CLIENT
+insert into eveniment_client values ( 1,
+                                      1 );
+insert into eveniment_client values ( 2,
+                                      2 );
+insert into eveniment_client values ( 3,
+                                      3 );
+insert into eveniment_client values ( 4,
+                                      4 );
+insert into eveniment_client values ( 5,
+                                      5 );
+insert into eveniment_client values ( 6,
+                                      6 );
+insert into eveniment_client values ( 7,
+                                      7 );
+insert into eveniment_client values ( 8,
+                                      8 );
+insert into eveniment_client values ( 9,
+                                      9 );
+insert into eveniment_client values ( 10,
+                                      10 );
+
+commit;
+
+-- Verificare sume calculate automat
+select p.id_plata,
+       p.id_rezervare,
+       p.suma as suma_calculata_automat,
+       p.data_plata,
+       p.metoda_plata
+  from plata p
+ order by p.id_plata;
+
+select *
+  from client;
+
+select owner,
+       table_name
+  from all_tables
+ where table_name in ( 'CLIENT',
+                       'REZERVARE',
+                       'CAMERA' );
+
+
+-- =====================================================
+-- Crearea tabelelor pentru depozitul de date (Data Warehouse)
+-- =====================================================
+-- Dimensiuni
+-- 3. Crearea bazei de date depozit și a utilizatorilor 
+
+-- DIM CLIENT: tabel de dimensiune pentru clienti
+create table dim_client (
+   id_client_dim  number primary key,
+   id_client_oltp number,
+   nume           varchar2(30),
+   prenume        varchar2(30),
+   email          varchar2(50)
+);
+
+-- DIM CAMERA: tabel de dimensiune pentru camere
+create table dim_camera (
+   id_camera_dim    number primary key,
+   id_camera_oltp   number,
+   nr_camera        number,
+   tip_camera       varchar2(20),
+   categorie_camera varchar2(20),
+   clasa_confort    varchar2(20),
+   pret             number(10,2)
+);
+
+-- DIM SERVICIU: tabel de dimensiune pentru servicii
+create table dim_serviciu (
+   id_serviciu_dim  number primary key,
+   id_serviciu_oltp number,
+   denumire         varchar2(50),
+   pret_serviciu    number(10,2)
+);
+
+-- DIM EVENIMENT: tabel de dimensiune pentru evenimente
+create table dim_eveniment (
+   id_eveniment_dim  number primary key,
+   id_eveniment_oltp number,
+   nume_eveniment    varchar2(50),
+   data_eveniment    date
+);
+
+-- DIM TIMP: tabel de dimensiune pentru timp
+create table dim_timp (
+   --id_timp_dim      number primary key,
+   data_completa date primary key,
+   zi            number,
+   luna          number,
+   an            number,
+   luna_an       varchar2(20)
+);
+
+-- DIM METODA PLATA: tabel de dimensiune pentru metoda de plata
+create table dim_metoda_plata (
+   id_metoda_plata_dim number primary key,
+   metoda_plata        varchar2(20),
+   tip_tranzactie      varchar2(30)
+);
+
+-- FACT: tabel de fapte pentru rezervari
+create table fact_rezervari (
+   id_rezervare        number primary key,
+   id_rezervare_oltp   number,
+   id_client_dim       number,
+   id_camera_dim       number,
+   id_serviciu_dim     number,
+   id_eveniment_dim    number,
+   id_data_start       date,
+   id_data_final       date,
+   id_metoda_plata_dim number,
+   suma_totala         number(10,2),
+   foreign key ( id_client_dim )
+      references dim_client ( id_client_dim ),
+   foreign key ( id_camera_dim )
+      references dim_camera ( id_camera_dim ),
+   foreign key ( id_serviciu_dim )
+      references dim_serviciu ( id_serviciu_dim ),
+   foreign key ( id_eveniment_dim )
+      references dim_eveniment ( id_eveniment_dim ),
+   foreign key ( id_data_start )
+      references dim_timp ( data_completa ),
+   foreign key ( id_data_final )
+      references dim_timp ( data_completa ),
+   foreign key ( id_metoda_plata_dim )
+      references dim_metoda_plata ( id_metoda_plata_dim )
+);
+
+-- Ajustare cheie primara pentru FACT_REZERVARI, deoarece granularitatea tabelului de fapte este
+-- REZERVARE – CAMERA, o rezervare poate aparea de mai multe ori in fact table.
+-- Cheia primara este definita ca fiind compusa din id-ul rezervarii din OLTP si cheia camerei,
+-- asigurand unicitatea fiecarui rand.
+alter table fact_rezervari drop primary key;
+
+alter table fact_rezervari add constraint pk_fact_rezervari primary key ( id_rezervare_oltp,
+                                                                          id_camera_dim );
+
+-- =====================================================
+-- Populare dimensiuni din OLTP
+-- =====================================================
+
+--4. Popularea cu informații a bazei de date depozit folosind ca sursă datele din baza de date OLTP
+insert into dim_client
+   select id_client,
+          id_client,
+          nume,
+          prenume,
+          email
+     from client;
+
+insert into dim_camera
+   select id_camera,
+          id_camera,
+          nr_camera,
+          tip_camera,
+          categorie_camera,
+          clasa_confort,
+          pret
+     from camera;
+
+insert into dim_serviciu
+   select id_serviciu,
+          id_serviciu,
+          denumire,
+          pret_serviciu
+     from serviciu;
+
+insert into dim_eveniment
+   select id_eveniment,
+          id_eveniment,
+          nume_eveniment,
+          data_eveniment
+     from eveniment;
+
+-- Dimensiune timp pe baza datei rezervarii
+insert into dim_timp
+   select data_completa,
+          extract(day from data_completa) as zi,
+          extract(month from data_completa) as luna,
+          extract(year from data_completa) as an,
+          to_char(
+             data_completa,
+             'YYYYMM'
+          ) as luna_an
+     from (
+      select data_start as data_completa
+        from rezervare
+      union
+      select data_final as data_completa
+        from rezervare
+   );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-01-15',
+           15,
+           1,
+           2025,
+           'Ian 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-02-20',
+           20,
+           2,
+           2025,
+           'Feb 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-03-10',
+           10,
+           3,
+           2025,
+           'Mar 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-04-05',
+           5,
+           4,
+           2025,
+           'Apr 2025' );
+
+insert into dim_timp (
+   data_completa,
+   zi,
+   luna,
+   an,
+   luna_an
+) values ( date '2025-07-20',
+           20,
+           7,
+           2025,
+           'Iul 2025' );
+
+insert into dim_metoda_plata
+   select dense_rank()
+          over(
+       order by metoda_plata
+          ) as id_metoda_plata_dim,
+          metoda_plata,
+          case
+             when metoda_plata = 'Card'     then
+                'Electronic'
+             when metoda_plata = 'Transfer' then
+                'Electronic'
+             when metoda_plata = 'Cash'     then
+                'Numerar'
+          end as tip_tranzactie
+     from (
+      select distinct metoda_plata
+        from plata
+   );
+
+-- Populare tabel de fapte FACT_REZERVARI
+-- Granularitate: o linie pentru fiecare combinatie: REZERVARE – CAMERA.
+-- Pentru fiecare rezervare se insereaza cate un rand pentru fiecare camera asociata rezervarii.
+-- Aceasta abordare permite analiza veniturilor in functie de camera, tip camera si perioada de timp.
+insert into fact_rezervari (
+   id_rezervare,
+   id_rezervare_oltp,
+   id_client_dim,
+   id_camera_dim,
+   id_data_start,
+   id_data_final,
+   id_metoda_plata_dim,
+   suma_totala
+)
+   select r.id_rezervare,
+          r.id_rezervare,
+          dc.id_client_dim,
+          dcam.id_camera_dim,
+          dt_start.data_completa,
+          dt_final.data_completa,
+          dmp.id_metoda_plata_dim,
+          rc.pret_rezervare
+     from rezervare r
+     join dim_client dc
+   on dc.id_client_oltp = r.id_client
+     join rezervare_camera rc
+   on rc.id_rezervare = r.id_rezervare
+     join dim_camera dcam
+   on dcam.id_camera_oltp = rc.id_camera
+     join dim_timp dt_start
+   on dt_start.data_completa = r.data_start
+     join dim_timp dt_final
+   on dt_final.data_completa = r.data_final
+     join plata p
+   on p.id_rezervare = r.id_rezervare
+     join dim_metoda_plata dmp
+   on dmp.metoda_plata = p.metoda_plata;
+
+
+begin
+   dbms_stats.gather_table_stats(
+      ownname          => user,
+      tabname          => 'FACT_REZERVARI',
+      cascade          => true,
+      estimate_percent => dbms_stats.auto_sample_size
+   );
+   dbms_stats.gather_table_stats(
+      ownname => user,
+      tabname => 'DIM_TIMP',
+      cascade => true
+   );
+   dbms_stats.gather_table_stats(
+      ownname => user,
+      tabname => 'DIM_CAMERA',
+      cascade => true
+   );
+   dbms_stats.gather_table_stats(
+      ownname => user,
+      tabname => 'DIM_METODA_PLATA',
+      cascade => true
+   );
+   dbms_stats.gather_table_stats(
+      ownname => user,
+      tabname => 'DIM_CLIENT',
+      cascade => true
+   );
+end;
+/
+
+-- =====================================================
+-- Creare constrangeri suplimentare si indexuri
+-- =====================================================
+
+--5. Definirea constrângerilor
+-- DIM CLIENT
+alter table dim_client modify
+   nume not null
+      enable validate;
+
+alter table dim_client modify
+   prenume not null
+      enable validate;
+
+-- Un client OLTP nu poate aparea de mai multe ori in dim_client
+alter table dim_client add constraint uq_dim_client_oltp unique ( id_client_oltp )
+   disable validate;
+
+-- DIM CAMERA
+alter table dim_camera modify
+   tip_camera not null
+      enable validate;
+
+alter table dim_camera modify
+   pret check ( pret > 0 )
+      enable validate;
+
+-- O camera OLTP nu poate aparea de mai multe ori in dim_camera
+alter table dim_camera add constraint uq_dim_camera_oltp unique ( id_camera_oltp )
+   disable validate;
+
+-- DIM SERVICIU
+alter table dim_serviciu modify
+   pret_serviciu check ( pret_serviciu >= 0 )
+      enable validate;
+
+alter table dim_serviciu add constraint uq_dim_serviciu_oltp unique ( id_serviciu_oltp )
+   disable validate;
+
+-- DIM EVENIMENT
+alter table dim_eveniment modify
+   nume_eveniment not null
+      enable validate;
+
+alter table dim_eveniment add constraint uq_dim_eveniment_oltp unique ( id_eveniment_oltp )
+   disable validate;
+
+-- Doua evenimente nu pot avea acelasi nume si aceeasi data
+alter table dim_eveniment
+   add constraint uq_dim_eveniment_nume_data unique ( nume_eveniment,
+                                                      data_eveniment )
+      disable validate;
+
+-- DIM TIMP
+alter table dim_timp modify
+   zi check ( zi between 1 and 31 )
+      enable validate;
+
+alter table dim_timp modify
+   luna check ( luna between 1 and 12 )
+      enable validate;
+
+alter table dim_timp modify
+   an check ( an between 1900 and 2100 )
+      enable validate;
+
+-- DIM METODA_PLATA
+alter table dim_metoda_plata modify
+   metoda_plata not null
+      enable validate;
+
+alter table dim_metoda_plata modify
+   tip_tranzactie not null
+      enable validate;
+
+-- O metoda de plata apare o singura data in dim_metoda_plata
+alter table dim_metoda_plata add constraint uq_dim_metoda_plata unique ( metoda_plata )
+   disable validate;
+
+-- FACT_REZERVARI
+-- Verificare suma_totala pozitiva
+alter table fact_rezervari
+   add constraint chk_fact_rezervari_suma check ( suma_totala >= 0 )
+      enable validate;
+
+select constraint_name
+  from user_constraints
+ where table_name = 'FACT_REZERVARI'
+   and constraint_type = 'R';
+
+alter table fact_rezervari modify constraint sys_c007793
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007794
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007795
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007796
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007797
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007798
+   enable novalidate;
+
+alter table fact_rezervari modify constraint sys_c007799
+   enable novalidate;
+
+-- =====================================================
+-- Verificari finale
+-- =====================================================
+
+select count(*)
+  from dim_client;
+select count(*)
+  from dim_camera;
+select count(*)
+  from dim_serviciu;
+select count(*)
+  from dim_eveniment;
+select count(*)
+  from dim_timp;
+select count(*)
+  from fact_rezervari;
+
+-- EXERCITII REFACUTE:
+
+-- 6.
+-- Indecsi BITMAP pe cheile externe din tabela de fapte:
+alter session set star_transformation_enabled = true;
+
+create bitmap index bmp_fk_rezervari_camere on
+   fact_rezervari (
+      id_camera_dim
+   );
+analyze index bmp_fk_rezervari_camere compute statistics;
+
+create bitmap index bmp_fk_rezervari_timp on
+   fact_rezervari (
+      id_data_start
+   );
+analyze index bmp_fk_rezervari_timp compute statistics;
+
+create bitmap index bmp_fk_rezervari_metoda_plata on
+   fact_rezervari (
+      id_metoda_plata_dim
+   );
+analyze index bmp_fk_rezervari_metoda_plata compute statistics;
+
+BEGIN
+   DBMS_STATS.SET_TABLE_STATS(
+      ownname => user,
+      tabname => 'FACT_REZERVARI',
+      numrows => 10000000,
+      numblks => 100000,
+      avgrlen => 100
+   );
+
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_CAMERA', numrows => 100, numblks => 5);
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_TIMP', numrows => 365, numblks => 10);
+   DBMS_STATS.SET_TABLE_STATS(user, 'DIM_METODA_PLATA', numrows => 5, numblks => 1);
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_CAMERE',
+      numrows => 10000000,
+      numlblks => 1000,
+      numdist => 100
+   );
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_TIMP',
+      numrows => 10000000,
+      numlblks => 1000,
+      numdist => 365
+   );
+
+   DBMS_STATS.SET_INDEX_STATS(
+      ownname => user,
+      indname => 'BMP_FK_REZERVARI_METODA_PLATA',
+      numrows => 10000000,
+      numlblks => 500,
+      numdist => 5
+   );
+END;
+/
+
+-- cost fara index: 27198
+-- cost cu index: 42
+EXPLAIN PLAN SET STATEMENT_ID = 'ex_6' FOR
+SELECT
+    dc.categorie_camera,
+    dmp.metoda_plata,
+    dt.luna,
+    SUM(fr.suma_totala) AS venit_lunar,
+    SUM(SUM(fr.suma_totala)) OVER (
+        PARTITION BY dc.categorie_camera, dmp.metoda_plata
+        ORDER BY dt.luna
+    ) AS venit_progresiv_anual,
+    ROUND(100 * RATIO_TO_REPORT(SUM(fr.suma_totala)) OVER (PARTITION BY dt.luna), 2) AS procent_din_luna
+FROM fact_rezervari fr
+JOIN dim_camera dc ON fr.id_camera_dim = dc.id_camera_dim
+JOIN dim_timp dt ON fr.id_data_start = dt.data_completa
+JOIN dim_metoda_plata dmp ON fr.id_metoda_plata_dim = dmp.id_metoda_plata_dim
+WHERE dc.clasa_confort = 'Luxury'
+  AND dt.an = 2025
+  AND dmp.tip_tranzactie = 'Electronic'
+GROUP BY
+    dc.categorie_camera,
+    dmp.metoda_plata,
+    dt.luna
+ORDER BY
+    dc.categorie_camera,
+    dt.luna;
+SELECT * FROM table(dbms_xplan.display('plan_table', 'ex_6', 'serial'));
+
+-- 7.
+grant
+   create dimension,
+   create materialized view,
+   query rewrite
+to diana;
+
+-- clasa confort "Luxury" are categoriile de camere: "Deluxe", "Royal"
+-- clasa confort "Standard" are categoriile de camere: "Basic", "Economy", "Family"
+create dimension dim_camera_obj
+   level camera is dim_camera.id_camera_dim
+   level categorie is dim_camera.categorie_camera
+   level clasa_confort is dim_camera.clasa_confort
+   attribute camera determines (
+      dim_camera.id_camera_oltp,
+      dim_camera.nr_camera,
+      dim_camera.tip_camera,
+      dim_camera.pret
+   )
+   attribute categorie determines (
+      dim_camera.categorie_camera
+   )
+   attribute clasa_confort determines (
+      dim_camera.clasa_confort
+   )
+   hierarchy camera_rollup ( camera
+      child of categorie
+      child of clasa_confort
+   );
+
+-- validare obiect dimensiune camera
+call dbms_dimension.validate_dimension(
+   upper('dim_camera_obj'),
+   false,
+   true,
+   'st_dim_camera_obj'
+);
+select *
+  from dimension_exceptions
+ where statement_id = 'st_dim_camera_obj'; -- zero exceptii == e valid
+
+create dimension dim_timp_obj
+   level zi is dim_timp.data_completa
+   level luna is dim_timp.luna_an
+   level an is dim_timp.an
+   attribute zi determines (
+      dim_timp.zi,
+      dim_timp.data_completa
+   )
+   attribute luna determines (
+      dim_timp.luna
+   )
+   attribute an determines (
+      dim_timp.an
+   )
+   hierarchy timp_rollup ( zi
+      child of luna
+      child of an
+   );
+
+-- validare obiect dimensiune timp
+call dbms_dimension.validate_dimension(
+   upper('dim_timp_obj'),
+   false,
+   true,
+   'st_dim_timp_obj'
+);
+select *
+  from dimension_exceptions
+ where statement_id = 'st_dim_timp_obj'; -- zero exceptii == e valid
+
+-- toate obiectele dimensiune definite
+select dimension_name
+  from user_dimensions;
+
+
+-- 8.
+create table fact_rezervari_part (
+   id_rezervare        number primary key,
+   id_rezervare_oltp   number,
+   id_client_dim       number,
+   id_camera_dim       number,
+   id_serviciu_dim     number,
+   id_eveniment_dim    number,
+   id_data_start       date not null,
+   id_data_final       date not null,
+   id_metoda_plata_dim number,
+   suma_totala         number(10,2),
+   constraint fk_dim_client foreign key ( id_client_dim )
+      references dim_client ( id_client_dim ),
+   constraint fk_dim_camera foreign key ( id_camera_dim )
+      references dim_camera ( id_camera_dim ),
+   constraint fk_dim_serviciu foreign key ( id_serviciu_dim )
+      references dim_serviciu ( id_serviciu_dim ),
+   constraint fk_dim_eveniment foreign key ( id_eveniment_dim )
+      references dim_eveniment ( id_eveniment_dim ),
+   constraint fk_dim_data_start foreign key ( id_data_start )
+      references dim_timp ( data_completa ),
+   constraint fk_dim_data_final foreign key ( id_data_final )
+      references dim_timp ( data_completa ),
+   constraint fk_dim_metoda_plata foreign key ( id_metoda_plata_dim )
+      references dim_metoda_plata ( id_metoda_plata_dim )
+)
+   partition by range (
+      id_data_start
+   )
+   ( partition p_timp_ani_anteriori
+      values less than ( date '2023-01-01' ),
+   partition p_timp_2023
+      values less than ( date '2024-01-01' ),
+   partition p_timp_2024
+      values less than ( date '2025-01-01' ),
+   partition p_timp_2025
+      values less than ( date '2026-01-01' )
+   );
+alter table fact_rezervari_part modify constraint fk_dim_client rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_camera rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_data_start rely enable novalidate;
+alter table fact_rezervari_part modify constraint fk_dim_metoda_plata rely enable novalidate;
+insert into fact_rezervari_part
+   (
+      select *
+        from fact_rezervari
+   );
+
+begin
+   dbms_stats.gather_table_stats(
+      ownname => user,
+      tabname => 'FACT_REZERVARI_PART',
+      cascade => true
+   );
+   dbms_stats.set_table_stats(
+      ownname => user,
+      tabname => 'FACT_REZERVARI_PART',
+      numrows => 10000000,
+      numblks => 150000,
+      avgrlen => 100
+   );
+   dbms_stats.set_table_stats(
+      ownname => user,
+      tabname => 'FACT_REZERVARI',
+      numrows => 10000000,
+      numblks => 150000,
+      avgrlen => 100
+   );
+end;
+/
+
+explain plan set statement_id = 'ex_8_part'
+   for
+with rezervari as (
+   select dc.id_client_dim,
+          dc.nume
+          || ' '
+          || dc.prenume as nume_client,
+          fr.id_data_start as data_checkin,
+          sum(fr.suma_totala) as total_sejur
+     from fact_rezervari_part fr
+     join dim_client dc
+   on fr.id_client_dim = dc.id_client_dim
+    where id_data_start between date '2025-01-01' and date '2025-12-31'
+    group by fr.id_rezervare_oltp,
+             dc.id_client_dim,
+             dc.nume,
+             dc.prenume,
+             fr.id_data_start
+)
+select nume_client,
+       data_checkin,
+       total_sejur,
+       nvl(
+          lag(data_checkin,
+              1)
+          over(partition by id_client_dim
+               order by data_checkin
+          ),
+          data_checkin
+       ) as data_vizita_anterioara,
+       data_checkin - nvl(
+          lag(data_checkin,
+              1)
+          over(partition by id_client_dim
+               order by data_checkin
+          ),
+          data_checkin
+       ) as zile_de_la_ultima_vizita
+  from rezervari
+ order by nume_client,
+          data_checkin;
+
+-- afiare plan executie
+select *
+  from table ( dbms_xplan.display(
+   'plan_table',
+   'ex_8_part',
+   'serial'
+) );
+
+-- 9
+-- cerere de optimizat:
+-- pentru fiecare client care a rezervat camera 1001 sa se afle:
+--      - venitul lunar generat pentru acea camera
+--      - clasamentul sau in cadrul lunii in functie de venitul lunar generat
+-- vom clasifica clientii ca fiind:
+--      -"VIP luna" daca sunt pe locul 1,
+--      - "Top 3" daca sunt pe primele 3 locuri
+--      - "Standard" altfel
+explain plan set statement_id = 'ex_9'
+   for
+with vanzari_per_client as (
+   select t.an,
+          t.luna,
+          cl.nume,
+          sum(f.suma_totala) as venit_generat
+     from fact_rezervari f
+     join dim_camera c
+   on f.id_camera_dim = c.id_camera_dim
+     join dim_client cl
+   on f.id_client_dim = cl.id_client_dim
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where c.nr_camera = 1001
+    group by t.an,
+             t.luna,
+             cl.nume
+),clasamente as (
+   select an,
+          luna,
+          nume,
+          venit_generat,
+          dense_rank()
+          over(partition by an,
+                            luna
+               order by venit_generat desc
+          ) as rang_lunar
+     from vanzari_per_client
+)
+select an,
+       luna,
+       nume,
+       venit_generat,
+       rang_lunar,
+       case
+          when rang_lunar = 1  then
+             'VIP Luna'
+          when rang_lunar <= 3 then
+             'Top 3'
+          else
+             'Standard'
+       end as status_client
+  from clasamente
+ order by an,
+          luna,
+          rang_lunar;
+select *
+  from table ( dbms_xplan.display(
+   'plan_table',
+   'ex_9',
+   'serial'
+) );
+
+-- optimizare 1: Bitmap join index pe numar camera => Cost = 13
+create bitmap index bji_rezervari_camera on
+   fact_rezervari ( c.nr_camera ) from fact_rezervari f,dim_camera c where
+      f.id_camera_dim = c.id_camera_dim;
+
+-- optimizare 2: materialized view
+grant query rewrite to diana;
+alter session set query_rewrite_enabled = true;
+
+create materialized view materialized_view_client_1001
+   build immediate
+   refresh
+         complete
+         on demand
+enable query rewrite -- foloseste automat vizualizarea materializata
+ as
+   select c.nr_camera,
+          cl.nume,
+          t.an,
+          t.luna,
+          sum(f.suma_totala) as venit_total
+     from fact_rezervari f
+     join dim_camera c
+   on f.id_camera_dim = c.id_camera_dim
+     join dim_client cl
+   on f.id_client_dim = cl.id_client_dim
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where c.nr_camera = 1001
+    group by c.nr_camera,
+             cl.nume,
+             t.an,
+             t.luna;
+
+-- actualizare view manual
+begin
+   dbms_mview.refresh('materialized_view_client_1001');
+end;
+/
+
+-- 10.
+-- cerere 1:
+with venituri_lunare as (
+   select t.luna,
+          sum(
+             case
+                when t.an = 2024 then
+                   f.suma_totala
+                else
+                   0
+             end
+          ) as venit_lunar_2024,
+          sum(
+             case
+                when t.an = 2025 then
+                   f.suma_totala
+                else
+                   0
+             end
+          ) as venit_lunar_2025
+     from fact_rezervari f
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where t.an in ( 2024,
+                    2025 )
+    group by t.luna
+)
+select luna,
+       sum(venit_lunar_2024)
+       over(
+           order by luna
+          rows unbounded preceding
+       ) as cumulat_2024,
+       sum(venit_lunar_2025)
+       over(
+           order by luna
+          rows unbounded preceding
+       ) as cumulat_2025
+  from venituri_lunare
+ order by luna;
+
+-- cerere 2:
+select f.id_camera_dim,
+       dm.metoda_plata,
+       dm.tip_tranzactie,
+       dt.an,
+       dt.luna,
+       sum(f.suma_totala) as venit_metoda_plata,
+       round(
+          (sum(f.suma_totala) / sum(sum(f.suma_totala))
+                                over(partition by f.id_camera_dim,
+                                                  dt.an,
+                                                  dt.luna)) * 100,
+          2
+       ) as procent_din_venit_total,
+       sum(f.suma_totala) - avg(sum(f.suma_totala))
+                            over(partition by f.id_camera_dim,
+                                              dt.an,
+                                              dt.luna) as deviata_fata_de_media_camerei
+  from fact_rezervari f
+  join dim_metoda_plata dm
+on f.id_metoda_plata_dim = dm.id_metoda_plata_dim
+  join dim_timp dt
+on f.id_data_start = dt.data_completa
+ where f.id_metoda_plata_dim in ( 2,
+                                  3 )
+   and dt.an = 2025
+ group by f.id_camera_dim,
+          dm.metoda_plata,
+          dm.tip_tranzactie,
+          dt.an,
+          dt.luna
+ order by f.id_camera_dim,
+          dt.an,
+          dt.luna,
+          venit_metoda_plata desc;
+
+-- cerere 3:
+with clienti_vip as (
+   select id_client_dim
+     from (
+      select id_client_dim,
+             sum(suma_totala) as total_cheltuit,
+             ntile(20)
+             over(
+                 order by sum(suma_totala) desc
+             ) as tile -- impartim in grupuri de 5%
+        from fact_rezervari
+       group by id_client_dim
+   )
+    where tile = 1 -- primii 5%
+),numar_rezervari_per_categorie as (
+   select c.categorie_camera,
+          count(*) as numar_rezervari
+     from clienti_vip tc
+     join fact_rezervari f
+   on f.id_client_dim = tc.id_client_dim
+     join dim_camera c
+   on f.id_camera_dim = c.id_camera_dim
+    group by c.categorie_camera
+)
+select categorie_camera,
+       numar_rezervari,
+       round(
+          ratio_to_report(numar_rezervari)
+          over() * 100,
+          2
+       ) as procent
+  from numar_rezervari_per_categorie;
+
+-- cerere 4:
+with venituri_anuale as (
+   select c.categorie_camera,
+          avg(f.suma_totala) as venit_mediu_anual
+     from fact_rezervari f
+     join dim_camera c
+   on f.id_camera_dim = c.id_camera_dim
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where t.an = 2025
+    group by c.categorie_camera
+),venituri_trimestriale as (
+   select c.categorie_camera,
+          ceil(t.luna / 3.0) as trimestru,
+          count(*) as numar_rezervari,
+          avg(f.suma_totala) as venit_mediu_rezervare
+     from fact_rezervari f
+     join dim_camera c
+   on f.id_camera_dim = c.id_camera_dim
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where t.an = 2025
+    group by c.categorie_camera,
+             ceil(t.luna / 3.0)
+)
+select vt.categorie_camera,
+       vt.trimestru,
+       vt.numar_rezervari,
+       round(
+          vt.venit_mediu_rezervare,
+          2
+       ) as venit_mediu_rezervare,
+       round(
+          ((vt.venit_mediu_rezervare - va.venit_mediu_anual) / va.venit_mediu_anual) * 100,
+          2
+       ) as diferenta_procentuala_fata_de_medie_anuala
+  from venituri_trimestriale vt
+  join venituri_anuale va
+on vt.categorie_camera = va.categorie_camera
+ order by vt.categorie_camera,
+          vt.trimestru;
+
+-- cerere 5:
+with camere_count as (
+   select f.id_metoda_plata_dim,
+          f.id_camera_dim,
+          count(*) as numar_rezervari,
+          sum(f.suma_totala) as venit_total
+     from fact_rezervari f
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where t.an = 2025
+    group by f.id_metoda_plata_dim,
+             f.id_camera_dim
+),top_camere as (
+   select id_metoda_plata_dim,
+          id_camera_dim,
+          numar_rezervari,
+          venit_total,
+          row_number()
+          over(partition by id_metoda_plata_dim
+               order by numar_rezervari desc
+          ) as rank_camera
+     from camere_count
+),venituri_lunare as (
+   select tc.id_metoda_plata_dim,
+          tc.id_camera_dim,
+          t.luna,
+          sum(f.suma_totala) as venit_lunar
+     from top_camere tc
+     join fact_rezervari f
+   on tc.id_camera_dim = f.id_camera_dim
+      and tc.id_metoda_plata_dim = f.id_metoda_plata_dim
+     join dim_timp t
+   on f.id_data_start = t.data_completa
+    where tc.rank_camera <= 3
+      and t.an = 2025
+    group by tc.id_metoda_plata_dim,
+             tc.id_camera_dim,
+             t.luna
+),rate_crestere as (
+   select id_metoda_plata_dim,
+          id_camera_dim,
+          avg(
+             case
+                when prev_venit > 0 then
+                   ((venit_lunar - prev_venit) / prev_venit) * 100
+                else
+                   0
+             end
+          ) as rata_crestere_medie
+     from (
+      select id_metoda_plata_dim,
+             id_camera_dim,
+             luna,
+             venit_lunar,
+             lag(venit_lunar)
+             over(partition by id_metoda_plata_dim,
+                               id_camera_dim
+                  order by luna
+             ) as prev_venit
+        from venituri_lunare
+   )
+    group by id_metoda_plata_dim,
+             id_camera_dim
+),procent_contributie as (
+   select id_metoda_plata_dim,
+          id_camera_dim,
+          venit_total,
+          ( venit_total / sum(venit_total)
+                          over(partition by id_metoda_plata_dim) ) * 100 as contributie_procentuala
+     from top_camere
+    where rank_camera <= 3
+)
+select mp.metoda_plata,
+       c.categorie_camera,
+       c.nr_camera,
+       tc.numar_rezervari,
+       round(
+          pc.venit_total,
+          2
+       ) as valoare_totala,
+       round(
+          pc.contributie_procentuala,
+          2
+       ) as contributie_procentuala,
+       round(
+          rc.rata_crestere_medie,
+          2
+       ) as rata_crestere_lunara_medie
+  from top_camere tc
+  join procent_contributie pc
+on tc.id_metoda_plata_dim = pc.id_metoda_plata_dim
+   and tc.id_camera_dim = pc.id_camera_dim
+  join rate_crestere rc
+on tc.id_metoda_plata_dim = rc.id_metoda_plata_dim
+   and tc.id_camera_dim = rc.id_camera_dim
+  join dim_camera c
+on tc.id_camera_dim = c.id_camera_dim
+  join dim_metoda_plata mp
+on tc.id_metoda_plata_dim = mp.id_metoda_plata_dim
+ where tc.rank_camera <= 3
+ order by mp.metoda_plata,
+          tc.numar_rezervari desc;

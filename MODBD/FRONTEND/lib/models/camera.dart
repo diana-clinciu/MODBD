@@ -1,0 +1,209 @@
+import 'package:flutter/material.dart';
+import 'package:mvvm_flutter/api/client_api.dart';
+import 'package:mvvm_flutter/internal_models/app_colors.dart';
+import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
+import 'package:mvvm_flutter/utils/extensions/color+.dart';
+
+class Camera {
+  final int id;
+  final int nr;
+  final String tip;
+  final String categorie;
+  final String clasaConfort;
+  final double pret;
+
+  Camera(
+      {required this.id,
+      required this.nr,
+      required this.tip,
+      required this.categorie,
+      required this.clasaConfort,
+      required this.pret});
+
+  static Camera fromJson(JSON jsonBody) {
+    return Camera(
+        id: jsonBody["id_camera"],
+        nr: jsonBody["nr_camera"],
+        tip: jsonBody["tip_camera"],
+        categorie: jsonBody["categorie_camera"],
+        clasaConfort: jsonBody["clasa_confort"],
+        pret: jsonBody["pret"]);
+  }
+
+  static void showAddCameraDialog(BuildContext context, OLTPViewModel vm) {
+    int nr = 0;
+    String tip = '';
+    String categorie = '';
+    String clasaConfort = '';
+    double pret = 0.0;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          "Adauga camera",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              keyboardType: TextInputType.number,
+              onChanged: (v) => nr = int.tryParse(v) ?? 0,
+              decoration: InputDecoration(labelText: "Numar camera"),
+            ),
+            TextField(
+                onChanged: (v) => tip = v,
+                decoration: InputDecoration(labelText: "Tip camera")),
+            TextField(
+              onChanged: (v) => categorie = v,
+              decoration: InputDecoration(labelText: "Categorie"),
+            ),
+            TextField(
+              onChanged: (v) => clasaConfort = v,
+              decoration: InputDecoration(labelText: "Clasa confort"),
+            ),
+            TextField(
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
+              decoration: InputDecoration(labelText: "Pret camera"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
+          ElevatedButton(
+            onPressed: () {
+              vm.addCamera(Camera(
+                  id: vm.camere.length + 1,
+                  nr: nr,
+                  tip: tip,
+                  categorie: categorie,
+                  clasaConfort: clasaConfort,
+                  pret: pret));
+              Navigator.pop(dialogContext);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void showEditCameraDialog(
+      BuildContext context, OLTPViewModel vm, int index) {
+    int nr = vm.camere[index].nr;
+    String tip = vm.camere[index].tip;
+    String categorie = vm.camere[index].categorie;
+    String clasaConfort = vm.camere[index].clasaConfort;
+    double pret = vm.camere[index].pret;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          "Modifica camera",
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blackForestColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: TextEditingController(text: nr.toString()),
+              keyboardType: TextInputType.number,
+              onChanged: (v) => nr = int.tryParse(v) ?? 0,
+              decoration: InputDecoration(labelText: "Numar camera"),
+            ),
+            TextField(
+              controller: TextEditingController(text: tip),
+              onChanged: (v) => tip = v,
+              decoration: InputDecoration(labelText: "Tip camera"),
+            ),
+            TextField(
+              controller: TextEditingController(text: categorie),
+              onChanged: (v) => categorie = v,
+              decoration: InputDecoration(labelText: "Categorie camera"),
+            ),
+            TextField(
+              controller: TextEditingController(text: clasaConfort),
+              onChanged: (v) => clasaConfort = v,
+              decoration: InputDecoration(labelText: "Clasa confort"),
+            ),
+            TextField(
+              controller: TextEditingController(text: pret.toString()),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => pret = double.tryParse(v) ?? 0.0,
+              decoration: InputDecoration(labelText: "Pret camera"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text("Anuleaza",
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blackForestColor))),
+          ElevatedButton(
+            onPressed: () {
+              vm.editCamera(
+                  index,
+                  Camera(
+                      id: vm.camere[index].id,
+                      nr: nr,
+                      tip: tip,
+                      categorie: categorie,
+                      clasaConfort: clasaConfort,
+                      pret: pret));
+              Navigator.pop(dialogContext);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  AppColors.lightCaramelColor.withTransparency(0.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("Salveaza",
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.blackForestColor)),
+          ),
+        ],
+      ),
+    );
+  }
+}
