@@ -16,6 +16,27 @@ CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
 
+GRANT CREATE VIEW TO bdd;
+GRANT CREATE SYNONYM TO bdd;
+GRANT CREATE MATERIALIZED VIEW TO bdd;
+GRANT CREATE TRIGGER TO bdd;
+GRANT SELECT ON bdd_all.angajat TO bdd;
+GRANT SELECT ON bdd_all.tip_camera TO bdd;
+GRANT SELECT ON bdd_all.serviciu TO bdd;
+GRANT SELECT ON bdd_all.departament TO bdd;
+GRANT SELECT ON bdd_all.client TO bdd;
+GRANT SELECT ON bdd_all.camera TO bdd;
+GRANT SELECT ON bdd_all.sala_eveniment TO bdd;
+GRANT SELECT ON bdd_all.eveniment TO bdd;
+GRANT SELECT ON bdd_all.eveniment_client TO bdd;
+
+-- grant-uri pentru userul global (EU)
+GRANT CREATE VIEW TO bdd_global;
+GRANT CREATE SYNONYM TO bdd_global;
+GRANT CREATE DATABASE LINK TO bdd_global;
+GRANT SELECT ON bdd.angajat_identitate TO bdd_global;
+-- grant-ul pt tabela remote se face dupa creare
+
 -- definire link eu -> apac
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
 
@@ -39,6 +60,10 @@ SELECT * FROM dual@bd_apac;
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
+GRANT CREATE VIEW TO bdd;
+GRANT CREATE SYNONYM TO bdd;
+GRANT CREATE MATERIALIZED VIEW TO bdd;
+GRANT CREATE TRIGGER TO bdd;
 
 -- definire link apac -> eu
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
@@ -414,3 +439,165 @@ commit;
 select p.id_plata, p.id_rezervare, p.suma as suma_calculata_automat, p.data_plata, p.metoda_plata
   from plata p
  order by p.id_plata;
+
+-- =====================================================================
+-- 2. Crearea relatiilor și a fragmentelor 
+-- =====================================================================
+
+-- 2.1 Fragment Vertical 1: ANGAJAT_IDENTITATE - creat pe EU (user bdd)
+CREATE TABLE angajat_identitate (
+    id_angajat   NUMBER        PRIMARY KEY,
+    nume         VARCHAR2(30)  NOT NULL,
+    prenume      VARCHAR2(30)  NOT NULL,
+    functie      VARCHAR2(30),
+    id_serviciu  NUMBER
+);
+
+-- Populare din tabela centralizata ANGAJAT (aflata pe bdd_all)
+INSERT INTO angajat_identitate (id_angajat, nume, prenume, functie, id_serviciu)
+SELECT id_angajat, nume, prenume, functie, id_serviciu
+FROM bdd_all.angajat;
+
+COMMIT;
+
+-- Verificare
+SELECT * FROM angajat_identitate ORDER BY id_angajat;
+
+-- 2.2 Fragment Vertical 2: ANGAJAT_SALARIZARE - creat pe APAC (user bdd)
+
+CREATE TABLE angajat_salarizare (
+    id_angajat     NUMBER        PRIMARY KEY,
+    salariu        NUMBER(10,2),
+    id_departament NUMBER        NOT NULL
+);
+
+-- Populare din tabela centralizata ANGAJAT de pe EU (prin db link)
+INSERT INTO angajat_salarizare (id_angajat, salariu, id_departament)
+SELECT id_angajat, salariu, id_departament
+FROM bdd_all.angajat@bd_eu;
+
+COMMIT;
+
+-- Verificare
+SELECT * FROM angajat_salarizare ORDER BY id_angajat;
+
+-- =====================================================================
+-- 4. Furnizarea formelor de transparenta pentru intreg modelul ales  
+-- =====================================================================
+
+--a) Transparenta pentru fragmentele verticale 
+
+-- VIEW global pe EU (user bdd_global) care reconstituie ANGAJAT
+
+-- Sinonim local pentru fragmentul de pe EU
+CREATE OR REPLACE SYNONYM angajat_identitate FOR bdd.angajat_identitate;
+
+CREATE OR REPLACE VIEW angajat_global AS
+SELECT 
+   ai.id_angajat,
+   ai.nume,
+   ai.prenume,
+   ai.functie,
+   asal.salariu,
+   asal.id_departament,
+   ai.id_serviciu
+FROM bdd.angajat_identitate ai
+JOIN bdd.angajat_salarizare@bd_apac asal ON ai.id_angajat = asal.id_angajat;
+
+-- Verificare: aplicatia vede tabela ANGAJAT ca si cand nu ar fi fragmentata
+SELECT * FROM angajat_global ORDER BY id_angajat;
+
+-- VIEW-uri pe APAC pentru acces la fragmentul de pe EU
+CREATE OR REPLACE VIEW angajat_global AS
+SELECT 
+   ai.id_angajat,
+   ai.nume,
+   ai.prenume,
+   ai.functie,
+   asal.salariu,
+   asal.id_departament,
+   ai.id_serviciu
+FROM bdd.angajat_identitate@bd_eu ai
+JOIN angajat_salarizare asal ON ai.id_angajat = asal.id_angajat;
+
+-- Triggere INSTEAD OF pe view-ul global (EU)
+
+CREATE OR REPLACE TRIGGER trg_angajat_global_insert
+INSTEAD OF INSERT ON angajat_global
+FOR EACH ROW
+BEGIN
+    -- Inserare in fragmentul local (EU)
+    INSERT INTO bdd.angajat_identitate (id_angajat, nume, prenume, functie, id_serviciu)
+    VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie, :NEW.id_serviciu);
+
+    -- Inserare in fragmentul remote (APAC)
+    INSERT INTO bdd.angajat_salarizare@bd_apac (id_angajat, salariu, id_departament)
+    VALUES (:NEW.id_angajat, :NEW.salariu, :NEW.id_departament);
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_angajat_global_update
+INSTEAD OF UPDATE ON angajat_global
+FOR EACH ROW
+BEGIN
+    -- Update fragment local (EU)
+   UPDATE bdd.angajat_identitate
+   SET 
+      nume = :NEW.nume,
+      prenume = :NEW.prenume,
+      functie = :NEW.functie,
+      id_serviciu = :NEW.id_serviciu
+   WHERE 
+      id_angajat  = :OLD.id_angajat;
+
+    -- Update fragment remote (APAC)
+   UPDATE bdd.angajat_salarizare@bd_apac
+   SET 
+      salariu = :NEW.salariu,
+      id_departament = :NEW.id_departament
+   WHERE 
+      id_angajat = :OLD.id_angajat;
+END;
+/
+
+-- DELETE transparent
+CREATE OR REPLACE TRIGGER trg_angajat_global_delete
+INSTEAD OF DELETE ON angajat_global
+FOR EACH ROW
+BEGIN
+    -- Stergere din fragmentul local (EU)
+   DELETE FROM bdd.angajat_identitate
+   WHERE id_angajat = :OLD.id_angajat;
+
+    -- Stergere din fragmentul remote (APAC)
+   DELETE FROM bdd.angajat_salarizare@bd_apac
+   WHERE id_angajat = :OLD.id_angajat;
+END;
+/
+
+-- Test INSERT prin view-ul global
+INSERT INTO angajat_global (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu)
+VALUES (11, 'Mihai', 'Ion', 'Portar', 2500, 1, NULL);
+
+-- Verificare: datele s-au propagat in ambele fragmente
+SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 11;
+SELECT * FROM bdd.angajat_salarizare@bd_apac WHERE id_angajat = 11;
+
+-- Cleanup test
+DELETE FROM angajat_global WHERE id_angajat = 11;
+COMMIT;
+
+--C) Transparenta pentru tabelele stocate în alta baza de date fata de cea la care se conecteaza aplicatia 
+
+-- Tabelele SALA_EVENIMENT, EVENIMENT, EVENIMENT_CLIENT sunt stocate
+-- doar pe EU. Le facem accesibile transparent pe APAC prin sinonime.
+
+-- Sinonime catre tabelele de pe EU (accesate prin db link)
+CREATE OR REPLACE SYNONYM sala_eveniment FOR bdd_all.sala_eveniment@bd_eu;
+CREATE OR REPLACE SYNONYM eveniment FOR bdd_all.eveniment@bd_eu;
+CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_eu;
+
+-- Verificare: statia APAC acceseaza tabelele ca si cand ar fi locale
+SELECT * FROM sala_eveniment;
+SELECT * FROM eveniment ORDER BY id_eveniment;
+SELECT * FROM eveniment_client;
