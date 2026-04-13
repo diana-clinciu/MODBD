@@ -601,3 +601,274 @@ CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_eu;
 SELECT * FROM sala_eveniment;
 SELECT * FROM eveniment ORDER BY id_eveniment;
 SELECT * FROM eveniment_client;
+
+-- =====================================================
+-- 5 - Asigurarea sincronizarii datelor pentru relatiile replicate
+-- =====================================================
+
+-- Creare tabele replicate pe APAC si populare initiala
+
+-- TIP_CAMERA (replica)
+create table tip_camera (
+   id_tip_camera    number primary key,
+   tip_camera       varchar2(20) not null,
+   clasa_confort    varchar2(20) not null,
+   categorie_camera varchar2(30) not null,
+   pret             number(10,2) not null
+);
+
+insert into tip_camera
+select * from bdd_all.tip_camera@bd_eu;
+
+-- SERVICIU (replica)
+create table serviciu (
+   id_serviciu   number primary key,
+   denumire      varchar2(50) not null,
+   pret_serviciu number(10,2) not null
+);
+
+insert into serviciu
+select * from bdd_all.serviciu@bd_eu;
+
+-- DEPARTAMENT (replica)
+create table departament (
+   id_departament   number primary key,
+   nume_departament varchar2(50) not null
+);
+
+insert into departament
+select * from bdd_all.departament@bd_eu;
+
+-- CLIENT (replica)
+create table client (
+   id_client number primary key,
+   nume      varchar2(30) not null,
+   prenume   varchar2(30) not null,
+   email     varchar2(50) unique
+);
+
+insert into client
+select * from bdd_all.client@bd_eu;
+
+-- CAMERA (replica)
+create table camera (
+   id_camera     number primary key,
+   nr_camera     number unique not null,
+   id_tip_camera number not null,
+   foreign key ( id_tip_camera )
+      references tip_camera ( id_tip_camera )
+);
+
+insert into camera
+select * from bdd_all.camera@bd_eu;
+
+commit;
+
+-- Verificare replici
+select 'TIP_CAMERA' as tabel, count(*) as nr from tip_camera
+union all
+select 'SERVICIU' as tabel, count(*) from serviciu
+union all
+select 'DEPARTAMENT' as tabel, count(*) from departament
+union all
+select 'CLIENT' as tabel, count(*) from client
+union all
+select 'CAMERA' as tabel, count(*) from camera;
+
+-- Triggere de sincronizare EU -> APAC
+-- La orice modificare pe tabelele sursa de pe EU, se propaga pe APAC
+
+create or replace trigger trg_sync_tip_camera_insert
+   after insert on tip_camera
+   for each row
+begin
+   insert into bdd.tip_camera@bd_apac
+      (id_tip_camera, tip_camera, clasa_confort, categorie_camera, pret)
+   values (
+      :new.id_tip_camera, :new.tip_camera, :new.clasa_confort,
+      :new.categorie_camera, :new.pret
+   );
+end;
+/
+
+create or replace trigger trg_sync_tip_camera_update
+   after update on tip_camera
+   for each row
+begin
+   update bdd.tip_camera@bd_apac
+   set
+      tip_camera = :new.tip_camera,
+      clasa_confort = :new.clasa_confort,
+      categorie_camera = :new.categorie_camera,
+      pret = :new.pret
+   where
+      id_tip_camera = :old.id_tip_camera;
+end;
+/
+
+create or replace trigger trg_sync_tip_camera_delete
+   after delete on tip_camera
+   for each row
+begin
+   delete from bdd.tip_camera@bd_apac
+   where id_tip_camera = :old.id_tip_camera;
+end;
+/
+
+-- ---------- SERVICIU ----------
+
+create or replace trigger trg_sync_serviciu_insert
+   after insert on serviciu
+   for each row
+begin
+   insert into bdd.serviciu@bd_apac
+      (id_serviciu, denumire, pret_serviciu)
+   values(
+      :new.id_serviciu, :new.denumire, :new.pret_serviciu
+   );
+end;
+/
+
+create or replace trigger trg_sync_serviciu_update
+   after update on serviciu
+   for each row
+begin
+   update bdd.serviciu@bd_apac
+   set
+      denumire = :new.denumire,
+      pret_serviciu = :new.pret_serviciu
+   where
+      id_serviciu = :old.id_serviciu;
+end;
+/
+
+create or replace trigger trg_sync_serviciu_delete
+   after delete on serviciu
+   for each row
+begin
+   delete from bdd.serviciu@bd_apac
+   where id_serviciu = :old.id_serviciu;
+end;
+/
+
+-- ---------- DEPARTAMENT ----------
+
+create or replace trigger trg_sync_departament_insert
+   after insert on departament
+   for each row
+begin
+   insert into bdd.departament@bd_apac
+      (id_departament, nume_departament)
+   values(
+      :new.id_departament, :new.nume_departament
+   );
+end;
+/
+
+create or replace trigger trg_sync_departament_update
+   after update on departament
+   for each row
+begin
+   update bdd.departament@bd_apac
+   set
+      nume_departament = :new.nume_departament
+   where
+      id_departament = :old.id_departament;
+end;
+/
+
+create or replace trigger trg_sync_departament_delete
+   after delete on departament
+   for each row
+begin
+   delete from bdd.departament@bd_apac
+   where id_departament = :old.id_departament;
+end;
+/
+
+-- ---------- CLIENT ----------
+
+create or replace trigger trg_sync_client_insert
+   after insert on client
+   for each row
+begin
+   insert into bdd.client@bd_apac
+      (id_client, nume, prenume, email)
+   values (
+      :new.id_client, :new.nume, 
+      :new.prenume, :new.email
+   );
+end;
+/
+
+create or replace trigger trg_sync_client_update
+   after update on client
+   for each row
+begin
+   update bdd.client@bd_apac
+   set
+      nume = :new.nume,
+      prenume = :new.prenume,
+      email = :new.email
+   where
+      id_client = :old.id_client;
+end;
+/
+
+create or replace trigger trg_sync_client_delete
+   after delete on client
+   for each row
+begin
+   delete from bdd.client@bd_apac
+   where id_client = :old.id_client;
+end;
+/
+
+-- ---------- CAMERA ----------
+
+create or replace trigger trg_sync_camera_insert
+   after insert on camera
+   for each row
+begin
+   insert into bdd.camera@bd_apac
+      (id_camera, nr_camera, id_tip_camera)
+   values (
+      :new.id_camera, :new.nr_camera, :new.id_tip_camera
+   );
+end;
+/
+
+create or replace trigger trg_sync_camera_update
+   after update on camera
+   for each row
+begin
+   update bdd.camera@bd_apac
+   set
+      nr_camera = :new.nr_camera,
+      id_tip_camera = :new.id_tip_camera
+   where
+      id_camera = :old.id_camera;
+end;
+/
+
+create or replace trigger trg_sync_camera_delete
+   after delete on camera
+   for each row
+begin
+   delete from bdd.camera@bd_apac
+   where id_camera = :old.id_camera;
+end;
+/
+
+-- Test sincronizare: INSERT pe EU, verificare pe APAC
+
+-- Test: adaugare tip camera nou pe EU
+insert into tip_camera values (6, 'Penthouse', 'Luxury', 'Penthouse VIP', 1200);
+commit;
+
+-- Verificare pe APAC (din EU prin db link)
+select * from bdd.tip_camera@bd_apac where id_tip_camera = 6;
+
+-- Cleanup test
+delete from tip_camera where id_tip_camera = 6;
+commit;
