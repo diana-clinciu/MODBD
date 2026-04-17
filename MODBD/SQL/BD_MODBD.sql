@@ -1,5 +1,5 @@
 -- 1.
--- Creare useri si link BD EU
+-- Creare useri si link BD BUCURESTI
 -- definire useri (trebuie creati cu userul sys)
 -- user BD OLPT
 CREATE USER bdd_all IDENTIFIED BY password;
@@ -11,7 +11,7 @@ CREATE USER bdd_global IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_global;
 ALTER USER bdd_global QUOTA UNLIMITED ON USERS;
 
--- user local eu
+-- user local bucuresti
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
@@ -31,7 +31,7 @@ GRANT SELECT ON bdd_all.sala_eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment_client TO bdd;
 
--- grant-uri pentru userul global (EU)
+-- grant-uri pentru userul global (BUCURESTI)
 GRANT CREATE VIEW TO bdd_global;
 GRANT CREATE SYNONYM TO bdd_global;
 GRANT CREATE DATABASE LINK TO bdd_global;
@@ -39,14 +39,14 @@ GRANT CREATE TRIGGER TO bdd_global;
 GRANT SELECT ON bdd.angajat_identitate TO bdd_global;
 -- grant-urile pt tabelele de fragmente se fac dupa creare
 
--- definire link eu -> apac
+-- definire link bucuresti -> constanta
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
 
-CREATE PUBLIC DATABASE LINK bd_apac
+CREATE PUBLIC DATABASE LINK bd_constanta
    CONNECT TO bdd IDENTIFIED BY password
    USING '(DESCRIPTION =
             (ADDRESS_LIST =
-              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-apac)(PORT = 1521))
+              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-constanta)(PORT = 1521))
             )
             (CONNECT_DATA =
               (SERVICE_NAME = FREEPDB1)
@@ -54,11 +54,11 @@ CREATE PUBLIC DATABASE LINK bd_apac
           )';
 
 -- test
-SELECT * FROM dual@bd_apac;
+SELECT * FROM dual@bd_constanta;
 
--- Create useri si link BD APAC
+-- Create useri si link BD CONSTANTA
 -- definire useri (creati cu sys)
--- user local apac
+-- user local constanta
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
@@ -67,14 +67,14 @@ GRANT CREATE SYNONYM TO bdd;
 GRANT CREATE MATERIALIZED VIEW TO bdd;
 GRANT CREATE TRIGGER TO bdd;
 
--- definire link apac -> eu
+-- definire link constanta -> bucuresti
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
 
-CREATE PUBLIC DATABASE LINK bd_eu
+CREATE PUBLIC DATABASE LINK bd_bucuresti
    CONNECT TO bdd IDENTIFIED BY password
    USING '(DESCRIPTION =
             (ADDRESS_LIST =
-              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-eu)(PORT = 1521))
+              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-bucuresti)(PORT = 1521))
             )
             (CONNECT_DATA =
               (SERVICE_NAME = FREEPDB1)
@@ -82,11 +82,11 @@ CREATE PUBLIC DATABASE LINK bd_eu
           )';
 
 -- test
-SELECT * FROM dual@bd_eu;
+SELECT * FROM dual@bd_bucuresti;
 
 
 -- ============================================================================================
--- Crearea tabelelor OLTP pentru gestionarea hotelului (Baza de date centralizata, aflata pe EU)  -- create cu userul bdd_all
+-- Crearea tabelelor OLTP pentru gestionarea hotelului (Baza de date centralizata, aflata pe BUCURESTI)  -- create cu userul bdd_all
 -- ============================================================================================
 -- 1. CATALOG: TIP_CAMERA
 create table tip_camera (
@@ -103,7 +103,7 @@ create table hotel (
    nume_hotel  varchar2(50) not null,
    oras        varchar2(30) not null,
    nr_stele    number,
-   capacitate  number
+   cconstantaitate  number
 );
 
 -- 3. CAMERA
@@ -206,7 +206,7 @@ create table plata (
 create table sala_eveniment (
    id_sala_eveniment number primary key,
    nume_sala         varchar2(50) not null,
-   capacitate_maxima number not null,
+   cconstantaitate_maxima number not null,
    etaj              number
 );
 
@@ -462,7 +462,7 @@ select p.id_plata, p.id_rezervare, p.suma as suma_calculata_automat, p.data_plat
 -- 2. Crearea relatiilor și a fragmentelor 
 -- =====================================================================
 
--- 2.1 Fragment Vertical 1: ANGAJAT_IDENTITATE - creat pe EU (user bdd)
+-- 2.1 Fragment Vertical 1: ANGAJAT_IDENTITATE - creat pe BUCURESTI (user bdd)
 CREATE TABLE angajat_identitate (
     id_angajat   NUMBER        PRIMARY KEY,
     nume         VARCHAR2(30)  NOT NULL,
@@ -481,7 +481,7 @@ COMMIT;
 -- Verificare
 SELECT * FROM angajat_identitate ORDER BY id_angajat;
 
--- 2.2 Fragment Vertical 2: ANGAJAT_SALARIZARE - creat pe APAC (user bdd)
+-- 2.2 Fragment Vertical 2: ANGAJAT_SALARIZARE - creat pe CONSTANTA (user bdd)
 
 CREATE TABLE angajat_salarizare (
     id_angajat     NUMBER        PRIMARY KEY,
@@ -489,31 +489,31 @@ CREATE TABLE angajat_salarizare (
     id_departament NUMBER        NOT NULL
 );
 
--- Populare din tabela centralizata ANGAJAT de pe EU (prin db link)
+-- Populare din tabela centralizata ANGAJAT de pe BUCURESTI (prin db link)
 INSERT INTO angajat_salarizare (id_angajat, salariu, id_departament)
 SELECT id_angajat, salariu, id_departament
-FROM bdd_all.angajat@bd_eu;
+FROM bdd_all.angajat@bd_bucuresti;
 
 COMMIT;
 
 -- Verificare
 SELECT * FROM angajat_salarizare ORDER BY id_angajat;
 
--- 2.3 Fragment Orizontal HOTEL1 - creat pe EU (user bdd)
+-- 2.3 Fragment Orizontal HOTEL1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE hotel1 AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
+SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate
 FROM bdd_all.hotel
 WHERE oras = 'Bucuresti';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON hotel1 TO bdd_global;
 
--- 2.4 Fragment Orizontal HOTEL2 - creat pe APAC (user bdd)
+-- 2.4 Fragment Orizontal HOTEL2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE hotel2 AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
-FROM bdd_all.hotel@bd_eu
+SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate
+FROM bdd_all.hotel@bd_bucuresti
 WHERE oras = 'Constanta';
 
--- 2.5 Fragment Derivat CAMERA1 - creat pe EU (user bdd)
+-- 2.5 Fragment Derivat CAMERA1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE camera1 AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel
 FROM bdd_all.camera
@@ -521,19 +521,19 @@ WHERE id_hotel = 1;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON camera1 TO bdd_global;
 
--- 2.6 Fragment Derivat CAMERA2 - creat pe APAC (user bdd)
+-- 2.6 Fragment Derivat CAMERA2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE camera2 AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel
-FROM bdd_all.camera@bd_eu
+FROM bdd_all.camera@bd_bucuresti
 WHERE id_hotel = 2;
 
 -- =====================================================================
 -- 4. Furnizarea formelor de transparenta pentru intreg modelul ales  
 -- =====================================================================
 
--- a) Transparenta pentru fragmentele verticale (EU-bdd_global)
+-- a) Transparenta pentru fragmentele verticale (BUCURESTI-bdd_global)
 
--- Sinonim local pentru fragmentul de pe EU
+-- Sinonim local pentru fragmentul de pe BUCURESTI
 CREATE OR REPLACE SYNONYM angajat_identitate FOR bdd.angajat_identitate;
 
 CREATE OR REPLACE VIEW angajat_global AS
@@ -546,12 +546,12 @@ SELECT
    asal.id_departament,
    ai.id_serviciu
 FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_apac asal ON ai.id_angajat = asal.id_angajat;
+JOIN bdd.angajat_salarizare@bd_constanta asal ON ai.id_angajat = asal.id_angajat;
 
 -- Verificare: aplicatia vede tabela ANGAJAT ca si cand nu ar fi fragmentata
 SELECT * FROM angajat_global ORDER BY id_angajat;
 
--- VIEW-uri pe APAC pentru acces la fragmentul de pe EU
+-- VIEW-uri pe CONSTANTA pentru acces la fragmentul de pe BUCURESTI
 CREATE OR REPLACE VIEW angajat_global AS
 SELECT 
    ai.id_angajat,
@@ -561,21 +561,21 @@ SELECT
    asal.salariu,
    asal.id_departament,
    ai.id_serviciu
-FROM bdd.angajat_identitate@bd_eu ai
+FROM bdd.angajat_identitate@bd_bucuresti ai
 JOIN angajat_salarizare asal ON ai.id_angajat = asal.id_angajat;
 
--- Triggere INSTEAD OF pe view-ul global (EU)
+-- Triggere INSTEAD OF pe view-ul global (BUCURESTI)
 
 CREATE OR REPLACE TRIGGER trg_angajat_global_insert
 INSTEAD OF INSERT ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Inserare in fragmentul local (EU)
+    -- Inserare in fragmentul local (BUCURESTI)
     INSERT INTO bdd.angajat_identitate (id_angajat, nume, prenume, functie, id_serviciu)
     VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie, :NEW.id_serviciu);
 
-    -- Inserare in fragmentul remote (APAC)
-    INSERT INTO bdd.angajat_salarizare@bd_apac (id_angajat, salariu, id_departament)
+    -- Inserare in fragmentul remote (CONSTANTA)
+    INSERT INTO bdd.angajat_salarizare@bd_constanta (id_angajat, salariu, id_departament)
     VALUES (:NEW.id_angajat, :NEW.salariu, :NEW.id_departament);
 END;
 /
@@ -584,7 +584,7 @@ CREATE OR REPLACE TRIGGER trg_angajat_global_update
 INSTEAD OF UPDATE ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Update fragment local (EU)
+    -- Update fragment local (BUCURESTI)
    UPDATE bdd.angajat_identitate
    SET 
       nume = :NEW.nume,
@@ -594,8 +594,8 @@ BEGIN
    WHERE 
       id_angajat  = :OLD.id_angajat;
 
-    -- Update fragment remote (APAC)
-   UPDATE bdd.angajat_salarizare@bd_apac
+    -- Update fragment remote (CONSTANTA)
+   UPDATE bdd.angajat_salarizare@bd_constanta
    SET 
       salariu = :NEW.salariu,
       id_departament = :NEW.id_departament
@@ -609,12 +609,12 @@ CREATE OR REPLACE TRIGGER trg_angajat_global_delete
 INSTEAD OF DELETE ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Stergere din fragmentul local (EU)
+    -- Stergere din fragmentul local (BUCURESTI)
    DELETE FROM bdd.angajat_identitate
    WHERE id_angajat = :OLD.id_angajat;
 
-    -- Stergere din fragmentul remote (APAC)
-   DELETE FROM bdd.angajat_salarizare@bd_apac
+    -- Stergere din fragmentul remote (CONSTANTA)
+   DELETE FROM bdd.angajat_salarizare@bd_constanta
    WHERE id_angajat = :OLD.id_angajat;
 END;
 /
@@ -625,19 +625,19 @@ VALUES (11, 'Mihai', 'Ion', 'Portar', 2500, 1, NULL);
 
 -- Verificare: datele s-au propagat in ambele fragmente
 SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 11;
-SELECT * FROM bdd.angajat_salarizare@bd_apac WHERE id_angajat = 11;
+SELECT * FROM bdd.angajat_salarizare@bd_constanta WHERE id_angajat = 11;
 
 -- Cleanup test
 DELETE FROM angajat_global WHERE id_angajat = 11;
 COMMIT;
 
--- b) Transparenta pentru fragmentele orizontale (EU-bdd_global)
+-- b) Transparenta pentru fragmentele orizontale (BUCURESTI-bdd_global)
 
 -- VIEW global care reconstituie HOTEL
 CREATE OR REPLACE VIEW hotel_global AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel1
+SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate FROM bdd.hotel1
 UNION ALL
-SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel2@bd_apac;
+SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate FROM bdd.hotel2@bd_constanta;
 
 SELECT * FROM hotel_global ORDER BY id_hotel;
 
@@ -647,11 +647,11 @@ INSTEAD OF INSERT ON hotel_global
 FOR EACH ROW
 BEGIN
    IF :NEW.oras = 'Bucuresti' THEN
-      INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, capacitate)
-      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
+      INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, cconstantaitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.cconstantaitate);
    ELSIF :NEW.oras = 'Constanta' THEN
-      INSERT INTO bdd.hotel2@bd_apac (id_hotel, nume_hotel, oras, nr_stele, capacitate)
-      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
+      INSERT INTO bdd.hotel2@bd_constanta (id_hotel, nume_hotel, oras, nr_stele, cconstantaitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.cconstantaitate);
    END IF;
 END;
 /
@@ -663,12 +663,12 @@ BEGIN
    IF :OLD.oras = 'Bucuresti' THEN
       UPDATE bdd.hotel1
       SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
-          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
+          nr_stele = :NEW.nr_stele, cconstantaitate = :NEW.cconstantaitate
       WHERE id_hotel = :OLD.id_hotel;
    ELSIF :OLD.oras = 'Constanta' THEN
-      UPDATE bdd.hotel2@bd_apac
+      UPDATE bdd.hotel2@bd_constanta
       SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
-          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
+          nr_stele = :NEW.nr_stele, cconstantaitate = :NEW.cconstantaitate
       WHERE id_hotel = :OLD.id_hotel;
    END IF;
 END;
@@ -681,7 +681,7 @@ BEGIN
    IF :OLD.oras = 'Bucuresti' THEN
       DELETE FROM bdd.hotel1 WHERE id_hotel = :OLD.id_hotel;
    ELSIF :OLD.oras = 'Constanta' THEN
-      DELETE FROM bdd.hotel2@bd_apac WHERE id_hotel = :OLD.id_hotel;
+      DELETE FROM bdd.hotel2@bd_constanta WHERE id_hotel = :OLD.id_hotel;
    END IF;
 END;
 /
@@ -695,7 +695,7 @@ ROLLBACK;
 CREATE OR REPLACE VIEW camera_global AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera1
 UNION ALL
-SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera2@bd_apac;
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera2@bd_constanta;
 
 SELECT * FROM camera_global ORDER BY id_camera;
 
@@ -708,7 +708,7 @@ BEGIN
       INSERT INTO bdd.camera1 (id_camera, nr_camera, id_tip_camera, id_hotel)
       VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
    ELSIF :NEW.id_hotel = 2 THEN
-      INSERT INTO bdd.camera2@bd_apac (id_camera, nr_camera, id_tip_camera, id_hotel)
+      INSERT INTO bdd.camera2@bd_constanta (id_camera, nr_camera, id_tip_camera, id_hotel)
       VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
    END IF;
 END;
@@ -724,7 +724,7 @@ BEGIN
           id_hotel = :NEW.id_hotel
       WHERE id_camera = :OLD.id_camera;
    ELSIF :OLD.id_hotel = 2 THEN
-      UPDATE bdd.camera2@bd_apac
+      UPDATE bdd.camera2@bd_constanta
       SET nr_camera = :NEW.nr_camera, id_tip_camera = :NEW.id_tip_camera,
           id_hotel = :NEW.id_hotel
       WHERE id_camera = :OLD.id_camera;
@@ -739,7 +739,7 @@ BEGIN
    IF :OLD.id_hotel = 1 THEN
       DELETE FROM bdd.camera1 WHERE id_camera = :OLD.id_camera;
    ELSIF :OLD.id_hotel = 2 THEN
-      DELETE FROM bdd.camera2@bd_apac WHERE id_camera = :OLD.id_camera;
+      DELETE FROM bdd.camera2@bd_constanta WHERE id_camera = :OLD.id_camera;
    END IF;
 END;
 /
@@ -751,22 +751,11 @@ ROLLBACK;
 
 -- c) Transparenta pentru tabelele stocate in alta baza de date fata de cea la care se conecteaza aplicatia 
 
--- Tabelele SALA_EVENIMENT, EVENIMENT, EVENIMENT_CLIENT sunt stocate
--- doar pe EU. Le facem accesibile transparent pe APAC prin sinonime.
+-- Sinonime pe CONSTANTA pentru acces transparent la fragmentele de pe BUCURESTI
+CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_bucuresti;
+CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
 
--- Sinonime catre tabelele de pe EU (accesate prin db link) - pe APAC-bdd
-CREATE OR REPLACE SYNONYM sala_eveniment FOR bdd_all.sala_eveniment@bd_eu;
-CREATE OR REPLACE SYNONYM eveniment FOR bdd_all.eveniment@bd_eu;
-CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_eu;
-
--- Sinonime pe APAC pentru acces transparent la fragmentele de pe EU
-CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_eu;
-CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_eu;
-
--- Verificare: statia APAC acceseaza tabelele ca si cand ar fi locale
-SELECT * FROM sala_eveniment;
-SELECT * FROM eveniment ORDER BY id_eveniment;
-SELECT * FROM eveniment_client;
+-- Verificare: statia CONSTANTA acceseaza tabelele ca si cand ar fi locale
 SELECT * FROM hotel1;
 SELECT * FROM camera1;
 
@@ -774,7 +763,7 @@ SELECT * FROM camera1;
 -- 5 - Asigurarea sincronizarii datelor pentru relatiile replicate
 -- =====================================================
 
--- Creare tabele replicate pe APAC si populare initiala
+-- Creare tabele replicate pe CONSTANTA si populare initiala
 
 -- TIP_CAMERA (replica)
 create table tip_camera (
@@ -786,7 +775,7 @@ create table tip_camera (
 );
 
 insert into tip_camera
-select * from bdd_all.tip_camera@bd_eu;
+select * from bdd_all.tip_camera@bd_bucuresti;
 
 -- SERVICIU (replica)
 create table serviciu (
@@ -796,7 +785,7 @@ create table serviciu (
 );
 
 insert into serviciu
-select * from bdd_all.serviciu@bd_eu;
+select * from bdd_all.serviciu@bd_bucuresti;
 
 -- DEPARTAMENT (replica)
 create table departament (
@@ -805,7 +794,7 @@ create table departament (
 );
 
 insert into departament
-select * from bdd_all.departament@bd_eu;
+select * from bdd_all.departament@bd_bucuresti;
 
 -- CLIENT (replica)
 create table client (
@@ -816,7 +805,7 @@ create table client (
 );
 
 insert into client
-select * from bdd_all.client@bd_eu;
+select * from bdd_all.client@bd_bucuresti;
 
 -- CAMERA (replica)
 create table camera (
@@ -829,7 +818,7 @@ create table camera (
 );
 
 insert into camera
-select * from bdd_all.camera@bd_eu;
+select * from bdd_all.camera@bd_bucuresti;
 
 commit;
 
@@ -844,14 +833,14 @@ select 'CLIENT' as tabel, count(*) from client
 union all
 select 'CAMERA' as tabel, count(*) from camera;
 
--- Triggere de sincronizare EU -> APAC
--- La orice modificare pe tabelele sursa de pe EU, se propaga pe APAC
+-- Triggere de sincronizare BUCURESTI -> CONSTANTA
+-- La orice modificare pe tabelele sursa de pe BUCURESTI, se propaga pe CONSTANTA
 
 create or replace trigger trg_sync_tip_camera_insert
    after insert on tip_camera
    for each row
 begin
-   insert into bdd.tip_camera@bd_apac
+   insert into bdd.tip_camera@bd_constanta
       (id_tip_camera, tip_camera, clasa_confort, categorie_camera, pret)
    values (
       :new.id_tip_camera, :new.tip_camera, :new.clasa_confort,
@@ -864,7 +853,7 @@ create or replace trigger trg_sync_tip_camera_update
    after update on tip_camera
    for each row
 begin
-   update bdd.tip_camera@bd_apac
+   update bdd.tip_camera@bd_constanta
    set
       tip_camera = :new.tip_camera,
       clasa_confort = :new.clasa_confort,
@@ -879,7 +868,7 @@ create or replace trigger trg_sync_tip_camera_delete
    after delete on tip_camera
    for each row
 begin
-   delete from bdd.tip_camera@bd_apac
+   delete from bdd.tip_camera@bd_constanta
    where id_tip_camera = :old.id_tip_camera;
 end;
 /
@@ -890,7 +879,7 @@ create or replace trigger trg_sync_serviciu_insert
    after insert on serviciu
    for each row
 begin
-   insert into bdd.serviciu@bd_apac
+   insert into bdd.serviciu@bd_constanta
       (id_serviciu, denumire, pret_serviciu)
    values(
       :new.id_serviciu, :new.denumire, :new.pret_serviciu
@@ -902,7 +891,7 @@ create or replace trigger trg_sync_serviciu_update
    after update on serviciu
    for each row
 begin
-   update bdd.serviciu@bd_apac
+   update bdd.serviciu@bd_constanta
    set
       denumire = :new.denumire,
       pret_serviciu = :new.pret_serviciu
@@ -915,7 +904,7 @@ create or replace trigger trg_sync_serviciu_delete
    after delete on serviciu
    for each row
 begin
-   delete from bdd.serviciu@bd_apac
+   delete from bdd.serviciu@bd_constanta
    where id_serviciu = :old.id_serviciu;
 end;
 /
@@ -926,7 +915,7 @@ create or replace trigger trg_sync_departament_insert
    after insert on departament
    for each row
 begin
-   insert into bdd.departament@bd_apac
+   insert into bdd.departament@bd_constanta
       (id_departament, nume_departament)
    values(
       :new.id_departament, :new.nume_departament
@@ -938,7 +927,7 @@ create or replace trigger trg_sync_departament_update
    after update on departament
    for each row
 begin
-   update bdd.departament@bd_apac
+   update bdd.departament@bd_constanta
    set
       nume_departament = :new.nume_departament
    where
@@ -950,95 +939,99 @@ create or replace trigger trg_sync_departament_delete
    after delete on departament
    for each row
 begin
-   delete from bdd.departament@bd_apac
+   delete from bdd.departament@bd_constanta
    where id_departament = :old.id_departament;
 end;
 /
 
--- ---------- CLIENT ----------
+-- ---------- CLIENT (replicare asincronă) ----------
+-- Relatia CLIENT este replicata asincron: modificarile locale nu asteapta
+-- confirmarea stației CONSTANTA, ci sunt puse intr-o coada si propagate ulterior de un job.
 
-create or replace trigger trg_sync_client_insert
-   after insert on client
+-- 1. Coada de replicare (pe BUCURESTI)
+create table client_replica_queue (
+   id_eveniment number generated always as identity primary key,
+   operatie varchar2(10) not null,
+   id_client number not null,
+   nume varchar2(30),
+   prenume varchar2(30),
+   email varchar2(50),
+   data_cerere timestamp default systimestamp,
+   status varchar2(10) default 'PENDING'
+);
+
+-- 2. Trigger local: scrie DOAR in coada, nu atinge CONSTANTA
+create or replace trigger trg_async_client
+   after insert or update or delete on client
    for each row
 begin
-   insert into bdd.client@bd_apac
-      (id_client, nume, prenume, email)
-   values (
-      :new.id_client, :new.nume, 
-      :new.prenume, :new.email
+   if inserting then
+      insert into client_replica_queue (operatie, id_client, nume, prenume, email)
+      values ('INSERT', :new.id_client, :new.nume, :new.prenume, :new.email);
+   elsif updating then
+      insert into client_replica_queue (operatie, id_client, nume, prenume, email)
+      values ('UPDATE', :new.id_client, :new.nume, :new.prenume, :new.email);
+   elsif deleting then
+      insert into client_replica_queue (operatie, id_client)
+      values ('DELETE', :old.id_client);
+   end if;
+end;
+/
+
+-- 3. Procedura care propaga modificarile catre CONSTANTA
+create or replace procedure sync_client_to_constanta is
+begin
+   for r in (
+      select *
+      from client_replica_queue
+      where status = 'PENDING'
+      order by id_eveniment
+   ) loop
+      begin
+         if r.operatie = 'INSERT' then
+            insert into bdd.client@bd_constanta (id_client, nume, prenume, email)
+            values (r.id_client, r.nume, r.prenume, r.email);
+         elsif r.operatie = 'UPDATE' then
+            update bdd.client@bd_constanta
+            set 
+               nume = r.nume, 
+               prenume = r.prenume, 
+               email = r.email
+            where id_client = r.id_client;
+         elsif r.operatie = 'DELETE' then
+            delete from bdd.client@bd_constanta
+            where id_client = r.id_client;
+         end if;
+
+         update client_replica_queue
+         set 
+            status = 'DONE'
+         where 
+            id_eveniment = r.id_eveniment;
+
+         commit;
+
+      exception
+         when others then
+            update client_replica_queue
+               set status = 'ERROR'
+            where 
+               id_eveniment = r.id_eveniment;
+            commit;
+      end;
+   end loop;
+end;
+/
+
+-- 4. Job care ruleaza procedura la fiecare 30 de secunde
+begin
+   dbms_scheduler.create_job(
+      job_name => 'JOB_SYNC_CLIENT',
+      job_type => 'PLSQL_BLOCK',
+      job_action => 'begin sync_client_to_constanta; end;',
+      start_date => systimestamp,
+      repeat_interval => 'FREQ=SECONDLY; INTERVAL=30',
+      enabled => true
    );
 end;
 /
-
-create or replace trigger trg_sync_client_update
-   after update on client
-   for each row
-begin
-   update bdd.client@bd_apac
-   set
-      nume = :new.nume,
-      prenume = :new.prenume,
-      email = :new.email
-   where
-      id_client = :old.id_client;
-end;
-/
-
-create or replace trigger trg_sync_client_delete
-   after delete on client
-   for each row
-begin
-   delete from bdd.client@bd_apac
-   where id_client = :old.id_client;
-end;
-/
-
--- ---------- CAMERA ----------
-
-create or replace trigger trg_sync_camera_insert
-   after insert on camera
-   for each row
-begin
-   insert into bdd.camera@bd_apac
-      (id_camera, nr_camera, id_tip_camera, id_hotel)
-   values (
-      :new.id_camera, :new.nr_camera, :new.id_tip_camera, :new.id_hotel
-   );
-end;
-/
-
-create or replace trigger trg_sync_camera_update
-   after update on camera
-   for each row
-begin
-   update bdd.camera@bd_apac
-   set
-      nr_camera = :new.nr_camera,
-      id_tip_camera = :new.id_tip_camera,
-      id_hotel = :new.id_hotel
-   where
-      id_camera = :old.id_camera;
-end;
-/
-
-create or replace trigger trg_sync_camera_delete
-   after delete on camera
-   for each row
-begin
-   delete from bdd.camera@bd_apac
-   where id_camera = :old.id_camera;
-end;
-/
-
--- Test sincronizare: INSERT pe EU, verificare pe APAC
-
--- Test: adaugare tip camera nou pe EU
-insert into tip_camera values (6, 'Penthouse', 'Luxury', 'Penthouse VIP', 1200);
-commit;
-
--- Verificare pe APAC (din EU prin db link)
-select * from bdd.tip_camera@bd_apac where id_tip_camera = 6;
-
--- Cleanup test
-delete from tip_camera where id_tip_camera = 6;
-commit;
