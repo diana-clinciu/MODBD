@@ -26,6 +26,7 @@ GRANT SELECT ON bdd_all.serviciu TO bdd;
 GRANT SELECT ON bdd_all.departament TO bdd;
 GRANT SELECT ON bdd_all.client TO bdd;
 GRANT SELECT ON bdd_all.camera TO bdd;
+GRANT SELECT ON bdd_all.hotel TO bdd;
 GRANT SELECT ON bdd_all.sala_eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment_client TO bdd;
@@ -34,8 +35,9 @@ GRANT SELECT ON bdd_all.eveniment_client TO bdd;
 GRANT CREATE VIEW TO bdd_global;
 GRANT CREATE SYNONYM TO bdd_global;
 GRANT CREATE DATABASE LINK TO bdd_global;
+GRANT CREATE TRIGGER TO bdd_global;
 GRANT SELECT ON bdd.angajat_identitate TO bdd_global;
--- grant-ul pt tabela remote se face dupa creare
+-- grant-urile pt tabelele de fragmente se fac dupa creare
 
 -- definire link eu -> apac
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
@@ -95,29 +97,41 @@ create table tip_camera (
    pret             number(10,2) not null
 );
 
--- 2. CAMERA
+-- 2. HOTEL
+create table hotel (
+   id_hotel    number primary key,
+   nume_hotel  varchar2(50) not null,
+   oras        varchar2(30) not null,
+   nr_stele    number,
+   capacitate  number
+);
+
+-- 3. CAMERA
 create table camera (
    id_camera     number primary key,
    nr_camera     number unique not null,
    id_tip_camera number not null,
+   id_hotel      number not null,
    foreign key ( id_tip_camera )
-      references tip_camera ( id_tip_camera )
+      references tip_camera ( id_tip_camera ),
+   foreign key ( id_hotel )
+      references hotel ( id_hotel )
 );
 
--- 3. CATALOG: SERVICIU
+-- 4. CATALOG: SERVICIU
 create table serviciu (
    id_serviciu   number primary key,
    denumire      varchar2(50) not null,
    pret_serviciu number(10,2) not null
 );
 
--- 4. DEPARTAMENT
+-- 5. DEPARTAMENT
 create table departament (
    id_departament   number primary key,
    nume_departament varchar2(50) not null
 );
 
--- 5. ANGAJAT
+-- 6. ANGAJAT
 create table angajat (
    id_angajat     number primary key,
    nume           varchar2(30) not null,
@@ -132,7 +146,7 @@ create table angajat (
       references serviciu ( id_serviciu )
 );
 
--- 6. CLIENT
+-- 7. CLIENT
 create table client (
    id_client number primary key,
    nume      varchar2(30) not null,
@@ -140,7 +154,7 @@ create table client (
    email     varchar2(50) unique
 );
 
--- 7. REZERVARE
+-- 8. REZERVARE
 create table rezervare (
    id_rezervare number primary key,
    id_client    number not null,
@@ -151,7 +165,7 @@ create table rezervare (
    constraint interal_data_valid check ( data_start <= data_final )
 );
 
--- 8. REZERVARE_CAMERA
+-- 9. REZERVARE_CAMERA
 create table rezervare_camera (
    id_rezervare   number,
    id_camera      number,
@@ -164,7 +178,7 @@ create table rezervare_camera (
       references camera ( id_camera )
 );
 
--- 9. CLIENT_SERVICIU
+-- 10. CLIENT_SERVICIU
 create table client_serviciu (
    id_client      number,
    id_serviciu    number,
@@ -177,7 +191,7 @@ create table client_serviciu (
       references serviciu ( id_serviciu )
 );
 
--- 10. PLATA
+-- 11. PLATA
 create table plata (
    id_plata     number primary key,
    id_rezervare number not null,
@@ -188,7 +202,7 @@ create table plata (
       references rezervare ( id_rezervare )
 );
 
--- 11. SALA_EVENIMENT
+-- 12. SALA_EVENIMENT
 create table sala_eveniment (
    id_sala_eveniment number primary key,
    nume_sala         varchar2(50) not null,
@@ -196,7 +210,7 @@ create table sala_eveniment (
    etaj              number
 );
 
--- 12. EVENIMENT
+-- 13. EVENIMENT
 create table eveniment (
    id_eveniment      number primary key,
    nume_eveniment    varchar2(50) not null,
@@ -207,7 +221,7 @@ create table eveniment (
       references sala_eveniment ( id_sala_eveniment )
 );
 
--- 13. EVENIMENT_CLIENT
+-- 14. EVENIMENT_CLIENT
 create table eveniment_client (
    id_eveniment number,
    id_client    number,
@@ -300,17 +314,21 @@ insert into tip_camera values ( 3, 'Suite', 'Standard', 'Suite Economy', 450 );
 insert into tip_camera values ( 4, 'Suite', 'Luxury', 'Suite Deluxe', 550 );
 insert into tip_camera values ( 5, 'Double', 'Luxury', 'Double Royal', 600 );
 
+-- HOTELURI
+insert into hotel values ( 1, 'Grand Hotel Bucuresti', 'Bucuresti', 5, 200 );
+insert into hotel values ( 2, 'Royal Hotel Constanta', 'Constanta', 4, 150 );
+
 -- CAMERE
-insert into camera values ( 1, 101, 1 );
-insert into camera values ( 2, 102, 2 );
-insert into camera values ( 3, 103, 3 );
-insert into camera values ( 4, 104, 1 );
-insert into camera values ( 5, 105, 2 );
-insert into camera values ( 6, 106, 4 );
-insert into camera values ( 7, 107, 4 );
-insert into camera values ( 8, 108, 5 );
-insert into camera values ( 9, 109, 5 );
-insert into camera values ( 10, 110, 2 );
+insert into camera values ( 1, 101, 1, 1 );
+insert into camera values ( 2, 102, 2, 1 );
+insert into camera values ( 3, 103, 3, 1 );
+insert into camera values ( 4, 104, 1, 1 );
+insert into camera values ( 5, 105, 2, 1 );
+insert into camera values ( 6, 106, 4, 2 );
+insert into camera values ( 7, 107, 4, 2 );
+insert into camera values ( 8, 108, 5, 2 );
+insert into camera values ( 9, 109, 5, 2 );
+insert into camera values ( 10, 110, 2, 2 );
 
 -- DATE CATALOG: DEPARTAMENTE
 insert into departament values (1, 'Receptie');
@@ -332,10 +350,10 @@ insert into serviciu values ( 9, 'Sală Fitness Premium', 80 );
 insert into serviciu values ( 10, 'Cinema Privat', 90 );
 
 -- ANGAJAȚI
-insert into angajat values ( 1, 'Popa', 'Andrei', 'Recepționer', 3500, 1, null ); -- Receptia nu ofera serviciu din catalog direct
-insert into angajat values ( 2, 'Ionescu', 'Mihai', 'Bucătar Șef', 4500, 2, 2 ); -- Ofera Room Service (serviciul 2)
+insert into angajat values ( 1, 'Popa', 'Andrei', 'Recepționer', 3500, 1, null );
+insert into angajat values ( 2, 'Ionescu', 'Mihai', 'Bucătar Șef', 4500, 2, 2 );
 insert into angajat values ( 3, 'Marin', 'Sorina', 'Ospătar', 3200, 2, 2 );
-insert into angajat values ( 4, 'Dumitru', 'Raluca', 'Masor Terapeut', 3800, 3, 3 ); -- Ofera Masaj (serviciul 3)
+insert into angajat values ( 4, 'Dumitru', 'Raluca', 'Masor Terapeut', 3800, 3, 3 );
 insert into angajat values ( 5, 'Stan', 'Vlad', 'Instructor Fitness', 3400, 3, 9 );
 insert into angajat values ( 6, 'Vasilescu', 'Ioan', 'Șofer', 3300, 5, 6 );
 insert into angajat values ( 7, 'Niculae', 'Elena', 'Recepționer Senior', 3800, 1, null );
@@ -381,7 +399,7 @@ insert into rezervare_camera values ( 10, 10, 5, 1300 );
 
 -- CLIENT_SERVICIU
 insert into client_serviciu values ( 1, 1, to_date('2025-12-02','YYYY-MM-DD'), 1 );
-insert into client_serviciu values ( 2, 2, to_date('2025-12-04','YYYY-MM-DD'), 3 ); -- A dat comanda la room service de 3 ori
+insert into client_serviciu values ( 2, 2, to_date('2025-12-04','YYYY-MM-DD'), 3 );
 insert into client_serviciu values ( 3, 3, to_date('2025-12-06','YYYY-MM-DD'), 1 );
 insert into client_serviciu values ( 4, 4, to_date('2025-12-08','YYYY-MM-DD'), 2 );
 insert into client_serviciu values ( 5, 5, to_date('2025-12-11','YYYY-MM-DD'), 1 );
@@ -481,13 +499,39 @@ COMMIT;
 -- Verificare
 SELECT * FROM angajat_salarizare ORDER BY id_angajat;
 
+-- 2.3 Fragment Orizontal HOTEL1 - creat pe EU (user bdd)
+CREATE TABLE hotel1 AS
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
+FROM bdd_all.hotel
+WHERE oras = 'Bucuresti';
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON hotel1 TO bdd_global;
+
+-- 2.4 Fragment Orizontal HOTEL2 - creat pe APAC (user bdd)
+CREATE TABLE hotel2 AS
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
+FROM bdd_all.hotel@bd_eu
+WHERE oras = 'Constanta';
+
+-- 2.5 Fragment Derivat CAMERA1 - creat pe EU (user bdd)
+CREATE TABLE camera1 AS
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel
+FROM bdd_all.camera
+WHERE id_hotel = 1;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON camera1 TO bdd_global;
+
+-- 2.6 Fragment Derivat CAMERA2 - creat pe APAC (user bdd)
+CREATE TABLE camera2 AS
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel
+FROM bdd_all.camera@bd_eu
+WHERE id_hotel = 2;
+
 -- =====================================================================
 -- 4. Furnizarea formelor de transparenta pentru intreg modelul ales  
 -- =====================================================================
 
---a) Transparenta pentru fragmentele verticale 
-
--- VIEW global pe EU (user bdd_global) care reconstituie ANGAJAT
+-- a) Transparenta pentru fragmentele verticale (EU-bdd_global)
 
 -- Sinonim local pentru fragmentul de pe EU
 CREATE OR REPLACE SYNONYM angajat_identitate FOR bdd.angajat_identitate;
@@ -587,20 +631,144 @@ SELECT * FROM bdd.angajat_salarizare@bd_apac WHERE id_angajat = 11;
 DELETE FROM angajat_global WHERE id_angajat = 11;
 COMMIT;
 
---C) Transparenta pentru tabelele stocate în alta baza de date fata de cea la care se conecteaza aplicatia 
+-- b) Transparenta pentru fragmentele orizontale (EU-bdd_global)
+
+-- VIEW global care reconstituie HOTEL
+CREATE OR REPLACE VIEW hotel_global AS
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel1
+UNION ALL
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel2@bd_apac;
+
+SELECT * FROM hotel_global ORDER BY id_hotel;
+
+-- Triggere INSTEAD OF pe hotel_global
+CREATE OR REPLACE TRIGGER trg_hotel_global_ins
+INSTEAD OF INSERT ON hotel_global
+FOR EACH ROW
+BEGIN
+   IF :NEW.oras = 'Bucuresti' THEN
+      INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, capacitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
+   ELSIF :NEW.oras = 'Constanta' THEN
+      INSERT INTO bdd.hotel2@bd_apac (id_hotel, nume_hotel, oras, nr_stele, capacitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_hotel_global_upd
+INSTEAD OF UPDATE ON hotel_global
+FOR EACH ROW
+BEGIN
+   IF :OLD.oras = 'Bucuresti' THEN
+      UPDATE bdd.hotel1
+      SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
+          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
+      WHERE id_hotel = :OLD.id_hotel;
+   ELSIF :OLD.oras = 'Constanta' THEN
+      UPDATE bdd.hotel2@bd_apac
+      SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
+          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
+      WHERE id_hotel = :OLD.id_hotel;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_hotel_global_del
+INSTEAD OF DELETE ON hotel_global
+FOR EACH ROW
+BEGIN
+   IF :OLD.oras = 'Bucuresti' THEN
+      DELETE FROM bdd.hotel1 WHERE id_hotel = :OLD.id_hotel;
+   ELSIF :OLD.oras = 'Constanta' THEN
+      DELETE FROM bdd.hotel2@bd_apac WHERE id_hotel = :OLD.id_hotel;
+   END IF;
+END;
+/
+
+-- Test INSERT prin view + rollback
+INSERT INTO hotel_global VALUES (3, 'Test Hotel', 'Bucuresti', 3, 80);
+SELECT * FROM hotel_global ORDER BY id_hotel;
+ROLLBACK;
+
+-- VIEW global care reconstituie CAMERA
+CREATE OR REPLACE VIEW camera_global AS
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera1
+UNION ALL
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera2@bd_apac;
+
+SELECT * FROM camera_global ORDER BY id_camera;
+
+-- Triggere INSTEAD OF pe camera_global
+CREATE OR REPLACE TRIGGER trg_camera_global_ins
+INSTEAD OF INSERT ON camera_global
+FOR EACH ROW
+BEGIN
+   IF :NEW.id_hotel = 1 THEN
+      INSERT INTO bdd.camera1 (id_camera, nr_camera, id_tip_camera, id_hotel)
+      VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
+   ELSIF :NEW.id_hotel = 2 THEN
+      INSERT INTO bdd.camera2@bd_apac (id_camera, nr_camera, id_tip_camera, id_hotel)
+      VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_camera_global_upd
+INSTEAD OF UPDATE ON camera_global
+FOR EACH ROW
+BEGIN
+   IF :OLD.id_hotel = 1 THEN
+      UPDATE bdd.camera1
+      SET nr_camera = :NEW.nr_camera, id_tip_camera = :NEW.id_tip_camera,
+          id_hotel = :NEW.id_hotel
+      WHERE id_camera = :OLD.id_camera;
+   ELSIF :OLD.id_hotel = 2 THEN
+      UPDATE bdd.camera2@bd_apac
+      SET nr_camera = :NEW.nr_camera, id_tip_camera = :NEW.id_tip_camera,
+          id_hotel = :NEW.id_hotel
+      WHERE id_camera = :OLD.id_camera;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_camera_global_del
+INSTEAD OF DELETE ON camera_global
+FOR EACH ROW
+BEGIN
+   IF :OLD.id_hotel = 1 THEN
+      DELETE FROM bdd.camera1 WHERE id_camera = :OLD.id_camera;
+   ELSIF :OLD.id_hotel = 2 THEN
+      DELETE FROM bdd.camera2@bd_apac WHERE id_camera = :OLD.id_camera;
+   END IF;
+END;
+/
+
+-- Test INSERT prin view + rollback
+INSERT INTO camera_global VALUES (11, 111, 1, 1);
+SELECT * FROM camera_global ORDER BY id_camera;
+ROLLBACK;
+
+-- c) Transparenta pentru tabelele stocate in alta baza de date fata de cea la care se conecteaza aplicatia 
 
 -- Tabelele SALA_EVENIMENT, EVENIMENT, EVENIMENT_CLIENT sunt stocate
 -- doar pe EU. Le facem accesibile transparent pe APAC prin sinonime.
 
--- Sinonime catre tabelele de pe EU (accesate prin db link)
+-- Sinonime catre tabelele de pe EU (accesate prin db link) - pe APAC-bdd
 CREATE OR REPLACE SYNONYM sala_eveniment FOR bdd_all.sala_eveniment@bd_eu;
 CREATE OR REPLACE SYNONYM eveniment FOR bdd_all.eveniment@bd_eu;
 CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_eu;
+
+-- Sinonime pe APAC pentru acces transparent la fragmentele de pe EU
+CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_eu;
+CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_eu;
 
 -- Verificare: statia APAC acceseaza tabelele ca si cand ar fi locale
 SELECT * FROM sala_eveniment;
 SELECT * FROM eveniment ORDER BY id_eveniment;
 SELECT * FROM eveniment_client;
+SELECT * FROM hotel1;
+SELECT * FROM camera1;
 
 -- =====================================================
 -- 5 - Asigurarea sincronizarii datelor pentru relatiile replicate
@@ -655,6 +823,7 @@ create table camera (
    id_camera     number primary key,
    nr_camera     number unique not null,
    id_tip_camera number not null,
+   id_hotel      number not null,
    foreign key ( id_tip_camera )
       references tip_camera ( id_tip_camera )
 );
@@ -831,9 +1000,9 @@ create or replace trigger trg_sync_camera_insert
    for each row
 begin
    insert into bdd.camera@bd_apac
-      (id_camera, nr_camera, id_tip_camera)
+      (id_camera, nr_camera, id_tip_camera, id_hotel)
    values (
-      :new.id_camera, :new.nr_camera, :new.id_tip_camera
+      :new.id_camera, :new.nr_camera, :new.id_tip_camera, :new.id_hotel
    );
 end;
 /
@@ -845,7 +1014,8 @@ begin
    update bdd.camera@bd_apac
    set
       nr_camera = :new.nr_camera,
-      id_tip_camera = :new.id_tip_camera
+      id_tip_camera = :new.id_tip_camera,
+      id_hotel = :new.id_hotel
    where
       id_camera = :old.id_camera;
 end;
