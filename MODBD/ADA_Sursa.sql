@@ -1,5 +1,5 @@
 -- 1.
--- Creare useri si link BD EU
+-- Creare useri si link BD BUCURESTI
 -- definire useri (trebuie creati cu userul sys)
 -- user BD OLPT
 CREATE USER bdd_all IDENTIFIED BY password;
@@ -11,19 +11,19 @@ CREATE USER bdd_global IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_global;
 ALTER USER bdd_global QUOTA UNLIMITED ON USERS;
 
--- user local eu
+-- user local bucuresti
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
 
--- definire link eu -> apac
+-- definire link bucuresti -> constanta
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
 
-CREATE PUBLIC DATABASE LINK bd_apac
+CREATE PUBLIC DATABASE LINK bd_constanta
    CONNECT TO bdd IDENTIFIED BY password
    USING '(DESCRIPTION =
             (ADDRESS_LIST =
-              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-apac)(PORT = 1521))
+              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-constanta)(PORT = 1521))
             )
             (CONNECT_DATA =
               (SERVICE_NAME = FREEPDB1)
@@ -31,23 +31,23 @@ CREATE PUBLIC DATABASE LINK bd_apac
           )';
 
 -- test
-SELECT * FROM dual@bd_apac;
+SELECT * FROM dual@bd_constanta;
 
--- Create useri si link BD APAC
+-- Create useri si link BD CONSTANTA
 -- definire useri (creati cu sys)
 -- user local apac
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
 
--- definire link apac -> eu
+-- definire link constanta -> bucuresti
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
 
-CREATE PUBLIC DATABASE LINK bd_eu
+CREATE PUBLIC DATABASE LINK bd_bucuresti
    CONNECT TO bdd IDENTIFIED BY password
    USING '(DESCRIPTION =
             (ADDRESS_LIST =
-              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-eu)(PORT = 1521))
+              (ADDRESS = (PROTOCOL = TCP)(HOST = oracle-bucuresti)(PORT = 1521))
             )
             (CONNECT_DATA =
               (SERVICE_NAME = FREEPDB1)
@@ -55,11 +55,11 @@ CREATE PUBLIC DATABASE LINK bd_eu
           )';
 
 -- test
-SELECT * FROM dual@bd_eu;
+SELECT * FROM dual@bd_bucuresti;
 
 
 -- ============================================================================================
--- Crearea tabelelor OLTP pentru gestionarea hotelului (Baza de date centralizata, aflata pe EU)  -- create cu userul bdd_all
+-- Crearea tabelelor OLTP pentru gestionarea hotelului (Baza de date centralizata, aflata pe BUCURESTI)  -- create cu userul bdd_all
 -- ============================================================================================
 -- 1. CATALOG: TIP_CAMERA
 create table tip_camera (
@@ -435,10 +435,10 @@ select p.id_plata, p.id_rezervare, p.suma as suma_calculata_automat, p.data_plat
 
 
  -- =====================================================================
--- Crearea fragmentelor orizontale
+-- Crearea si popularea fragmentelor orizontale
 -- =====================================================================
 
--- Fragment Orizontal HOTEL1 - creat pe EU (user bdd)
+-- Fragment Orizontal HOTEL1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE hotel1 AS
 SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
 FROM bdd_all.hotel
@@ -446,13 +446,13 @@ WHERE oras = 'Bucuresti';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON hotel1 TO bdd_global;
 
--- Fragment Orizontal HOTEL2 - creat pe APAC (user bdd)
+-- Fragment Orizontal HOTEL2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE hotel2 AS
 SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
-FROM bdd_all.hotel@bd_eu
+FROM bdd_all.hotel@bd_bucuresti
 WHERE oras = 'Constanta';
 
--- Fragment Derivat CAMERA1 - creat pe EU (user bdd)
+-- Fragment Derivat CAMERA1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE camera1 AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel
 FROM bdd_all.camera
@@ -460,21 +460,39 @@ WHERE id_hotel = 1;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON camera1 TO bdd_global;
 
--- Fragment Derivat CAMERA2 - creat pe APAC (user bdd)
+-- Fragment Derivat CAMERA2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE camera2 AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel
-FROM bdd_all.camera@bd_eu
+FROM bdd_all.camera@bd_bucuresti
 WHERE id_hotel = 2;
 
+-- Fragment Derivat REZERVARE_CAMERA1 - creat pe BUCURESTI (user bdd)
+CREATE TABLE rezervare_camera1 AS
+SELECT id_rezervare, rc.id_camera, nr_nopti, pret_rezervare
+FROM bdd_all.rezervare_camera rc
+JOIN bdd_all.camera c ON c.id_camera = rc.id_camera
+JOIN bdd_all.hotel h ON c.id_hotel = h.id_hotel
+WHERE h.oras = 'Bucuresti';
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON rezervare_camera1 TO bdd_global;
+
+-- Fragment Derivat REZERVARE_CAMERA2 - creat pe CONSTANTA (user bdd)
+CREATE TABLE rezervare_camera2 AS
+SELECT id_rezervare, rc.id_camera, nr_nopti, pret_rezervare
+FROM bdd_all.rezervare_camera@bd_bucuresti rc
+JOIN bdd_all.camera@bd_bucuresti c ON c.id_camera = rc.id_camera
+JOIN bdd_all.hotel@bd_bucuresti h ON c.id_hotel = h.id_hotel
+WHERE h.oras = 'Constanta';
+
 -- =====================================================================
--- Transparenta pentru fragmentele orizontale (EU-bdd_global)
+-- Transparenta pentru fragmentele orizontale (BUCURESTI-bdd_global)
 -- =====================================================================
 
 -- VIEW global care reconstituie HOTEL
 CREATE OR REPLACE VIEW hotel_global AS
 SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel1
 UNION ALL
-SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel2@bd_apac;
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel2@bd_constanta;
 
 SELECT * FROM hotel_global ORDER BY id_hotel;
 
@@ -487,7 +505,7 @@ BEGIN
       INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, capacitate)
       VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
    ELSIF :NEW.oras = 'Constanta' THEN
-      INSERT INTO bdd.hotel2@bd_apac (id_hotel, nume_hotel, oras, nr_stele, capacitate)
+      INSERT INTO bdd.hotel2@bd_constanta (id_hotel, nume_hotel, oras, nr_stele, capacitate)
       VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
    END IF;
 END;
@@ -503,7 +521,7 @@ BEGIN
           nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
       WHERE id_hotel = :OLD.id_hotel;
    ELSIF :OLD.oras = 'Constanta' THEN
-      UPDATE bdd.hotel2@bd_apac
+      UPDATE bdd.hotel2@bd_constanta
       SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
           nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
       WHERE id_hotel = :OLD.id_hotel;
@@ -518,7 +536,7 @@ BEGIN
    IF :OLD.oras = 'Bucuresti' THEN
       DELETE FROM bdd.hotel1 WHERE id_hotel = :OLD.id_hotel;
    ELSIF :OLD.oras = 'Constanta' THEN
-      DELETE FROM bdd.hotel2@bd_apac WHERE id_hotel = :OLD.id_hotel;
+      DELETE FROM bdd.hotel2@bd_constanta WHERE id_hotel = :OLD.id_hotel;
    END IF;
 END;
 /
@@ -532,7 +550,7 @@ ROLLBACK;
 CREATE OR REPLACE VIEW camera_global AS
 SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera1
 UNION ALL
-SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera2@bd_apac;
+SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM bdd.camera2@bd_constanta;
 
 SELECT * FROM camera_global ORDER BY id_camera;
 
@@ -545,7 +563,7 @@ BEGIN
       INSERT INTO bdd.camera1 (id_camera, nr_camera, id_tip_camera, id_hotel)
       VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
    ELSIF :NEW.id_hotel = 2 THEN
-      INSERT INTO bdd.camera2@bd_apac (id_camera, nr_camera, id_tip_camera, id_hotel)
+      INSERT INTO bdd.camera2@bd_constanta (id_camera, nr_camera, id_tip_camera, id_hotel)
       VALUES (:NEW.id_camera, :NEW.nr_camera, :NEW.id_tip_camera, :NEW.id_hotel);
    END IF;
 END;
@@ -561,7 +579,7 @@ BEGIN
           id_hotel = :NEW.id_hotel
       WHERE id_camera = :OLD.id_camera;
    ELSIF :OLD.id_hotel = 2 THEN
-      UPDATE bdd.camera2@bd_apac
+      UPDATE bdd.camera2@bd_constanta
       SET nr_camera = :NEW.nr_camera, id_tip_camera = :NEW.id_tip_camera,
           id_hotel = :NEW.id_hotel
       WHERE id_camera = :OLD.id_camera;
@@ -576,7 +594,7 @@ BEGIN
    IF :OLD.id_hotel = 1 THEN
       DELETE FROM bdd.camera1 WHERE id_camera = :OLD.id_camera;
    ELSIF :OLD.id_hotel = 2 THEN
-      DELETE FROM bdd.camera2@bd_apac WHERE id_camera = :OLD.id_camera;
+      DELETE FROM bdd.camera2@bd_constanta WHERE id_camera = :OLD.id_camera;
    END IF;
 END;
 /
@@ -586,14 +604,517 @@ INSERT INTO camera_global VALUES (11, 111, 1, 1);
 SELECT * FROM camera_global ORDER BY id_camera;
 ROLLBACK;
 
+
+-- VIEW global care reconstituie REZERVARE_CAMERA
+CREATE OR REPLACE VIEW rezervare_camera_global AS
+SELECT id_rezervare, id_camera, nr_nopti, pret_rezervare FROM bdd.rezervare_camera1
+UNION ALL
+SELECT id_rezervare, id_camera, nr_nopti, pret_rezervare FROM bdd.rezervare_camera2@bd_constanta;
+
+SELECT * FROM rezervare_camera_global;
+
+-- Triggere INSTEAD OF pe rezervare_camera_global
+CREATE OR REPLACE TRIGGER trg_rezervare_camera_global_ins
+INSTEAD OF INSERT ON rezervare_camera_global
+FOR EACH ROW
+DECLARE
+    v_oras VARCHAR(255);
+BEGIN
+   SELECT oras INTO v_oras
+   FROM camera_global c
+   JOIN hotel_global h ON c.id_hotel = h.id_hotel
+   WHERE c.id_camera = :NEW.id_camera;
+
+   IF v_oras = 'Bucuresti' THEN
+      INSERT INTO bdd.rezervare_camera1 (id_rezervare, id_camera, nr_nopti, pret_rezervare)
+      VALUES (:NEW.id_rezervare, :NEW.id_camera, :NEW.nr_nopti, :NEW.pret_rezervare);
+   ELSIF v_oras = 'Constanta' THEN
+      INSERT INTO bdd.rezervare_camera2@bd_constanta (id_rezervare, id_camera, nr_nopti, pret_rezervare)
+      VALUES (:NEW.id_rezervare, :NEW.id_camera, :NEW.nr_nopti, :NEW.pret_rezervare);
+   END IF;
+END;
+/
+-- test
+INSERT INTO rezervare_camera_global VALUES (100, 1, 1, 100);
+SELECT * FROM rezervare_camera_global WHERE id_rezervare = 100 AND id_camera=1;
+SELECT * FROM bdd.rezervare_camera1 WHERE id_rezervare = 100 AND id_camera=1;
+ROLLBACK;
+
+CREATE OR REPLACE TRIGGER trg_rezervare_camera_global_upd
+INSTEAD OF UPDATE ON rezervare_camera_global
+FOR EACH ROW
+DECLARE
+    v_oras VARCHAR(255);
+BEGIN
+   SELECT oras INTO v_oras
+   FROM camera_global c
+   JOIN hotel_global h ON c.id_hotel = h.id_hotel
+   WHERE c.id_camera = :OLD.id_camera;
+
+   IF v_oras = 'Bucuresti' THEN
+      UPDATE bdd.rezervare_camera1
+      SET nr_nopti = :NEW.nr_nopti, pret_rezervare = :NEW.pret_rezervare
+      WHERE id_camera = :OLD.id_camera AND id_rezervare = :OLD.id_rezervare;
+   ELSIF v_oras = 'Constanta' THEN
+      UPDATE bdd.rezervare_camera2@bd_constanta
+      SET nr_nopti = :NEW.nr_nopti, pret_rezervare = :NEW.pret_rezervare
+      WHERE id_camera = :OLD.id_camera AND id_rezervare = :OLD.id_rezervare;
+   END IF;
+END;
+/
+-- test
+UPDATE rezervare_camera_global
+SET nr_nopti = 1000, pret_rezervare = 56000
+WHERE id_camera = 1 AND id_rezervare = 1;
+SELECT * FROM rezervare_camera_global WHERE id_camera = 1 AND id_rezervare = 1;
+SELECT * FROM bdd.rezervare_camera1 WHERE id_camera = 1 AND id_rezervare = 1;
+ROLLBACK;
+
+CREATE OR REPLACE TRIGGER trg_rezervare_camera_global_del
+INSTEAD OF DELETE ON rezervare_camera_global
+FOR EACH ROW
+DECLARE
+    v_oras VARCHAR(255);
+BEGIN
+   SELECT oras INTO v_oras
+   FROM camera_global c
+   JOIN hotel_global h ON c.id_hotel = h.id_hotel
+   WHERE c.id_camera = :OLD.id_camera;
+
+   IF v_oras = 'Bucuresti' THEN
+      DELETE FROM bdd.rezervare_camera1 WHERE id_camera = :OLD.id_camera AND id_rezervare = :OLD.id_rezervare;
+   ELSIF v_oras = 'Constanta' THEN
+      DELETE FROM bdd.rezervare_camera2@bd_constanta WHERE id_camera = :OLD.id_camera AND id_rezervare = :OLD.id_rezervare;
+   END IF;
+END;
+/
+-- test
+DELETE FROM rezervare_camera_global WHERE id_camera = 1 AND id_rezervare = 1;
+SELECT * FROM rezervare_camera_global WHERE id_camera = 1 AND id_rezervare = 1;
+SELECT * FROM bdd.rezervare_camera1 WHERE id_camera = 1 AND id_rezervare = 1;
+ROLLBACK;
+
 -- =====================================================================
 -- Transparenta pentru tabelele stocate in alta baza de date (APAC-bdd)
 -- =====================================================================
 
 -- Sinonime pe APAC pentru acces transparent la fragmentele de pe EU
-CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_eu;
-CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_eu;
+CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_bucuresti;
+CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
 
 -- Verificare
 SELECT * FROM hotel1;
 SELECT * FROM camera1;
+
+-- =====================================================================
+-- CONSTRANGERE DE UNICITATE LOCALA
+-- =====================================================================
+
+-- BD_BUCURESTI
+ALTER TABLE hotel1
+ADD CONSTRAINT uq_hotel1_nume_hotel UNIQUE (nume_hotel);
+
+ALTER TABLE camera1
+ADD CONSTRAINT uq_camera1_nr_camera UNIQUE (nr_camera);
+
+-- BD_CONSTANTA
+ALTER TABLE hotel2
+ADD CONSTRAINT uq_hotel2_nume_hotel UNIQUE (nume_hotel);
+
+ALTER TABLE camera2
+ADD CONSTRAINT uq_camera2_nr_camera UNIQUE (nr_camera);
+
+-- =====================================================================
+-- CONSTRANGERE DE UNICITATE GLOBALA FRAGMENTE ORIZONTALE
+-- =====================================================================
+
+-- BD_BUCURESTI
+CREATE OR REPLACE TRIGGER trg_unique_hotel1
+BEFORE INSERT OR UPDATE ON hotel1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM hotel2@bd_constanta
+    WHERE nume_hotel = :NEW.nume_hotel;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala: Acest nume_hotel exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+INSERT INTO hotel1 VALUES (3, 'Royal Hotel Constanta', 'Bucuresti', 4, 400);
+
+CREATE OR REPLACE TRIGGER trg_unique_camera1
+BEFORE INSERT OR UPDATE ON camera1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM camera2@bd_constanta
+    WHERE nr_camera = :NEW.nr_camera;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala: Acest nr_camera exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+INSERT INTO camera1 VALUES (20, 110, 2, 1);
+
+
+-- BD_CONSTANTA
+CREATE OR REPLACE TRIGGER trg_unique_hotel2
+BEFORE INSERT OR UPDATE ON hotel2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM hotel1@bd_bucuresti
+    WHERE nume_hotel = :NEW.nume_hotel;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala: Acest nume_hotel exista deja in bd_bucuresti!');
+    END IF;
+END;
+/
+
+-- test
+INSERT INTO hotel2 VALUES (4, 'Grand Hotel Bucuresti', 'Constanta', 4, 400);
+
+
+CREATE OR REPLACE TRIGGER trg_unique_camera2
+BEFORE INSERT OR UPDATE ON camera2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM camera1@bd_bucuresti
+    WHERE nr_camera = :NEW.nr_camera;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala: Acest nr_camera exista deja in bd_bucuresti!');
+    END IF;
+END;
+/
+
+-- test
+INSERT INTO camera2 VALUES (30, 101, 2, 2);
+
+-- =====================================================================
+-- CONSTRANGERE DE UNICITATE GLOBALA FRAGMENTE VERTICALE
+-- =====================================================================
+
+-- UNIQUE (nume, prenume, id_departament)
+-- BD BUCURESTI (bdd_global)
+CREATE OR REPLACE TRIGGER trg_unique_nume_deptartament_global
+    INSTEAD OF INSERT OR UPDATE
+    ON angajat_global
+    FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(1)
+    INTO v_count
+    FROM bdd.angajat_identitate ai
+    JOIN bdd.angajat_salarizare@bd_constanta asal ON asal.id_angajat = ai.id_angajat
+    WHERE ai.nume = :NEW.nume
+      AND ai.prenume = :NEW.prenume
+      AND asal.id_departament = :NEW.id_departament
+      AND ai.id_angajat != :NEW.id_angajat;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001,
+                                'Constangere de unicitate pe nume, prenume si id_departament incalcata!');
+    END IF;
+END;
+
+-- test
+INSERT INTO angajat_global values (13, 'Popa', 'Andrei', 'Sofer', 1000, 1, null);
+
+-- =====================================================================
+-- CONSTRANGERE DE CHEIE PRIMARA
+-- =====================================================================
+
+-- BD_BUCURESTI
+
+ALTER TABLE hotel1
+ADD CONSTRAINT pk_hotel1 PRIMARY KEY (id_hotel);
+
+ALTER TABLE camera1
+ADD CONSTRAINT pk_camera1 PRIMARY KEY (id_camera);
+
+ALTER TABLE rezervare_camera1
+ADD CONSTRAINT pk_rezervare_camera1 PRIMARY KEY (id_camera, id_rezervare);
+
+-- (deja definita in definitia tabelului)
+ALTER TABLE angajat_identitate
+ADD CONSTRAINT pk_angajat_identitate PRIMARY KEY (id_angajat);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_hotel1
+BEFORE INSERT OR UPDATE ON hotel1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM hotel2@bd_constanta
+    WHERE id_hotel = :NEW.id_hotel;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+insert into hotel1 values (2, 'nume hotel', 'Bucuresti', 1, 100);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_camera1
+BEFORE INSERT OR UPDATE ON camera1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM camera2@bd_constanta
+    WHERE id_camera = :NEW.id_camera;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+insert into camera1 values (10, 1000, 2, 1);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_rezervare_camera1
+BEFORE INSERT OR UPDATE ON rezervare_camera1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM rezervare_camera2@bd_constanta
+    WHERE id_camera = :NEW.id_camera AND id_rezervare = :NEW.id_rezervare;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+insert into rezervare_camera1 values (6, 6, 2, 100);
+
+
+-- BD CONSTANTA
+
+ALTER TABLE hotel2
+ADD CONSTRAINT pk_hotel2 PRIMARY KEY (id_hotel);
+
+ALTER TABLE camera2
+ADD CONSTRAINT pk_camera2 PRIMARY KEY (id_camera);
+
+ALTER TABLE rezervare_camera2
+ADD CONSTRAINT pk_rezervare_camera2 PRIMARY KEY (id_camera, id_rezervare);
+
+-- (deja definita in definitia tabelului)
+ALTER TABLE angajat_salarizare
+ADD CONSTRAINT pk_angajat_salarizare PRIMARY KEY (id_angajat);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_hotel2
+BEFORE INSERT OR UPDATE ON hotel2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM hotel1@bd_bucuresti
+    WHERE id_hotel = :NEW.id_hotel;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_bucuresti!');
+    END IF;
+END;
+/
+
+-- test
+insert into hotel2 values (1, 'nume hotel', 'Constanta', 1, 100);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_camera2
+BEFORE INSERT OR UPDATE ON camera2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM camera1@bd_bucuresti
+    WHERE id_camera = :NEW.id_camera;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_bucuresti!');
+    END IF;
+END;
+/
+
+-- test
+insert into camera2 values (1, 1000, 2, 2);
+
+CREATE OR REPLACE TRIGGER trg_unique_pk_rezervare_camera2
+BEFORE INSERT OR UPDATE ON rezervare_camera2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM rezervare_camera1@bd_bucuresti
+    WHERE id_camera = :NEW.id_camera AND id_rezervare = :NEW.id_rezervare;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_bucuresti!');
+    END IF;
+END;
+/
+
+-- test
+insert into rezervare_camera2 values (1, 1, 2, 200);
+
+
+-- =====================================================================
+-- CONSTRANGERE DE CHEIE EXTERNA
+-- =====================================================================
+-- BD_BUCURESTI
+ALTER TABLE camera1
+ADD CONSTRAINT fk_id_hotel
+FOREIGN KEY (id_hotel) REFERENCES hotel1 (id_hotel);
+
+ALTER TABLE camera1
+ADD CONSTRAINT fk_id_tip_camera
+FOREIGN KEY (id_tip_camera) REFERENCES tip_camera (id_tip_camera);
+
+ALTER TABLE rezervare_camera1
+ADD CONSTRAINT fk_id_camera
+FOREIGN KEY (id_camera) REFERENCES camera1 (id_camera);
+
+ALTER TABLE angajat_identitate
+ADD CONSTRAINT fk_id_serviciu
+FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
+
+-- BD_CONSTANTA
+ALTER TABLE camera2
+ADD CONSTRAINT fk_id_hotel
+FOREIGN KEY (id_hotel) REFERENCES hotel2 (id_hotel);
+
+ALTER TABLE camera2
+ADD CONSTRAINT fk_id_tip_camera
+FOREIGN KEY (id_tip_camera) REFERENCES tip_camera (id_tip_camera);
+
+ALTER TABLE rezervare_camera2
+ADD CONSTRAINT fk_id_camera
+FOREIGN KEY (id_camera) REFERENCES camera2 (id_camera);
+
+ALTER TABLE angajat_salarizare
+ADD CONSTRAINT fk_id_departament
+FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+
+-- =====================================================================
+-- CONSTRANGERE DE VALIDARE
+-- =====================================================================
+-- BD_BUCURESTI
+ALTER TABLE hotel1
+ADD CONSTRAINT capacitate_pozitiva CHECK (capacitate > 0);
+ALTER TABLE hotel1
+ADD CONSTRAINT nr_stele CHECK (nr_stele >= 1 and nr_stele <= 5);
+
+ALTER TABLE tip_camera
+ADD CONSTRAINT pret_pozitiv CHECK (pret > 0);
+
+ALTER TABLE serviciu
+ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
+
+-- constrangere la nivel global pe fragmente diferinte
+-- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
+CREATE OR REPLACE TRIGGER trg_salariu_manager_identitate
+BEFORE INSERT OR UPDATE ON angajat_identitate
+FOR EACH ROW
+DECLARE
+    v_salariu NUMBER;
+BEGIN
+    IF :NEW.functie = 'Manager Hotel' THEN
+        SELECT salariu INTO v_salariu
+        FROM angajat_salarizare@bd_constanta
+        WHERE id_angajat = :NEW.id_angajat;
+
+        IF v_salariu > 10000 OR v_salariu < 5000 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+        END IF;
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN null;
+END;
+/
+
+-- TEST: inserare din fragment bucuresti
+INSERT INTO angajat_salarizare@bd_constanta VALUES (100, 1000, 1);
+INSERT INTO angajat_identitate VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
+SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
+SELECT * FROM angajat_identitate WHERE id_angajat = 100;
+ROLLBACK;
+
+-- BD_CONSTANTA
+ALTER TABLE hotel2
+ADD CONSTRAINT capacitate_pozitiva CHECK (capacitate > 0);
+ALTER TABLE hotel2
+ADD CONSTRAINT nr_stele CHECK (nr_stele >= 1 and nr_stele <= 5);
+
+ALTER TABLE angajat_salarizare
+ADD CONSTRAINT salariu_pozitiv CHECK (salariu > 0);
+
+ALTER TABLE tip_camera
+ADD CONSTRAINT pret_pozitiv CHECK (pret > 0);
+
+ALTER TABLE serviciu
+ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
+
+-- constrangere la nivel global pe fragmente diferinte
+-- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
+CREATE OR REPLACE TRIGGER trg_salariu_manager_salarizare
+BEFORE INSERT OR UPDATE ON angajat_salarizare
+FOR EACH ROW
+DECLARE
+    v_functie VARCHAR2(200);
+BEGIN
+    SELECT functie INTO v_functie
+    FROM angajat_identitate@bd_bucuresti
+    WHERE id_angajat = :NEW.id_angajat;
+
+    IF v_functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN null;
+END;
+/
+
+-- TEST: inserare din fragment constanta
+INSERT INTO angajat_identitate@bd_bucuresti VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
+INSERT INTO angajat_salarizare VALUES (100, 1000, 1);
+SELECT * FROM angajat_salarizare WHERE id_angajat = 100;
+SELECT * FROM angajat_identitate@bd_bucuresti WHERE id_angajat = 100;
+ROLLBACK;
+
+-- TEST: inserare din view-ul global
+INSERT INTO angajat_global
+VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL);
+SELECT * FROM angajat_global WHERE id_angajat = 100;
+SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 100;
+SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;

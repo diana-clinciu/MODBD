@@ -30,6 +30,7 @@ GRANT SELECT ON bdd_all.hotel TO bdd;
 GRANT SELECT ON bdd_all.sala_eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment TO bdd;
 GRANT SELECT ON bdd_all.eveniment_client TO bdd;
+GRANT SELECT ON bdd_all.rezervare_camera TO bdd;
 
 -- grant-uri pentru userul global (BUCURESTI)
 GRANT CREATE VIEW TO bdd_global;
@@ -807,19 +808,6 @@ create table client (
 insert into client
 select * from bdd_all.client@bd_bucuresti;
 
--- CAMERA (replica)
-create table camera (
-   id_camera     number primary key,
-   nr_camera     number unique not null,
-   id_tip_camera number not null,
-   id_hotel      number not null,
-   foreign key ( id_tip_camera )
-      references tip_camera ( id_tip_camera )
-);
-
-insert into camera
-select * from bdd_all.camera@bd_bucuresti;
-
 commit;
 
 -- Verificare replici
@@ -993,9 +981,9 @@ begin
             values (r.id_client, r.nume, r.prenume, r.email);
          elsif r.operatie = 'UPDATE' then
             update bdd.client@bd_constanta
-            set 
-               nume = r.nume, 
-               prenume = r.prenume, 
+            set
+               nume = r.nume,
+               prenume = r.prenume,
                email = r.email
             where id_client = r.id_client;
          elsif r.operatie = 'DELETE' then
@@ -1004,9 +992,9 @@ begin
          end if;
 
          update client_replica_queue
-         set 
+         set
             status = 'DONE'
-         where 
+         where
             id_eveniment = r.id_eveniment;
 
          commit;
@@ -1015,7 +1003,7 @@ begin
          when others then
             update client_replica_queue
                set status = 'ERROR'
-            where 
+            where
                id_eveniment = r.id_eveniment;
             commit;
       end;
