@@ -5,6 +5,7 @@
 CREATE USER bdd_all IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_all;
 ALTER USER bdd_all QUOTA UNLIMITED ON USERS;
+GRANT CREATE JOB TO bdd_all;  
 
 -- user global
 CREATE USER bdd_global IDENTIFIED BY password;
@@ -104,7 +105,7 @@ create table hotel (
    nume_hotel  varchar2(50) not null,
    oras        varchar2(30) not null,
    nr_stele    number,
-   cconstantaitate  number
+   capacitate  number
 );
 
 -- 3. CAMERA
@@ -207,7 +208,7 @@ create table plata (
 create table sala_eveniment (
    id_sala_eveniment number primary key,
    nume_sala         varchar2(50) not null,
-   cconstantaitate_maxima number not null,
+   capacitate_maxima number not null,
    etaj              number
 );
 
@@ -502,7 +503,7 @@ SELECT * FROM angajat_salarizare ORDER BY id_angajat;
 
 -- 2.3 Fragment Orizontal HOTEL1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE hotel1 AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
 FROM bdd_all.hotel
 WHERE oras = 'Bucuresti';
 
@@ -510,7 +511,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON hotel1 TO bdd_global;
 
 -- 2.4 Fragment Orizontal HOTEL2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE hotel2 AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate
 FROM bdd_all.hotel@bd_bucuresti
 WHERE oras = 'Constanta';
 
@@ -636,9 +637,9 @@ COMMIT;
 
 -- VIEW global care reconstituie HOTEL
 CREATE OR REPLACE VIEW hotel_global AS
-SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate FROM bdd.hotel1
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel1
 UNION ALL
-SELECT id_hotel, nume_hotel, oras, nr_stele, cconstantaitate FROM bdd.hotel2@bd_constanta;
+SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM bdd.hotel2@bd_constanta;
 
 SELECT * FROM hotel_global ORDER BY id_hotel;
 
@@ -648,11 +649,11 @@ INSTEAD OF INSERT ON hotel_global
 FOR EACH ROW
 BEGIN
    IF :NEW.oras = 'Bucuresti' THEN
-      INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, cconstantaitate)
-      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.cconstantaitate);
+      INSERT INTO bdd.hotel1 (id_hotel, nume_hotel, oras, nr_stele, capacitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
    ELSIF :NEW.oras = 'Constanta' THEN
-      INSERT INTO bdd.hotel2@bd_constanta (id_hotel, nume_hotel, oras, nr_stele, cconstantaitate)
-      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.cconstantaitate);
+      INSERT INTO bdd.hotel2@bd_constanta (id_hotel, nume_hotel, oras, nr_stele, capacitate)
+      VALUES (:NEW.id_hotel, :NEW.nume_hotel, :NEW.oras, :NEW.nr_stele, :NEW.capacitate);
    END IF;
 END;
 /
@@ -664,12 +665,12 @@ BEGIN
    IF :OLD.oras = 'Bucuresti' THEN
       UPDATE bdd.hotel1
       SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
-          nr_stele = :NEW.nr_stele, cconstantaitate = :NEW.cconstantaitate
+          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
       WHERE id_hotel = :OLD.id_hotel;
    ELSIF :OLD.oras = 'Constanta' THEN
       UPDATE bdd.hotel2@bd_constanta
       SET nume_hotel = :NEW.nume_hotel, oras = :NEW.oras,
-          nr_stele = :NEW.nr_stele, cconstantaitate = :NEW.cconstantaitate
+          nr_stele = :NEW.nr_stele, capacitate = :NEW.capacitate
       WHERE id_hotel = :OLD.id_hotel;
    END IF;
 END;
@@ -759,6 +760,61 @@ CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
 -- Verificare: statia CONSTANTA acceseaza tabelele ca si cand ar fi locale
 SELECT * FROM hotel1;
 SELECT * FROM camera1;
+
+
+-- Tabele centralizate pe BUCURESTI 
+
+-- Asigurarea transparentei: granturi (ca SYS) + sinonime in schemele
+-- bdd / bdd_global pe ambele statii.
+
+-- Granturi (ca SYS pe BUCURESTI)
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.sala_eveniment   TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment        TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment_client TO bdd;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.sala_eveniment   TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment        TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment_client TO bdd_global;
+
+-- Sinonime in schema bdd pe BUCURESTI (acces local cross-schema)
+CREATE OR REPLACE SYNONYM bdd.rezervare        FOR bdd_all.rezervare;
+CREATE OR REPLACE SYNONYM bdd.rezervare_camera FOR bdd_all.rezervare_camera;
+CREATE OR REPLACE SYNONYM bdd.plata            FOR bdd_all.plata;
+CREATE OR REPLACE SYNONYM bdd.client_serviciu  FOR bdd_all.client_serviciu;
+CREATE OR REPLACE SYNONYM bdd.sala_eveniment   FOR bdd_all.sala_eveniment;
+CREATE OR REPLACE SYNONYM bdd.eveniment        FOR bdd_all.eveniment;
+CREATE OR REPLACE SYNONYM bdd.eveniment_client FOR bdd_all.eveniment_client;
+
+-- Sinonime in schema bdd_global pe BUCURESTI (pentru aplicatia globala)
+CREATE OR REPLACE SYNONYM bdd_global.rezervare        FOR bdd_all.rezervare;
+CREATE OR REPLACE SYNONYM bdd_global.rezervare_camera FOR bdd_all.rezervare_camera;
+CREATE OR REPLACE SYNONYM bdd_global.plata            FOR bdd_all.plata;
+CREATE OR REPLACE SYNONYM bdd_global.client_serviciu  FOR bdd_all.client_serviciu;
+CREATE OR REPLACE SYNONYM bdd_global.sala_eveniment   FOR bdd_all.sala_eveniment;
+CREATE OR REPLACE SYNONYM bdd_global.eveniment        FOR bdd_all.eveniment;
+CREATE OR REPLACE SYNONYM bdd_global.eveniment_client FOR bdd_all.eveniment_client;
+
+-- Sinonime in schema bdd pe CONSTANTA (acces remote prin link bd_bucuresti)
+CREATE OR REPLACE SYNONYM rezervare        FOR bdd_all.rezervare@bd_bucuresti;
+CREATE OR REPLACE SYNONYM rezervare_camera FOR bdd_all.rezervare_camera@bd_bucuresti;
+CREATE OR REPLACE SYNONYM plata            FOR bdd_all.plata@bd_bucuresti;
+CREATE OR REPLACE SYNONYM client_serviciu  FOR bdd_all.client_serviciu@bd_bucuresti;
+CREATE OR REPLACE SYNONYM sala_eveniment   FOR bdd_all.sala_eveniment@bd_bucuresti;
+CREATE OR REPLACE SYNONYM eveniment        FOR bdd_all.eveniment@bd_bucuresti;
+CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_bucuresti;
+
+-- Verificare: acces transparent de pe CONSTANTA la tabelele centralizate
+SELECT count(*) AS rezervari_remote  FROM rezervare;
+SELECT count(*) AS plati_remote      FROM plata;
+SELECT count(*) AS evenimente_remote FROM eveniment;
 
 -- =====================================================
 -- 5 - Asigurarea sincronizarii datelor pentru relatiile replicate
