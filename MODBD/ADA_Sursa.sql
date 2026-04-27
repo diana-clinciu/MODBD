@@ -1124,26 +1124,40 @@ SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
 -- OPTIMIZARE CERERE SQL PROPUSA IN MODULUL DE ANALIZA
 -- =====================================================================
 -- cerere sql intiala:
--- Să se afișeze numele, prenumele și funcția angajaților care lucrează în departamentul cu numele ’Spa & Wellness’
--- și care au salariul mai mare de 2000 lei.
+--  Să afișeze primii 3 cei mai bine plătiți angajați din departamentul 'Spa & Wellness'.
+--  Se va afisa numele, prenumele, funcția și poziția în clasament a angajatului.
 
-SELECT ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
-FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
-JOIN bdd.departament d ON asz.id_departament = d.id_departament
-WHERE d.nume_departament = 'Spa & Wellness'
-  AND asz.salariu > 2000;
+SELECT *
+FROM (SELECT
+          ai.nume,
+          ai.prenume,
+          ai.functie,
+          asz.salariu,
+          d.nume_departament,
+          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
+      FROM bdd.angajat_identitate ai
+               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
+               JOIN bdd.departament d ON asz.id_departament = d.id_departament
+      WHERE d.nume_departament = 'Spa & Wellness')
+WHERE rank_salariu <= 3;
 
 -- A. plan intital optimizator regula
 ALTER SESSION SET OPTIMIZER_MODE = RULE;
 
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_regula_angajat' FOR
-SELECT ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
-FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
-JOIN bdd.departament d ON asz.id_departament = d.id_departament
-WHERE d.nume_departament = 'Spa & Wellness'
-  AND asz.salariu > 2000;
+SELECT *
+FROM (SELECT
+          ai.nume,
+          ai.prenume,
+          ai.functie,
+          asz.salariu,
+          d.nume_departament,
+          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
+      FROM bdd.angajat_identitate ai
+               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
+               JOIN bdd.departament d ON asz.id_departament = d.id_departament
+      WHERE d.nume_departament = 'Spa & Wellness')
+WHERE rank_salariu <= 3;
 SELECT plan_table_output
 FROM table(dbms_xplan.display('PLAN_TABLE', 'plan_regula_angajat', 'SERIAL'));
 
@@ -1156,13 +1170,19 @@ ANALYZE TABLE bdd.departament COMPUTE STATISTICS; -- bd_constanta
 ALTER SESSION SET OPTIMIZER_MODE = CHOOSE;
 
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat' FOR
-SELECT /*+ ALL_ROWS */
-    ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
-FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
-JOIN bdd.departament d ON asz.id_departament = d.id_departament
-WHERE d.nume_departament = 'Spa & Wellness'
-  AND asz.salariu > 2000;
+SELECT /*+ ALL_ROWS */ *
+FROM (SELECT
+          ai.nume,
+          ai.prenume,
+          ai.functie,
+          asz.salariu,
+          d.nume_departament,
+          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
+      FROM bdd.angajat_identitate ai
+               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
+               JOIN bdd.departament d ON asz.id_departament = d.id_departament
+      WHERE d.nume_departament = 'Spa & Wellness')
+WHERE rank_salariu <= 3;
 SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat', 'SERIAL'));
 
 -- C. Optimizare:
@@ -1171,12 +1191,18 @@ CREATE INDEX index_nume_dep ON bdd.departament(nume_departament);
 
 -- plan optimizator de cost cu index
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat_index' FOR
-SELECT /*+ ALL_ROWS */
-    ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
-FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
-JOIN bdd.departament d ON asz.id_departament = d.id_departament
-WHERE d.nume_departament = 'Spa & Wellness'
-  AND asz.salariu > 2000;
+SELECT /*+ ALL_ROWS */ *
+FROM (SELECT
+          ai.nume,
+          ai.prenume,
+          ai.functie,
+          asz.salariu,
+          d.nume_departament,
+          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
+      FROM bdd.angajat_identitate ai
+               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
+               JOIN bdd.departament d ON asz.id_departament = d.id_departament
+      WHERE d.nume_departament = 'Spa & Wellness')
+WHERE rank_salariu <= 3;
 SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat_index', 'SERIAL'));
 
