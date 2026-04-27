@@ -1118,3 +1118,65 @@ VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL);
 SELECT * FROM angajat_global WHERE id_angajat = 100;
 SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 100;
 SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
+
+
+-- =====================================================================
+-- OPTIMIZARE CERERE SQL PROPUSA IN MODULUL DE ANALIZA
+-- =====================================================================
+-- cerere sql intiala:
+-- Să se afișeze numele, prenumele și funcția angajaților care lucrează în departamentul cu numele ’Spa & Wellness’
+-- și care au salariul mai mare de 2000 lei.
+
+SELECT ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
+FROM bdd.angajat_identitate ai
+JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
+JOIN bdd.departament d ON asz.id_departament = d.id_departament
+WHERE d.nume_departament = 'Spa & Wellness'
+  AND asz.salariu > 2000;
+
+-- A. plan intital optimizator regula
+ALTER SESSION SET OPTIMIZER_MODE = RULE;
+
+EXPLAIN PLAN SET STATEMENT_ID = 'plan_regula_angajat' FOR
+SELECT ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
+FROM bdd.angajat_identitate ai
+JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
+JOIN bdd.departament d ON asz.id_departament = d.id_departament
+WHERE d.nume_departament = 'Spa & Wellness'
+  AND asz.salariu > 2000;
+SELECT plan_table_output
+FROM table(dbms_xplan.display('PLAN_TABLE', 'plan_regula_angajat', 'SERIAL'));
+
+-- B. plan intital optimizator cost
+ANALYZE TABLE bdd.angajat_identitate COMPUTE STATISTICS; -- bd_bucuresti
+ANALYZE TABLE bdd.departament COMPUTE STATISTICS; -- bd_bucuresti
+ANALYZE TABLE bdd.angajat_salarizare COMPUTE STATISTICS; -- bd_constanta
+ANALYZE TABLE bdd.departament COMPUTE STATISTICS; -- bd_constanta
+
+ALTER SESSION SET OPTIMIZER_MODE = CHOOSE;
+
+EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat' FOR
+SELECT /*+ ALL_ROWS */
+    ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
+FROM bdd.angajat_identitate ai
+JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
+JOIN bdd.departament d ON asz.id_departament = d.id_departament
+WHERE d.nume_departament = 'Spa & Wellness'
+  AND asz.salariu > 2000;
+SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat', 'SERIAL'));
+
+-- C. Optimizare:
+-- C.1. optimizare cu index
+CREATE INDEX index_nume_dep ON bdd.departament(nume_departament);
+
+-- plan optimizator de cost cu index
+EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat_index' FOR
+SELECT /*+ ALL_ROWS */
+    ai.nume, ai.prenume, ai.functie, d.nume_departament, asz.salariu
+FROM bdd.angajat_identitate ai
+JOIN bdd.angajat_salarizare@bd_constanta asz ON ai.id_angajat = asz.id_angajat
+JOIN bdd.departament d ON asz.id_departament = d.id_departament
+WHERE d.nume_departament = 'Spa & Wellness'
+  AND asz.salariu > 2000;
+SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat_index', 'SERIAL'));
+
