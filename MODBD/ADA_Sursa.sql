@@ -1180,7 +1180,7 @@ END;
 /
 
 -- test
-insert into hotel1 values (2, 'nume hotel', 'Bucuresti', 1, 100);
+insert into hotel1 values (2, 'nume hotel',  1, 100, 2);
 
 CREATE OR REPLACE TRIGGER trg_unique_pk_camera1
 BEFORE INSERT OR UPDATE ON camera1
@@ -1275,7 +1275,7 @@ END;
 /
 
 -- test
-insert into hotel2 values (1, 'nume hotel', 'Constanta', 1, 100);
+insert into hotel2 values (1, 'nume hotel', 1, 100, 2);
 
 CREATE OR REPLACE TRIGGER trg_unique_pk_camera2
 BEFORE INSERT OR UPDATE ON camera2
