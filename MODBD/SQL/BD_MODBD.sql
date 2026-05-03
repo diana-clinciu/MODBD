@@ -5,17 +5,20 @@
 CREATE USER bdd_all IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_all;
 ALTER USER bdd_all QUOTA UNLIMITED ON USERS;
-GRANT CREATE JOB TO bdd_all;  
+GRANT CREATE TABLE TO bdd_all;
+GRANT CREATE JOB TO bdd_all;
 
 -- user global
 CREATE USER bdd_global IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_global;
 ALTER USER bdd_global QUOTA UNLIMITED ON USERS;
+GRANT CREATE TABLE TO bdd_global;
 
 -- user local bucuresti
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
+GRANT CREATE TABLE TO bdd;
 
 GRANT CREATE VIEW TO bdd;
 GRANT CREATE SYNONYM TO bdd;
@@ -38,8 +41,7 @@ GRANT CREATE VIEW TO bdd_global;
 GRANT CREATE SYNONYM TO bdd_global;
 GRANT CREATE DATABASE LINK TO bdd_global;
 GRANT CREATE TRIGGER TO bdd_global;
-GRANT SELECT ON bdd.angajat_identitate TO bdd_global;
--- grant-urile pt tabelele de fragmente se fac dupa creare
+-- grant-urile pt tabelele de fragmente (angajat1, angajat_date_personale etc.) se fac dupa creare
 
 -- definire link bucuresti -> constanta
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
@@ -140,12 +142,17 @@ create table angajat (
    prenume        varchar2(30) not null,
    functie        varchar2(30),
    salariu        number(10,2),
+   cnp            varchar2(30) not null,
+   data_angajare  date not null,
    id_departament number not null,
    id_serviciu    number,
+   id_hotel       number not null,
    foreign key ( id_departament )
       references departament ( id_departament ),
    foreign key ( id_serviciu )
-      references serviciu ( id_serviciu )
+      references serviciu ( id_serviciu ),
+   foreign key ( id_hotel )
+      references hotel ( id_hotel )
 );
 
 -- 7. CLIENT
@@ -351,17 +358,17 @@ insert into serviciu values ( 8, 'Spălătorie Express', 45 );
 insert into serviciu values ( 9, 'Sală Fitness Premium', 80 );
 insert into serviciu values ( 10, 'Cinema Privat', 90 );
 
--- ANGAJAȚI
-insert into angajat values ( 1, 'Popa', 'Andrei', 'Recepționer', 3500, 1, null );
-insert into angajat values ( 2, 'Ionescu', 'Mihai', 'Bucătar Șef', 4500, 2, 2 );
-insert into angajat values ( 3, 'Marin', 'Sorina', 'Ospătar', 3200, 2, 2 );
-insert into angajat values ( 4, 'Dumitru', 'Raluca', 'Masor Terapeut', 3800, 3, 3 );
-insert into angajat values ( 5, 'Stan', 'Vlad', 'Instructor Fitness', 3400, 3, 9 );
-insert into angajat values ( 6, 'Vasilescu', 'Ioan', 'Șofer', 3300, 5, 6 );
-insert into angajat values ( 7, 'Niculae', 'Elena', 'Recepționer Senior', 3800, 1, null );
-insert into angajat values ( 8, 'Florea', 'Cristina', 'Supervizor Curățenie', 3000, 4, 7 );
-insert into angajat values ( 9, 'Georgescu', 'Alin', 'Responsabil Spălătorie', 2900, 4, 8 );
-insert into angajat values ( 10, 'Radu', 'Laura', 'Ghid Turistic', 3200, 5, 5 );
+-- ANGAJAȚI  (id_angajat, nume, prenume, functie, salariu, cnp, data_angajare, id_departament, id_serviciu, id_hotel)
+insert into angajat values (1,  'Popa',       'Andrei',   'Recepționer',            3500, '111111111', date '2025-01-01', 1, null, 1);
+insert into angajat values (2,  'Ionescu',    'Mihai',    'Bucătar Șef',            4500, '262262626', date '2025-05-24', 2, 2,    1);
+insert into angajat values (3,  'Marin',      'Sorina',   'Ospătar',                3200, '363737373', date '2004-05-01', 2, 2,    1);
+insert into angajat values (4,  'Dumitru',    'Raluca',   'Masor Terapeut',         3800, '123456789', date '2026-03-11', 3, 3,    1);
+insert into angajat values (5,  'Stan',       'Vlad',     'Instructor Fitness',     3400, '987654321', date '2022-02-21', 3, 9,    2);
+insert into angajat values (6,  'Vasilescu',  'Ioan',     'Șofer',                  3300, '152346789', date '2025-02-11', 5, 6,    2);
+insert into angajat values (7,  'Niculae',    'Elena',    'Recepționer Senior',     3800, '987653421', date '2025-11-01', 1, null, 2);
+insert into angajat values (8,  'Florea',     'Cristina', 'Supervizor Curățenie',   3000, '768543219', date '2025-01-11', 4, 7,    2);
+insert into angajat values (9,  'Georgescu',  'Alin',     'Responsabil Spălătorie', 2900, '758961324', date '2024-01-11', 4, 8,    2);
+insert into angajat values (10, 'Radu',       'Laura',    'Ghid Turistic',          3200, '758901324', date '2025-04-01', 5, 5,    2);
 
 -- CLIENȚI
 insert into client values ( 1, 'Popescu', 'Ana', 'ana.popescu@email.ro' );
@@ -464,42 +471,60 @@ select p.id_plata, p.id_rezervare, p.suma as suma_calculata_automat, p.data_plat
 -- 2. Crearea relatiilor și a fragmentelor 
 -- =====================================================================
 
--- 2.1 Fragment Vertical 1: ANGAJAT_IDENTITATE - creat pe BUCURESTI (user bdd)
-CREATE TABLE angajat_identitate (
-    id_angajat   NUMBER        PRIMARY KEY,
-    nume         VARCHAR2(30)  NOT NULL,
-    prenume      VARCHAR2(30)  NOT NULL,
-    functie      VARCHAR2(30),
-    id_serviciu  NUMBER
+-- ===========================================================
+-- NOTA: Fragmentarea verticala initiala a tabelei ANGAJAT
+-- (split identitate/salarizare) a fost inlocuita conform
+-- recomandarilor primite la consultatie: cheile externe
+-- trebuie sa ramana in acelasi fragment ca si cheia primara.
+-- Schema revizuita combina fragmentare orizontala (dupa hotel)
+-- cu o fragmentare verticala separata pentru date personale.
+-- Vechea fragmentare identitate/salarizare ramane documentata
+-- ca EXEMPLU TEORETIC in modulul de analiza (ADA).
+-- ===========================================================
+
+-- 2.1 Fragment Orizontal ANGAJAT1 - creat pe BUCURESTI (user bdd)
+--     Angajatii hotelului din Bucuresti (id_hotel = 1); toate FK raman in acelasi fragment
+CREATE TABLE angajat1 AS
+SELECT id_angajat, nume, prenume, functie, salariu,
+       id_departament, id_serviciu, id_hotel
+FROM bdd_all.angajat
+WHERE id_hotel = 1;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON angajat1 TO bdd_global;
+
+-- Verificare
+SELECT * FROM angajat1 ORDER BY id_angajat;
+
+-- 2.2 Fragment Orizontal ANGAJAT2 - creat pe CONSTANTA (user bdd)
+--     Angajatii hotelului din Constanta (id_hotel = 2); toate FK raman in acelasi fragment
+CREATE TABLE angajat2 AS
+SELECT id_angajat, nume, prenume, functie, salariu,
+       id_departament, id_serviciu, id_hotel
+FROM bdd_all.angajat@bd_bucuresti
+WHERE id_hotel = 2;
+
+-- Verificare
+SELECT * FROM angajat2 ORDER BY id_angajat;
+
+-- 2.3 Fragment Vertical ANGAJAT_DATE_PERSONALE - creat pe BUCURESTI (user bdd_global)
+--     Date personale sensibile (CNP, data angajare) stocate centralizat in bdd_global
+CREATE TABLE angajat_date_personale (
+    id_angajat    NUMBER        PRIMARY KEY,
+    cnp           VARCHAR2(30)  NOT NULL,
+    data_angajare DATE          NOT NULL
 );
 
--- Populare din tabela centralizata ANGAJAT (aflata pe bdd_all)
-INSERT INTO angajat_identitate (id_angajat, nume, prenume, functie, id_serviciu)
-SELECT id_angajat, nume, prenume, functie, id_serviciu
+INSERT INTO angajat_date_personale (id_angajat, cnp, data_angajare)
+SELECT id_angajat, cnp, data_angajare
 FROM bdd_all.angajat;
 
 COMMIT;
 
--- Verificare
-SELECT * FROM angajat_identitate ORDER BY id_angajat;
-
--- 2.2 Fragment Vertical 2: ANGAJAT_SALARIZARE - creat pe CONSTANTA (user bdd)
-
-CREATE TABLE angajat_salarizare (
-    id_angajat     NUMBER        PRIMARY KEY,
-    salariu        NUMBER(10,2),
-    id_departament NUMBER        NOT NULL
-);
-
--- Populare din tabela centralizata ANGAJAT de pe BUCURESTI (prin db link)
-INSERT INTO angajat_salarizare (id_angajat, salariu, id_departament)
-SELECT id_angajat, salariu, id_departament
-FROM bdd_all.angajat@bd_bucuresti;
-
-COMMIT;
+-- Grant necesar pentru ca bdd (CONSTANTA) sa acceseze tabela prin db link
+GRANT SELECT ON angajat_date_personale TO bdd;
 
 -- Verificare
-SELECT * FROM angajat_salarizare ORDER BY id_angajat;
+SELECT * FROM angajat_date_personale ORDER BY id_angajat;
 
 -- 2.3 Fragment Orizontal HOTEL1 - creat pe BUCURESTI (user bdd)
 CREATE TABLE hotel1 AS
@@ -533,52 +558,63 @@ WHERE id_hotel = 2;
 -- 4. Furnizarea formelor de transparenta pentru intreg modelul ales  
 -- =====================================================================
 
--- a) Transparenta pentru fragmentele verticale (BUCURESTI-bdd_global)
+-- a) Transparenta pentru fragmentele angajat (BUCURESTI - bdd_global)
 
--- Sinonim local pentru fragmentul de pe BUCURESTI
-CREATE OR REPLACE SYNONYM angajat_identitate FOR bdd.angajat_identitate;
-
+-- VIEW global care reconstituie ANGAJAT (fragmentare orizontala dupa hotel + verticala date personale)
+-- Creat pe BUCURESTI (user bdd_global)
 CREATE OR REPLACE VIEW angajat_global AS
-SELECT 
-   ai.id_angajat,
-   ai.nume,
-   ai.prenume,
-   ai.functie,
-   asal.salariu,
-   asal.id_departament,
-   ai.id_serviciu
-FROM bdd.angajat_identitate ai
-JOIN bdd.angajat_salarizare@bd_constanta asal ON ai.id_angajat = asal.id_angajat;
+SELECT
+   a.id_angajat, a.nume, a.prenume, a.functie,
+   a.salariu, a.id_departament, a.id_serviciu, a.id_hotel,
+   dp.cnp, dp.data_angajare
+FROM (
+   SELECT id_angajat, nume, prenume, functie, salariu,
+          id_departament, id_serviciu, id_hotel FROM bdd.angajat1
+   UNION ALL
+   SELECT id_angajat, nume, prenume, functie, salariu,
+          id_departament, id_serviciu, id_hotel FROM bdd.angajat2@bd_constanta
+) a
+JOIN angajat_date_personale dp ON a.id_angajat = dp.id_angajat;
 
 -- Verificare: aplicatia vede tabela ANGAJAT ca si cand nu ar fi fragmentata
 SELECT * FROM angajat_global ORDER BY id_angajat;
 
--- VIEW-uri pe CONSTANTA pentru acces la fragmentul de pe BUCURESTI
+-- VIEW pe CONSTANTA pentru acces la fragmentul global (user bdd)
 CREATE OR REPLACE VIEW angajat_global AS
-SELECT 
-   ai.id_angajat,
-   ai.nume,
-   ai.prenume,
-   ai.functie,
-   asal.salariu,
-   asal.id_departament,
-   ai.id_serviciu
-FROM bdd.angajat_identitate@bd_bucuresti ai
-JOIN angajat_salarizare asal ON ai.id_angajat = asal.id_angajat;
+SELECT
+   a.id_angajat, a.nume, a.prenume, a.functie,
+   a.salariu, a.id_departament, a.id_serviciu, a.id_hotel,
+   dp.cnp, dp.data_angajare
+FROM (
+   SELECT id_angajat, nume, prenume, functie, salariu,
+          id_departament, id_serviciu, id_hotel FROM bdd.angajat1@bd_bucuresti
+   UNION ALL
+   SELECT id_angajat, nume, prenume, functie, salariu,
+          id_departament, id_serviciu, id_hotel FROM angajat2
+) a
+JOIN bdd_global.angajat_date_personale@bd_bucuresti dp ON a.id_angajat = dp.id_angajat;
 
--- Triggere INSTEAD OF pe view-ul global (BUCURESTI)
+-- Triggere INSTEAD OF pe view-ul global (BUCURESTI - bdd_global)
 
 CREATE OR REPLACE TRIGGER trg_angajat_global_insert
 INSTEAD OF INSERT ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Inserare in fragmentul local (BUCURESTI)
-    INSERT INTO bdd.angajat_identitate (id_angajat, nume, prenume, functie, id_serviciu)
-    VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie, :NEW.id_serviciu);
-
-    -- Inserare in fragmentul remote (CONSTANTA)
-    INSERT INTO bdd.angajat_salarizare@bd_constanta (id_angajat, salariu, id_departament)
-    VALUES (:NEW.id_angajat, :NEW.salariu, :NEW.id_departament);
+    -- Inserare in fragmentul operational (orizontal, dupa hotel)
+    IF :NEW.id_hotel = 1 THEN
+        INSERT INTO bdd.angajat1
+            (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel)
+        VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie,
+                :NEW.salariu, :NEW.id_departament, :NEW.id_serviciu, :NEW.id_hotel);
+    ELSIF :NEW.id_hotel = 2 THEN
+        INSERT INTO bdd.angajat2@bd_constanta
+            (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel)
+        VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie,
+                :NEW.salariu, :NEW.id_departament, :NEW.id_serviciu, :NEW.id_hotel);
+    END IF;
+    -- Inserare in fragmentul date personale (vertical, stocat in bdd_global)
+    INSERT INTO angajat_date_personale (id_angajat, cnp, data_angajare)
+    VALUES (:NEW.id_angajat, :NEW.cnp, :NEW.data_angajare);
 END;
 /
 
@@ -586,48 +622,50 @@ CREATE OR REPLACE TRIGGER trg_angajat_global_update
 INSTEAD OF UPDATE ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Update fragment local (BUCURESTI)
-   UPDATE bdd.angajat_identitate
-   SET 
-      nume = :NEW.nume,
-      prenume = :NEW.prenume,
-      functie = :NEW.functie,
-      id_serviciu = :NEW.id_serviciu
-   WHERE 
-      id_angajat  = :OLD.id_angajat;
-
-    -- Update fragment remote (CONSTANTA)
-   UPDATE bdd.angajat_salarizare@bd_constanta
-   SET 
-      salariu = :NEW.salariu,
-      id_departament = :NEW.id_departament
-   WHERE 
-      id_angajat = :OLD.id_angajat;
+    -- Update fragment operational (orizontal, dupa hotel)
+    IF :OLD.id_hotel = 1 THEN
+        UPDATE bdd.angajat1
+        SET nume = :NEW.nume, prenume = :NEW.prenume, functie = :NEW.functie,
+            salariu = :NEW.salariu, id_departament = :NEW.id_departament,
+            id_serviciu = :NEW.id_serviciu, id_hotel = :NEW.id_hotel
+        WHERE id_angajat = :OLD.id_angajat;
+    ELSIF :OLD.id_hotel = 2 THEN
+        UPDATE bdd.angajat2@bd_constanta
+        SET nume = :NEW.nume, prenume = :NEW.prenume, functie = :NEW.functie,
+            salariu = :NEW.salariu, id_departament = :NEW.id_departament,
+            id_serviciu = :NEW.id_serviciu, id_hotel = :NEW.id_hotel
+        WHERE id_angajat = :OLD.id_angajat;
+    END IF;
+    -- Update date personale (vertical)
+    UPDATE angajat_date_personale
+    SET cnp = :NEW.cnp, data_angajare = :NEW.data_angajare
+    WHERE id_angajat = :OLD.id_angajat;
 END;
 /
 
--- DELETE transparent
 CREATE OR REPLACE TRIGGER trg_angajat_global_delete
 INSTEAD OF DELETE ON angajat_global
 FOR EACH ROW
 BEGIN
-    -- Stergere din fragmentul local (BUCURESTI)
-   DELETE FROM bdd.angajat_identitate
-   WHERE id_angajat = :OLD.id_angajat;
-
-    -- Stergere din fragmentul remote (CONSTANTA)
-   DELETE FROM bdd.angajat_salarizare@bd_constanta
-   WHERE id_angajat = :OLD.id_angajat;
+    -- Stergere din fragmentul operational
+    IF :OLD.id_hotel = 1 THEN
+        DELETE FROM bdd.angajat1 WHERE id_angajat = :OLD.id_angajat;
+    ELSIF :OLD.id_hotel = 2 THEN
+        DELETE FROM bdd.angajat2@bd_constanta WHERE id_angajat = :OLD.id_angajat;
+    END IF;
+    -- Stergere din fragmentul date personale
+    DELETE FROM angajat_date_personale WHERE id_angajat = :OLD.id_angajat;
 END;
 /
 
 -- Test INSERT prin view-ul global
-INSERT INTO angajat_global (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu)
-VALUES (11, 'Mihai', 'Ion', 'Portar', 2500, 1, NULL);
+INSERT INTO angajat_global
+    (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
+VALUES (11, 'Mihai', 'Ion', 'Portar', 2500, 1, NULL, 1, '999999999', date '2025-01-01');
 
 -- Verificare: datele s-au propagat in ambele fragmente
-SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 11;
-SELECT * FROM bdd.angajat_salarizare@bd_constanta WHERE id_angajat = 11;
+SELECT * FROM bdd.angajat1 WHERE id_angajat = 11;
+SELECT * FROM angajat_date_personale WHERE id_angajat = 11;
 
 -- Cleanup test
 DELETE FROM angajat_global WHERE id_angajat = 11;

@@ -10,11 +10,13 @@ ALTER USER bdd_all QUOTA UNLIMITED ON USERS;
 CREATE USER bdd_global IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd_global;
 ALTER USER bdd_global QUOTA UNLIMITED ON USERS;
+GRANT CREATE TABLE TO bdd_global;
 
 -- user local bucuresti
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
+GRANT CREATE TABLE TO bdd;
 
 -- definire link bucuresti -> constanta
 GRANT CREATE PUBLIC DATABASE LINK TO bdd;
@@ -35,7 +37,7 @@ SELECT * FROM dual@bd_constanta;
 
 -- Create useri si link BD CONSTANTA
 -- definire useri (creati cu sys)
--- user local apac
+-- user local Constanta
 CREATE USER bdd IDENTIFIED BY password;
 GRANT CONNECT, RESOURCE TO bdd;
 ALTER USER bdd QUOTA UNLIMITED ON USERS;
@@ -462,6 +464,68 @@ JOIN bdd_all.hotel@bd_bucuresti h ON c.id_hotel = h.id_hotel
 JOIN bdd_all.oras@bd_bucuresti o ON o.id_oras = h.id_oras
 WHERE o.oras = 'Constanta';
 
+-- Fragmentare ANGAJAT
+-- NOTA: Fragmentarea verticala initiala (identitate/salarizare) a fost
+-- inlocuita conform recomandarilor de la consultatie:
+-- cheile externe trebuie sa ramana in acelasi fragment ca si cheia primara.
+
+-- Vechea fragmentare identitate/salarizare ramane documentata ca EXEMPLU TEORETIC.
+-- Schema revizuita:
+--   Fragment 1: date operationale, fragmentat orizontal dupa hotel (angajat1/angajat2)
+--   Fragment 2: date personale (CNP, data angajare), stocat in bdd_global (angajat_date_personale)
+-- ===========================================================
+
+-- Fragment Orizontal ANGAJAT1 - creat pe BUCURESTI (user bdd)
+-- Contine angajatii hotelului din Bucuresti; toate FK raman in acelasi fragment
+CREATE TABLE angajat1 AS
+SELECT 
+    id_angajat, 
+    nume, 
+    prenume, 
+    functie, 
+    salariu,
+    id_departament, 
+    id_serviciu, 
+    id_hotel
+FROM bdd_all.angajat
+WHERE id_hotel = 1;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON angajat1 TO bdd_global;
+
+-- Fragment Orizontal ANGAJAT2 - creat pe CONSTANTA (user bdd)
+-- Contine angajatii hotelului din Constanta; toate FK raman in acelasi fragment
+CREATE TABLE angajat2 AS
+SELECT 
+    id_angajat, 
+    nume, 
+    prenume, 
+    functie, 
+    salariu,
+    id_departament, 
+    id_serviciu, 
+    id_hotel
+FROM bdd_all.angajat@bd_bucuresti
+WHERE id_hotel = 2;
+
+-- Fragment Vertical ANGAJAT_DATE_PERSONALE - creat pe BUCURESTI (user bdd_global)
+-- Date personale sensibile (CNP, data angajare) stocate centralizat in bdd_global
+CREATE TABLE angajat_date_personale (
+    id_angajat    NUMBER        PRIMARY KEY,
+    cnp           VARCHAR2(30)  NOT NULL,
+    data_angajare DATE          NOT NULL
+);
+
+INSERT INTO angajat_date_personale (id_angajat, cnp, data_angajare)
+SELECT
+    id_angajat,
+    cnp,
+    data_angajare
+FROM bdd_all.angajat;
+
+COMMIT;
+
+GRANT SELECT ON angajat_date_personale TO bdd;
+
 -- =====================================================================
 -- Transparenta pentru fragmentele orizontale (BUCURESTI-bdd_global)
 -- =====================================================================
@@ -816,16 +880,130 @@ SELECT * FROM bdd.rezervare_camera1 WHERE id_camera = 1 AND id_rezervare = 1;
 ROLLBACK;
 
 -- =====================================================================
--- Transparenta pentru tabelele stocate in alta baza de date (APAC-bdd)
+-- Transparenta pentru tabelele stocate in alta baza de date (Constanta-bdd)
 -- =====================================================================
 
--- Sinonime pe APAC pentru acces transparent la fragmentele de pe EU
+-- Sinonime pe Constanta pentru acces transparent la fragmentele de pe Bucuresti
 CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_bucuresti;
 CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
+CREATE OR REPLACE SYNONYM angajat1 FOR bdd.angajat1@bd_bucuresti;
 
 -- Verificare
 SELECT * FROM hotel1;
 SELECT * FROM camera1;
+SELECT * FROM angajat1;
+
+-- =====================================================================
+-- Transparenta pentru fragmentele ANGAJAT (BUCURESTI - bdd_global)
+-- =====================================================================
+
+-- VIEW global care reconstituie ANGAJAT, creat pe BUCURESTI (user bdd_global)
+CREATE OR REPLACE VIEW angajat_global AS
+SELECT
+   a.id_angajat, a.nume, a.prenume, a.functie,
+   a.salariu, a.id_departament, a.id_serviciu, a.id_hotel,
+   dp.cnp, dp.data_angajare
+FROM (
+    SELECT 
+        id_angajat, nume, prenume, functie, salariu,
+        id_departament, id_serviciu, id_hotel 
+    FROM bdd.angajat1
+    UNION ALL
+    SELECT 
+        id_angajat, nume, prenume, functie, salariu,
+        id_departament, id_serviciu, id_hotel 
+    FROM bdd.angajat2@bd_constanta
+) a
+JOIN angajat_date_personale dp ON a.id_angajat = dp.id_angajat;
+
+SELECT * FROM angajat_global ORDER BY id_angajat;
+
+-- VIEW pe CONSTANTA pentru acces la fragmentul global (user bdd)
+CREATE OR REPLACE VIEW angajat_global AS
+SELECT
+   a.id_angajat, a.nume, a.prenume, a.functie,
+   a.salariu, a.id_departament, a.id_serviciu, a.id_hotel,
+   dp.cnp, dp.data_angajare
+FROM (
+    SELECT 
+        id_angajat, nume, prenume, functie, salariu,
+        id_departament, id_serviciu, id_hotel 
+    FROM bdd.angajat1@bd_bucuresti
+    UNION ALL
+    SELECT 
+        id_angajat, nume, prenume, functie, salariu,
+        id_departament, id_serviciu, id_hotel 
+    FROM angajat2
+) a
+JOIN bdd_global.angajat_date_personale@bd_bucuresti dp ON a.id_angajat = dp.id_angajat;
+
+SELECT * FROM angajat_global ORDER BY id_angajat;
+
+-- Triggere INSTEAD OF pe view-ul global (BUCURESTI - bdd_global)
+CREATE OR REPLACE TRIGGER trg_angajat_global_ins
+INSTEAD OF INSERT ON angajat_global
+FOR EACH ROW
+BEGIN
+    IF :NEW.id_hotel = 1 THEN
+        INSERT INTO bdd.angajat1
+            (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel)
+        VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie,
+                :NEW.salariu, :NEW.id_departament, :NEW.id_serviciu, :NEW.id_hotel);
+    ELSIF :NEW.id_hotel = 2 THEN
+        INSERT INTO bdd.angajat2@bd_constanta
+            (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel)
+        VALUES (:NEW.id_angajat, :NEW.nume, :NEW.prenume, :NEW.functie,
+                :NEW.salariu, :NEW.id_departament, :NEW.id_serviciu, :NEW.id_hotel);
+    END IF;
+    INSERT INTO angajat_date_personale (id_angajat, cnp, data_angajare)
+    VALUES (:NEW.id_angajat, :NEW.cnp, :NEW.data_angajare);
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_angajat_global_upd
+INSTEAD OF UPDATE ON angajat_global
+FOR EACH ROW
+BEGIN
+    IF :OLD.id_hotel = 1 THEN
+        UPDATE bdd.angajat1
+        SET nume = :NEW.nume, prenume = :NEW.prenume, functie = :NEW.functie,
+            salariu = :NEW.salariu, id_departament = :NEW.id_departament,
+            id_serviciu = :NEW.id_serviciu, id_hotel = :NEW.id_hotel
+        WHERE id_angajat = :OLD.id_angajat;
+    ELSIF :OLD.id_hotel = 2 THEN
+        UPDATE bdd.angajat2@bd_constanta
+        SET nume = :NEW.nume, prenume = :NEW.prenume, functie = :NEW.functie,
+            salariu = :NEW.salariu, id_departament = :NEW.id_departament,
+            id_serviciu = :NEW.id_serviciu, id_hotel = :NEW.id_hotel
+        WHERE id_angajat = :OLD.id_angajat;
+    END IF;
+    UPDATE angajat_date_personale
+    SET cnp = :NEW.cnp, data_angajare = :NEW.data_angajare
+    WHERE id_angajat = :OLD.id_angajat;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_angajat_global_del
+INSTEAD OF DELETE ON angajat_global
+FOR EACH ROW
+BEGIN
+    IF :OLD.id_hotel = 1 THEN
+        DELETE FROM bdd.angajat1 WHERE id_angajat = :OLD.id_angajat;
+    ELSIF :OLD.id_hotel = 2 THEN
+        DELETE FROM bdd.angajat2@bd_constanta WHERE id_angajat = :OLD.id_angajat;
+    END IF;
+    DELETE FROM angajat_date_personale WHERE id_angajat = :OLD.id_angajat;
+END;
+/
+
+-- test
+INSERT INTO angajat_global
+    (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
+VALUES (11, 'Mihai', 'Ion', 'Portar', 2500, 1, NULL, 1, '999999999', date '2025-01-01');
+SELECT * FROM angajat_global WHERE id_angajat = 11;
+SELECT * FROM bdd.angajat1 WHERE id_angajat = 11;
+SELECT * FROM angajat_date_personale WHERE id_angajat = 11;
+ROLLBACK;
 
 -- =====================================================================
 -- REPLICARE
@@ -1095,8 +1273,7 @@ INSERT INTO camera2 VALUES (30, 101, 2, 2);
 -- CONSTRANGERE DE UNICITATE GLOBALA FRAGMENTE VERTICALE
 -- =====================================================================
 
--- UNIQUE (nume, prenume, id_departament)
--- BD BUCURESTI (bdd_global)
+-- UNIQUE (nume, prenume, id_departament) — verificata la nivel global pe angajat_global
 CREATE OR REPLACE TRIGGER trg_unique_nume_deptartament_global
     INSTEAD OF INSERT OR UPDATE
     ON angajat_global
@@ -1106,21 +1283,29 @@ DECLARE
 BEGIN
     SELECT COUNT(1)
     INTO v_count
-    FROM bdd.angajat_identitate ai
-    JOIN bdd.angajat_salarizare@bd_constanta asal ON asal.id_angajat = ai.id_angajat
-    WHERE ai.nume = :NEW.nume
-      AND ai.prenume = :NEW.prenume
-      AND asal.id_departament = :NEW.id_departament
-      AND ai.id_angajat != :NEW.id_angajat;
+    FROM (
+        SELECT id_angajat, nume, prenume, id_departament FROM bdd.angajat1
+        UNION ALL
+        SELECT id_angajat, nume, prenume, id_departament FROM bdd.angajat2@bd_constanta
+    )
+    WHERE nume = :NEW.nume
+      AND prenume = :NEW.prenume
+      AND id_departament = :NEW.id_departament
+      AND id_angajat != :NEW.id_angajat;
 
     IF v_count > 0 THEN
-        RAISE_APPLICATION_ERROR(-20001,
-                                'Constangere de unicitate pe nume, prenume si id_departament incalcata!');
+        RAISE_APPLICATION_ERROR(
+            -20001,
+            'Constangere de unicitate pe nume, prenume si id_departament incalcata!'
+        );
     END IF;
 END;
+/
 
 -- test
-INSERT INTO angajat_global values (13, 'Popa', 'Andrei', 'Sofer', 1000, 1, null);
+INSERT INTO angajat_global (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
+VALUES (13, 'Popa', 'Andrei', 'Sofer', 1000, 1, null, 1, '111111112', date '2025-01-02');
+ROLLBACK;
 
 -- =====================================================================
 -- CONSTRANGERE DE CHEIE PRIMARA
@@ -1140,9 +1325,8 @@ ADD CONSTRAINT pk_camera1 PRIMARY KEY (id_camera);
 ALTER TABLE rezervare_camera1
 ADD CONSTRAINT pk_rezervare_camera1 PRIMARY KEY (id_camera, id_rezervare);
 
--- (deja definita in definitia tabelului)
-ALTER TABLE angajat_identitate
-ADD CONSTRAINT pk_angajat_identitate PRIMARY KEY (id_angajat);
+ALTER TABLE angajat1
+ADD CONSTRAINT pk_angajat1 PRIMARY KEY (id_angajat);
 
 CREATE OR REPLACE TRIGGER trg_unique_pk_oras1
 BEFORE INSERT OR UPDATE ON oras1
@@ -1236,8 +1420,13 @@ ALTER TABLE rezervare_camera2
 ADD CONSTRAINT pk_rezervare_camera2 PRIMARY KEY (id_camera, id_rezervare);
 
 -- (deja definita in definitia tabelului)
-ALTER TABLE angajat_salarizare
-ADD CONSTRAINT pk_angajat_salarizare PRIMARY KEY (id_angajat);
+ALTER TABLE angajat2
+ADD CONSTRAINT pk_angajat2 PRIMARY KEY (id_angajat);
+
+-- BD_GLOBAL (BUCURESTI)
+-- (deja definita in definitia tabelului)
+ALTER TABLE angajat_date_personale
+ADD CONSTRAINT pk_angajat_dp PRIMARY KEY (id_angajat);
 
 CREATE OR REPLACE TRIGGER trg_unique_pk_oras2
 BEFORE INSERT OR UPDATE ON oras2
@@ -1340,9 +1529,12 @@ ALTER TABLE rezervare_camera1
 ADD CONSTRAINT fk_id_rezervare
 FOREIGN KEY (id_rezervare) REFERENCES rezervare (id_rezervare);
 
--- ALTER TABLE angajat_identitate
--- ADD CONSTRAINT fk_id_serviciu
--- FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
+ALTER TABLE angajat1
+ADD CONSTRAINT fk_angajat1_id_hotel FOREIGN KEY (id_hotel) REFERENCES hotel1 (id_hotel);
+ALTER TABLE angajat1
+ADD CONSTRAINT fk_angajat1_id_departament FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+ALTER TABLE angajat1
+ADD CONSTRAINT fk_angajat1_id_serviciu FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
 
 ALTER TABLE rezervare
 ADD CONSTRAINT fk_id_client
@@ -1381,9 +1573,12 @@ ALTER TABLE rezervare_camera2
 ADD CONSTRAINT fk_id_rezervare
 FOREIGN KEY (id_rezervare) REFERENCES rezervare (id_rezervare);
 
--- ALTER TABLE angajat_salarizare
--- ADD CONSTRAINT fk_id_departament
--- FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+ALTER TABLE angajat2
+ADD CONSTRAINT fk_angajat2_id_hotel FOREIGN KEY (id_hotel) REFERENCES hotel2 (id_hotel);
+ALTER TABLE angajat2
+ADD CONSTRAINT fk_angajat2_id_departament FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+ALTER TABLE angajat2
+ADD CONSTRAINT fk_angajat2_id_serviciu FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
 
 ALTER TABLE rezervare
 ADD CONSTRAINT fk_id_client
@@ -1418,31 +1613,21 @@ ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
 
 -- constrangere la nivel global pe fragmente diferinte
 -- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
-CREATE OR REPLACE TRIGGER trg_salariu_manager_identitate
-BEFORE INSERT OR UPDATE ON angajat_identitate
+-- Trigger pe fragmentul orizontal angajat1 (BUCURESTI)
+CREATE OR REPLACE TRIGGER trg_salariu_manager_angajat1
+BEFORE INSERT OR UPDATE ON angajat1
 FOR EACH ROW
 DECLARE
     v_salariu NUMBER;
 BEGIN
-    IF :NEW.functie = 'Manager Hotel' THEN
-        SELECT salariu INTO v_salariu
-        FROM angajat_salarizare@bd_constanta
-        WHERE id_angajat = :NEW.id_angajat;
-
-        IF v_salariu > 10000 OR v_salariu < 5000 THEN
-            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
-        END IF;
+    IF :NEW.functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
     END IF;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN null;
 END;
 /
 
 -- TEST: inserare din fragment bucuresti
-INSERT INTO angajat_salarizare@bd_constanta VALUES (100, 1000, 1);
-INSERT INTO angajat_identitate VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
-SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
-SELECT * FROM angajat_identitate WHERE id_angajat = 100;
+INSERT INTO angajat1 VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1000, 1, null, 1);
 ROLLBACK;
 
 -- BD_CONSTANTA
@@ -1451,7 +1636,7 @@ ADD CONSTRAINT capacitate_pozitiva CHECK (capacitate > 0);
 ALTER TABLE hotel2
 ADD CONSTRAINT nr_stele CHECK (nr_stele >= 1 and nr_stele <= 5);
 
-ALTER TABLE angajat_salarizare
+ALTER TABLE angajat2
 ADD CONSTRAINT salariu_pozitiv CHECK (salariu > 0);
 
 ALTER TABLE tip_camera
@@ -1462,18 +1647,15 @@ ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
 
 -- constrangere la nivel global pe fragmente diferinte
 -- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
-CREATE OR REPLACE TRIGGER trg_salariu_manager_salarizare
-BEFORE INSERT OR UPDATE ON angajat_salarizare
+-- Trigger pe fragmentul orizontal angajat2 (CONSTANTA)
+CREATE OR REPLACE TRIGGER trg_salariu_manager_angajat2
+BEFORE INSERT OR UPDATE ON angajat2
 FOR EACH ROW
 DECLARE
     v_functie VARCHAR2(200);
 BEGIN
-    SELECT functie INTO v_functie
-    FROM angajat_identitate@bd_bucuresti
-    WHERE id_angajat = :NEW.id_angajat;
-
-    IF v_functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
-            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+    IF :NEW.functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
     END IF;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN null;
@@ -1481,19 +1663,17 @@ END;
 /
 
 -- TEST: inserare din fragment constanta
-INSERT INTO angajat_identitate@bd_bucuresti VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
-INSERT INTO angajat_salarizare VALUES (100, 1000, 1);
-SELECT * FROM angajat_salarizare WHERE id_angajat = 100;
-SELECT * FROM angajat_identitate@bd_bucuresti WHERE id_angajat = 100;
+INSERT INTO angajat2 VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1000, 1, null, 2);
 ROLLBACK;
 
 -- TEST: inserare din view-ul global
 INSERT INTO angajat_global
-VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL);
+    (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
+VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL, 1, '000000001', date '2025-01-01');
 SELECT * FROM angajat_global WHERE id_angajat = 100;
-SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 100;
-SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
-
+SELECT * FROM bdd.angajat1 WHERE id_angajat = 100;
+SELECT * FROM angajat_date_personale WHERE id_angajat = 100;
+ROLLBACK;
 
 -- =====================================================================
 -- OPTIMIZARE CERERE SQL PROPUSA IN MODULUL DE ANALIZA
@@ -1502,18 +1682,21 @@ SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
 --  Să afișeze primii 3 cei mai bine plătiți angajați din departamentul 'Spa & Wellness'.
 --  Se va afisa numele, prenumele, funcția și poziția în clasament a angajatului.
 
+-- Cererea foloseste view-ul global angajat_global (bdd_global) care reuneste
+-- fragmentele orizontale angajat1 (Bucuresti) si angajat2 (Constanta)
 SELECT *
-FROM (SELECT
-          ai.nume,
-          ai.prenume,
-          ai.functie,
-          asz.salariu,
-          d.nume_departament,
-          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
-      FROM bdd.angajat_identitate ai
-               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
-               JOIN bdd.departament d ON asz.id_departament = d.id_departament
-      WHERE d.nume_departament = 'Spa & Wellness')
+FROM (
+    SELECT
+        ag.nume,
+        ag.prenume,
+        ag.functie,
+        ag.salariu,
+        d.nume_departament,
+        DENSE_RANK() OVER (ORDER BY ag.salariu DESC) rank_salariu
+    FROM angajat_global ag
+    JOIN bdd.departament d ON ag.id_departament = d.id_departament
+    WHERE d.nume_departament = 'Spa & Wellness'
+)
 WHERE rank_salariu <= 3;
 
 -- A. plan intital optimizator regula
@@ -1521,42 +1704,44 @@ ALTER SESSION SET OPTIMIZER_MODE = RULE;
 
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_regula_angajat' FOR
 SELECT *
-FROM (SELECT
-          ai.nume,
-          ai.prenume,
-          ai.functie,
-          asz.salariu,
-          d.nume_departament,
-          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
-      FROM bdd.angajat_identitate ai
-               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
-               JOIN bdd.departament d ON asz.id_departament = d.id_departament
-      WHERE d.nume_departament = 'Spa & Wellness')
+FROM (
+    SELECT
+        ag.nume,
+        ag.prenume,
+        ag.functie,
+        ag.salariu,
+        d.nume_departament,
+        DENSE_RANK() OVER (ORDER BY ag.salariu DESC) rank_salariu
+    FROM angajat_global ag
+    JOIN bdd.departament d ON ag.id_departament = d.id_departament
+    WHERE d.nume_departament = 'Spa & Wellness'
+)
 WHERE rank_salariu <= 3;
+
 SELECT plan_table_output
 FROM table(dbms_xplan.display('PLAN_TABLE', 'plan_regula_angajat', 'SERIAL'));
 
 -- B. plan intital optimizator cost
-ANALYZE TABLE bdd.angajat_identitate COMPUTE STATISTICS; -- bd_bucuresti
-ANALYZE TABLE bdd.departament COMPUTE STATISTICS; -- bd_bucuresti
-ANALYZE TABLE bdd.angajat_salarizare COMPUTE STATISTICS; -- bd_constanta
-ANALYZE TABLE bdd.departament COMPUTE STATISTICS; -- bd_constanta
+ANALYZE TABLE bdd.angajat1 COMPUTE STATISTICS;      -- bd_bucuresti
+ANALYZE TABLE bdd.angajat2 COMPUTE STATISTICS;      -- bd_constanta (prin db link)
+ANALYZE TABLE bdd.departament COMPUTE STATISTICS;   -- bd_bucuresti
 
 ALTER SESSION SET OPTIMIZER_MODE = CHOOSE;
 
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat' FOR
 SELECT /*+ ALL_ROWS */ *
-FROM (SELECT
-          ai.nume,
-          ai.prenume,
-          ai.functie,
-          asz.salariu,
-          d.nume_departament,
-          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
-      FROM bdd.angajat_identitate ai
-               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
-               JOIN bdd.departament d ON asz.id_departament = d.id_departament
-      WHERE d.nume_departament = 'Spa & Wellness')
+FROM (
+    SELECT
+        ag.nume,
+        ag.prenume,
+        ag.functie,
+        ag.salariu,
+        d.nume_departament,
+        DENSE_RANK() OVER (ORDER BY ag.salariu DESC) rank_salariu
+    FROM angajat_global ag
+    JOIN bdd.departament d ON ag.id_departament = d.id_departament
+    WHERE d.nume_departament = 'Spa & Wellness'
+)
 WHERE rank_salariu <= 3;
 SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat', 'SERIAL'));
 
@@ -1567,17 +1752,17 @@ CREATE INDEX index_nume_dep ON bdd.departament(nume_departament);
 -- plan optimizator de cost cu index
 EXPLAIN PLAN SET STATEMENT_ID = 'plan_cost_angajat_index' FOR
 SELECT /*+ ALL_ROWS */ *
-FROM (SELECT
-          ai.nume,
-          ai.prenume,
-          ai.functie,
-          asz.salariu,
-          d.nume_departament,
-          DENSE_RANK() OVER (ORDER BY asz.salariu DESC) rank_salariu
-      FROM bdd.angajat_identitate ai
-               JOIN bdd.angajat_salarizare@bd_constanta asz ON asz.id_angajat = ai.id_angajat
-               JOIN bdd.departament d ON asz.id_departament = d.id_departament
-      WHERE d.nume_departament = 'Spa & Wellness')
+FROM (
+    SELECT
+        ag.nume,
+        ag.prenume,
+        ag.functie,
+        ag.salariu,
+        d.nume_departament,
+        DENSE_RANK() OVER (ORDER BY ag.salariu DESC) rank_salariu
+    FROM angajat_global ag
+    JOIN bdd.departament d ON ag.id_departament = d.id_departament
+    WHERE d.nume_departament = 'Spa & Wellness'
+)
 WHERE rank_salariu <= 3;
 SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat_index', 'SERIAL'));
-
