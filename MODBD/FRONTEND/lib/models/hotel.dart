@@ -17,7 +17,7 @@ class Hotel {
 
   factory Hotel.fromJson(Map<String, dynamic> j) => Hotel(
         idHotel: j['id_hotel'] as int,
-        numeHotel: j['nome_hotel'] as String?,
+        numeHotel: j['nume_hotel'] as String?,
         oras: j['oras'] as String?,
         nrStele: j['nr_stele'] as int?,
         capacitate: j['capacitate'] as int?,
@@ -25,7 +25,7 @@ class Hotel {
 
   Map<String, String> toFormFields() => {
         'id_hotel': idHotel.toString(),
-        if (numeHotel != null) 'nome_hotel': numeHotel!,
+        if (numeHotel != null) 'nume_hotel': numeHotel!,
         if (oras != null) 'oras': oras!,
         if (nrStele != null) 'nr_stele': nrStele.toString(),
         if (capacitate != null) 'capacitate': capacitate.toString(),

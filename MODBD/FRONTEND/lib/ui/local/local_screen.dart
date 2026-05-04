@@ -109,7 +109,7 @@ class _LocalScreenState extends State<LocalScreen>
         children: [
           ListTile(
             dense: true,
-            title: const Text('Efecte la nivel global (Req 3)',
+            title: const Text('Efecte la nivel global',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
