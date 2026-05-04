@@ -888,6 +888,11 @@ CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@bd_bucuresti;
 CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
 CREATE OR REPLACE SYNONYM angajat1 FOR bdd.angajat1@bd_bucuresti;
 
+CREATE OR REPLACE SYNONYM bdd_global.tip_camera FOR bdd_all.tip_camera;
+CREATE OR REPLACE SYNONYM bdd_global.departament FOR bdd_all.departament;
+CREATE OR REPLACE SYNONYM bdd_global.client FOR bdd_all.client;
+CREATE OR REPLACE SYNONYM bdd_global.serviciu FOR bdd_all.serviciu;
+
 -- Verificare
 SELECT * FROM hotel1;
 SELECT * FROM camera1;

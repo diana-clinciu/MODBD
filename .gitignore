@@ -1,5 +1,14 @@
-.idea
+.idea/
 
 # Claude files
 CLAUDE.md
-.claude
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db

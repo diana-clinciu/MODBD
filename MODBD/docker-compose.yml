@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+
+  oracle_buc:
+    image: gvenzl/oracle-free:23-slim
+    container_name: oracle-bucuresti
+    hostname: oracle-bucuresti
+    environment:
+      ORACLE_PASSWORD: password
+    ports:
+      - "1521:1521"
+    volumes:
+      - modbd-bucuresti-data:/opt/oracle/oradata
+      - ./SQL:/sql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 20s
+      retries: 20
+
+  oracle_con:
+    image: gvenzl/oracle-free:23-slim
+    container_name: oracle-constanta
+    hostname: oracle-constanta
+    environment:
+      ORACLE_PASSWORD: password
+    ports:
+      - "1522:1521"
+    volumes:
+      - modbd-constanta-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 20s
+      retries: 20
+
+  backend:
+    build:
+      context: ./BACKEND
+      dockerfile: Dockerfile
+    container_name: modbd_backend
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: oracle-bucuresti
+      DB_PORT: "1521"
+    volumes:
+      - ./BACKEND:/app
+    depends_on:
+      oracle_buc:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+  frontend:
+    build:
+      context: ./FRONTEND
+      dockerfile: Dockerfile
+    container_name: modbd_frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./FRONTEND:/app
+      - pub_cache:/root/.pub-cache
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+volumes:
+  modbd-bucuresti-data:
+    external: true
+  modbd-constanta-data:
+    external: true
+  pub_cache:

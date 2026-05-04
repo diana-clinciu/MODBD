@@ -1,6 +1,10 @@
-.idea
+.idea/
 ~$*.docx
 
 # Claude files
 CLAUDE.md
-.claude
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]

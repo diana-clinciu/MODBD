@@ -1,33 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import clients, rezervari, camere, servicii, plati, angajati, evenimente, dw_sync, rapoarte
+from routers import local_buc, local_con, global_db, statistici
 
-app = FastAPI()
-
-origins = [
-    "http://localhost:5173",  # portul unde ruleaza Flutter Web
-    "http://localhost:8000",  # backendul
-    "*",  
-]
+app = FastAPI(title="MODBD – Baza de Date Distribuita", version="2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(clients.router)
-app.include_router(rezervari.router)
-app.include_router(camere.router)
-app.include_router(servicii.router)
-app.include_router(plati.router)
-app.include_router(angajati.router)
-app.include_router(evenimente.router)
-app.include_router(dw_sync.router)
-app.include_router(rapoarte.router)
+app.include_router(local_buc.router)
+app.include_router(local_con.router)
+app.include_router(global_db.router)
+app.include_router(statistici.router)
+
 
 @app.get("/")
 def root():
-    return {"message": "Backend FastAPI merge!"}
+    return {
+        "message": "Backend MODBD merge!",
+        "docs": "/docs",
+        "endpoints": {
+            "local_bucuresti": "/local/buc/...",
+            "local_constanta": "/local/con/...",
+            "global": "/global/...",
+            "statistici": "/statistici/distributie",
+        },
+    }
