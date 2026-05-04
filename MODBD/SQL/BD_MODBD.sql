@@ -799,7 +799,6 @@ CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@bd_bucuresti;
 SELECT * FROM hotel1;
 SELECT * FROM camera1;
 
-
 -- Tabele centralizate pe BUCURESTI 
 
 -- Asigurarea transparentei: granturi (ca SYS) + sinonime in schemele
@@ -810,26 +809,17 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.sala_eveniment   TO bdd;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment        TO bdd;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment_client TO bdd;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd_global;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd_global;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd_global;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd_global;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.sala_eveniment   TO bdd_global;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment        TO bdd_global;
-GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.eveniment_client TO bdd_global;
 
 -- Sinonime in schema bdd pe BUCURESTI (acces local cross-schema)
 CREATE OR REPLACE SYNONYM bdd.rezervare        FOR bdd_all.rezervare;
 CREATE OR REPLACE SYNONYM bdd.rezervare_camera FOR bdd_all.rezervare_camera;
 CREATE OR REPLACE SYNONYM bdd.plata            FOR bdd_all.plata;
 CREATE OR REPLACE SYNONYM bdd.client_serviciu  FOR bdd_all.client_serviciu;
-CREATE OR REPLACE SYNONYM bdd.sala_eveniment   FOR bdd_all.sala_eveniment;
-CREATE OR REPLACE SYNONYM bdd.eveniment        FOR bdd_all.eveniment;
-CREATE OR REPLACE SYNONYM bdd.eveniment_client FOR bdd_all.eveniment_client;
 
 -- Sinonime in schema bdd_global pe BUCURESTI (pentru aplicatia globala)
 CREATE OR REPLACE SYNONYM bdd_global.rezervare        FOR bdd_all.rezervare;
@@ -845,9 +835,6 @@ CREATE OR REPLACE SYNONYM rezervare        FOR bdd_all.rezervare@bd_bucuresti;
 CREATE OR REPLACE SYNONYM rezervare_camera FOR bdd_all.rezervare_camera@bd_bucuresti;
 CREATE OR REPLACE SYNONYM plata            FOR bdd_all.plata@bd_bucuresti;
 CREATE OR REPLACE SYNONYM client_serviciu  FOR bdd_all.client_serviciu@bd_bucuresti;
-CREATE OR REPLACE SYNONYM sala_eveniment   FOR bdd_all.sala_eveniment@bd_bucuresti;
-CREATE OR REPLACE SYNONYM eveniment        FOR bdd_all.eveniment@bd_bucuresti;
-CREATE OR REPLACE SYNONYM eveniment_client FOR bdd_all.eveniment_client@bd_bucuresti;
 
 -- Verificare: acces transparent de pe CONSTANTA la tabelele centralizate
 SELECT count(*) AS rezervari_remote  FROM rezervare;

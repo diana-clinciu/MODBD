@@ -464,6 +464,8 @@ JOIN bdd_all.hotel@bd_bucuresti h ON c.id_hotel = h.id_hotel
 JOIN bdd_all.oras@bd_bucuresti o ON o.id_oras = h.id_oras
 WHERE o.oras = 'Constanta';
 
+--2. (1p) Crearea relațiilor și a fragmentelor - obligatoriu  
+
 -- Fragmentare ANGAJAT
 -- NOTA: Fragmentarea verticala initiala (identitate/salarizare) a fost
 -- inlocuita conform recomandarilor de la consultatie:
@@ -909,11 +911,9 @@ SELECT * FROM hotel1;
 SELECT * FROM camera1;
 SELECT * FROM angajat1;
 
--- =====================================================================
--- Transparenta pentru fragmentele ANGAJAT (BUCURESTI - bdd_global)
--- =====================================================================
+--4. (2,5p) Furnizarea formelor de transparență pentru întreg modelul ales
+--a. (1p) transparență pentru fragmentele verticale  
 
--- VIEW global care reconstituie ANGAJAT, creat pe BUCURESTI (user bdd_global)
 CREATE OR REPLACE VIEW angajat_global AS
 SELECT
    a.id_angajat, a.nume, a.prenume, a.functie,
@@ -1021,90 +1021,48 @@ SELECT * FROM bdd.angajat1 WHERE id_angajat = 11;
 SELECT * FROM angajat_date_personale WHERE id_angajat = 11;
 ROLLBACK;
 
--- =====================================================================
--- REPLICARE
--- =====================================================================
+-- c) Transparenta pentru tabelele stocate in alta baza de date fata de cea la care se conecteaza aplicatia 
+CREATE OR REPLACE SYNONYM hotel1 FOR bdd.hotel1@BD_BUCURESTI; 
+CREATE OR REPLACE SYNONYM camera1 FOR bdd.camera1@BD_BUCURESTI; 
+CREATE OR REPLACE SYNONYM angajat1 FOR bdd.angajat1@bd_bucuresti; 
 
--- BD_BUCURESTI
+-- Verificare 
+SELECT * FROM hotel1; 
+SELECT * FROM camera1; 
+SELECT * FROM angajat1; 
 
--- TIP_CAMERA (replica)
-create table tip_camera (
-   id_tip_camera    number primary key,
-   tip_camera       varchar2(20) not null,
-   clasa_confort    varchar2(20) not null,
-   categorie_camera varchar2(30) not null,
-   pret             number(10,2) not null
-);
-insert into tip_camera
-select * from bdd_all.tip_camera;
+-- Granturi (ca SYS pe BUCURESTI)
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd;
 
--- SERVICIU (replica)
-create table serviciu (
-   id_serviciu   number primary key,
-   denumire      varchar2(50) not null,
-   pret_serviciu number(10,2) not null
-);
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd_global;
 
-insert into serviciu
-select * from bdd_all.serviciu;
+-- Sinonime in schema bdd pe BUCURESTI (acces local cross-schema)
+CREATE OR REPLACE SYNONYM bdd.rezervare        FOR bdd_all.rezervare;
+CREATE OR REPLACE SYNONYM bdd.rezervare_camera FOR bdd_all.rezervare_camera;
+CREATE OR REPLACE SYNONYM bdd.plata            FOR bdd_all.plata;
+CREATE OR REPLACE SYNONYM bdd.client_serviciu  FOR bdd_all.client_serviciu;
 
--- DEPARTAMENT (replica)
-create table departament (
-   id_departament   number primary key,
-   nume_departament varchar2(50) not null
-);
+-- Sinonime in schema bdd_global pe BUCURESTI (pentru aplicatia globala)
+CREATE OR REPLACE SYNONYM bdd_global.rezervare        FOR bdd_all.rezervare;
+CREATE OR REPLACE SYNONYM bdd_global.rezervare_camera FOR bdd_all.rezervare_camera;
+CREATE OR REPLACE SYNONYM bdd_global.plata            FOR bdd_all.plata;
+CREATE OR REPLACE SYNONYM bdd_global.client_serviciu  FOR bdd_all.client_serviciu;
 
-insert into departament
-select * from bdd_all.departament;
+-- Sinonime in schema bdd pe CONSTANTA (acces remote prin link bd_bucuresti)
+CREATE OR REPLACE SYNONYM rezervare        FOR bdd_all.rezervare@bd_bucuresti;
+CREATE OR REPLACE SYNONYM rezervare_camera FOR bdd_all.rezervare_camera@bd_bucuresti;
+CREATE OR REPLACE SYNONYM plata            FOR bdd_all.plata@bd_bucuresti;
+CREATE OR REPLACE SYNONYM client_serviciu  FOR bdd_all.client_serviciu@bd_bucuresti;
 
--- CLIENT (replica)
-create table client (
-   id_client number primary key,
-   nume      varchar2(30) not null,
-   prenume   varchar2(30) not null,
-   email     varchar2(50) unique
-);
+--5. (1p) Asigurarea sincronizării datelor pentru relațiile replicate. 
 
-insert into client
-select * from bdd_all.client;
-
--- CLIENT_SERVICIU (replica)
-create table client_serviciu (
-   id_client      number,
-   id_serviciu    number,
-   data_utilizare date default sysdate,
-   cantitate      number default 1 not null,
-   primary key ( id_client, id_serviciu, data_utilizare )
-);
-
-insert into client_serviciu
-select * from bdd_all.client_serviciu;
-
--- REZERVARE (replica)
-create table rezervare (
-   id_rezervare number primary key,
-   id_client    number not null,
-   data_start   date not null,
-   data_final   date not null,
-   constraint interval_data_valid check ( data_start <= data_final )
-);
-
-insert into rezervare
-select * from bdd_all.rezervare;
-
--- PLATA (replica)
-create table plata (
-   id_plata     number primary key,
-   id_rezervare number not null,
-   suma         number(10,2),
-   data_plata   date not null,
-   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash', 'Card', 'Transfer' ) )
-);
-
-insert into plata
-select * from bdd_all.plata;
-
--- BD_CONSTANTA
+-- Creare tabele replicate pe CONSTANTA si populare initiala
 
 -- TIP_CAMERA (replica)
 create table tip_camera (
@@ -1114,6 +1072,7 @@ create table tip_camera (
    categorie_camera varchar2(30) not null,
    pret             number(10,2) not null
 );
+
 insert into tip_camera
 select * from bdd_all.tip_camera@bd_bucuresti;
 
@@ -1147,41 +1106,221 @@ create table client (
 insert into client
 select * from bdd_all.client@bd_bucuresti;
 
--- CLIENT_SERVICIU (replica)
-create table client_serviciu (
-   id_client      number,
-   id_serviciu    number,
-   data_utilizare date default sysdate,
-   cantitate      number default 1 not null,
-   primary key ( id_client, id_serviciu, data_utilizare )
+commit;
+
+-- Verificare replici
+select 'TIP_CAMERA' as tabel, count(*) as nr from tip_camera
+union all
+select 'SERVICIU' as tabel, count(*) from serviciu
+union all
+select 'DEPARTAMENT' as tabel, count(*) from departament
+union all
+select 'CLIENT' as tabel, count(*) from client
+union all
+select 'CAMERA' as tabel, count(*) from camera;
+
+-- Triggere de sincronizare BUCURESTI -> CONSTANTA
+-- La orice modificare pe tabelele sursa de pe BUCURESTI, se propaga pe CONSTANTA
+
+create or replace trigger trg_sync_tip_camera_insert
+   after insert on tip_camera
+   for each row
+begin
+   insert into bdd.tip_camera@bd_constanta
+      (id_tip_camera, tip_camera, clasa_confort, categorie_camera, pret)
+   values (
+      :new.id_tip_camera, :new.tip_camera, :new.clasa_confort,
+      :new.categorie_camera, :new.pret
+   );
+end;
+/
+
+create or replace trigger trg_sync_tip_camera_update
+   after update on tip_camera
+   for each row
+begin
+   update bdd.tip_camera@bd_constanta
+   set
+      tip_camera = :new.tip_camera,
+      clasa_confort = :new.clasa_confort,
+      categorie_camera = :new.categorie_camera,
+      pret = :new.pret
+   where
+      id_tip_camera = :old.id_tip_camera;
+end;
+/
+
+create or replace trigger trg_sync_tip_camera_delete
+   after delete on tip_camera
+   for each row
+begin
+   delete from bdd.tip_camera@bd_constanta
+   where id_tip_camera = :old.id_tip_camera;
+end;
+/
+
+-- ---------- SERVICIU ----------
+
+create or replace trigger trg_sync_serviciu_insert
+   after insert on serviciu
+   for each row
+begin
+   insert into bdd.serviciu@bd_constanta
+      (id_serviciu, denumire, pret_serviciu)
+   values(
+      :new.id_serviciu, :new.denumire, :new.pret_serviciu
+   );
+end;
+/
+
+create or replace trigger trg_sync_serviciu_update
+   after update on serviciu
+   for each row
+begin
+   update bdd.serviciu@bd_constanta
+   set
+      denumire = :new.denumire,
+      pret_serviciu = :new.pret_serviciu
+   where
+      id_serviciu = :old.id_serviciu;
+end;
+/
+
+create or replace trigger trg_sync_serviciu_delete
+   after delete on serviciu
+   for each row
+begin
+   delete from bdd.serviciu@bd_constanta
+   where id_serviciu = :old.id_serviciu;
+end;
+/
+
+-- ---------- DEPARTAMENT ----------
+
+create or replace trigger trg_sync_departament_insert
+   after insert on departament
+   for each row
+begin
+   insert into bdd.departament@bd_constanta
+      (id_departament, nume_departament)
+   values(
+      :new.id_departament, :new.nume_departament
+   );
+end;
+/
+
+create or replace trigger trg_sync_departament_update
+   after update on departament
+   for each row
+begin
+   update bdd.departament@bd_constanta
+   set
+      nume_departament = :new.nume_departament
+   where
+      id_departament = :old.id_departament;
+end;
+/
+
+create or replace trigger trg_sync_departament_delete
+   after delete on departament
+   for each row
+begin
+   delete from bdd.departament@bd_constanta
+   where id_departament = :old.id_departament;
+end;
+/
+
+-- ---------- CLIENT (replicare asincronă) ----------
+-- Relatia CLIENT este replicata asincron: modificarile locale nu asteapta
+-- confirmarea stației CONSTANTA, ci sunt puse intr-o coada si propagate ulterior de un job.
+
+-- 1. Coada de replicare (pe BUCURESTI)
+create table client_replica_queue (
+   id_eveniment number generated always as identity primary key,
+   operatie varchar2(10) not null,
+   id_client number not null,
+   nume varchar2(30),
+   prenume varchar2(30),
+   email varchar2(50),
+   data_cerere timestamp default systimestamp,
+   status varchar2(10) default 'PENDING'
 );
 
-insert into client_serviciu
-select * from bdd_all.client_serviciu@bd_bucuresti;
+-- 2. Trigger local: scrie DOAR in coada, nu atinge CONSTANTA
+create or replace trigger trg_async_client
+   after insert or update or delete on client
+   for each row
+begin
+   if inserting then
+      insert into client_replica_queue (operatie, id_client, nume, prenume, email)
+      values ('INSERT', :new.id_client, :new.nume, :new.prenume, :new.email);
+   elsif updating then
+      insert into client_replica_queue (operatie, id_client, nume, prenume, email)
+      values ('UPDATE', :new.id_client, :new.nume, :new.prenume, :new.email);
+   elsif deleting then
+      insert into client_replica_queue (operatie, id_client)
+      values ('DELETE', :old.id_client);
+   end if;
+end;
+/
 
--- REZERVARE (replica)
-create table rezervare (
-   id_rezervare number primary key,
-   id_client    number not null,
-   data_start   date not null,
-   data_final   date not null,
-   constraint interval_data_valid check ( data_start <= data_final )
-);
+-- 3. Procedura care propaga modificarile catre CONSTANTA
+create or replace procedure sync_client_to_constanta is
+begin
+   for r in (
+      select *
+      from client_replica_queue
+      where status = 'PENDING'
+      order by id_eveniment
+   ) loop
+      begin
+         if r.operatie = 'INSERT' then
+            insert into bdd.client@bd_constanta (id_client, nume, prenume, email)
+            values (r.id_client, r.nume, r.prenume, r.email);
+         elsif r.operatie = 'UPDATE' then
+            update bdd.client@bd_constanta
+            set
+               nume = r.nume,
+               prenume = r.prenume,
+               email = r.email
+            where id_client = r.id_client;
+         elsif r.operatie = 'DELETE' then
+            delete from bdd.client@bd_constanta
+            where id_client = r.id_client;
+         end if;
 
-insert into rezervare
-select * from bdd_all.rezervare@bd_bucuresti;
+         update client_replica_queue
+         set
+            status = 'DONE'
+         where
+            id_eveniment = r.id_eveniment;
 
--- PLATA (replica)
-create table plata (
-   id_plata     number primary key,
-   id_rezervare number not null,
-   suma         number(10,2),
-   data_plata   date not null,
-   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash', 'Card', 'Transfer' ) )
-);
+         commit;
 
-insert into plata
-select * from bdd_all.plata@bd_bucuresti;
+      exception
+         when others then
+            update client_replica_queue
+               set status = 'ERROR'
+            where
+               id_eveniment = r.id_eveniment;
+            commit;
+      end;
+   end loop;
+end;
+/
+
+-- 4. Job care ruleaza procedura la fiecare 30 de secunde
+begin
+   dbms_scheduler.create_job(
+      job_name => 'JOB_SYNC_CLIENT',
+      job_type => 'PLSQL_BLOCK',
+      job_action => 'begin sync_client_to_constanta; end;',
+      start_date => systimestamp,
+      repeat_interval => 'FREQ=SECONDLY; INTERVAL=30',
+      enabled => true
+   );
+end;
+/
 
 -- =====================================================================
 -- CONSTRANGERE DE UNICITATE LOCALA
