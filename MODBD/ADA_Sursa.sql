@@ -1278,7 +1278,26 @@ INSERT INTO camera2 VALUES (30, 101, 2, 2);
 -- CONSTRANGERE DE UNICITATE GLOBALA FRAGMENTE VERTICALE
 -- =====================================================================
 
--- UNIQUE (nume, prenume, id_departament) — verificata la nivel global pe angajat_global
+-- NOTA: Definitia constrangerii a fost facuta pe fragmentele verticale VECHI angajat_identitate si angajat_salarizare
+--       Conform consultatiei, a ramas ca este ok daca constrangerea ramene neactualizata, ca exemplu teoretic
+-- FRAGMENTELE VECHI:
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
+
+-- UNIQUE (nume, prenume, id_departament)
+-- BD BUCURESTI (bdd_global)
 CREATE OR REPLACE TRIGGER trg_unique_nume_deptartament_global
     INSTEAD OF INSERT OR UPDATE
     ON angajat_global
@@ -1288,28 +1307,22 @@ DECLARE
 BEGIN
     SELECT COUNT(1)
     INTO v_count
-    FROM (
-        SELECT id_angajat, nume, prenume, id_departament FROM bdd.angajat1
-        UNION ALL
-        SELECT id_angajat, nume, prenume, id_departament FROM bdd.angajat2@bd_constanta
-    )
-    WHERE nume = :NEW.nume
-      AND prenume = :NEW.prenume
-      AND id_departament = :NEW.id_departament
-      AND id_angajat != :NEW.id_angajat;
+    FROM bdd.angajat_identitate ai
+             JOIN bdd.angajat_salarizare@bd_constanta asal ON asal.id_angajat = ai.id_angajat
+    WHERE ai.nume = :NEW.nume
+      AND ai.prenume = :NEW.prenume
+      AND asal.id_departament = :NEW.id_departament
+      AND ai.id_angajat != :NEW.id_angajat;
 
     IF v_count > 0 THEN
-        RAISE_APPLICATION_ERROR(
-            -20001,
-            'Constangere de unicitate pe nume, prenume si id_departament incalcata!'
-        );
+        RAISE_APPLICATION_ERROR(-20001,
+                                'Constangere de unicitate pe nume, prenume si id_departament incalcata!');
     END IF;
 END;
-/
 
 -- test
-INSERT INTO angajat_global (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
-VALUES (13, 'Popa', 'Andrei', 'Sofer', 1000, 1, null, 1, '111111112', date '2025-01-02');
+INSERT INTO angajat_global
+values (13, 'Popa', 'Andrei', 'Sofer', 1000, 1, null);
 ROLLBACK;
 
 -- =====================================================================
@@ -1409,6 +1422,24 @@ END;
 -- test
 insert into rezervare_camera1 values (6, 6, 2, 100);
 
+CREATE OR REPLACE TRIGGER trg_unique_pk_angajat1
+BEFORE INSERT OR UPDATE ON angajat1
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM angajat2@bd_constanta
+    WHERE id_angajat = :NEW.id_angajat;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_constanta!');
+    END IF;
+END;
+/
+
+-- test
+insert into angajat1 values (6, 'nume', 'prenume', 'functie', 1111, 1, 1, 1);
 
 -- BD CONSTANTA
 
@@ -1424,14 +1455,8 @@ ADD CONSTRAINT pk_camera2 PRIMARY KEY (id_camera);
 ALTER TABLE rezervare_camera2
 ADD CONSTRAINT pk_rezervare_camera2 PRIMARY KEY (id_camera, id_rezervare);
 
--- (deja definita in definitia tabelului)
 ALTER TABLE angajat2
 ADD CONSTRAINT pk_angajat2 PRIMARY KEY (id_angajat);
-
--- BD_GLOBAL (BUCURESTI)
--- (deja definita in definitia tabelului)
-ALTER TABLE angajat_date_personale
-ADD CONSTRAINT pk_angajat_dp PRIMARY KEY (id_angajat);
 
 CREATE OR REPLACE TRIGGER trg_unique_pk_oras2
 BEFORE INSERT OR UPDATE ON oras2
@@ -1509,6 +1534,30 @@ END;
 -- test
 insert into rezervare_camera2 values (1, 1, 2, 200);
 
+CREATE OR REPLACE TRIGGER trg_unique_pk_angajat2
+BEFORE INSERT OR UPDATE ON angajat2
+FOR EACH ROW
+DECLARE
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM angajat1@bd_bucuresti
+    WHERE id_angajat = :NEW.id_angajat;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Eroare de unicitate globala a cheii primare: Aceasta cheie priamra exista deja in bd_bucutesti!');
+    END IF;
+END;
+/
+
+-- test
+insert into angajat2 values (1, 'nume', 'prenume', 'functie', 1111, 1, 1, 2);
+
+-- BD_GLOBAL (BUCURESTI)
+-- (deja definita in definitia tabelului)
+ALTER TABLE angajat_date_personale
+ADD CONSTRAINT pk_angajat_dp PRIMARY KEY (id_angajat);
+
 
 -- =====================================================================
 -- CONSTRANGERE DE CHEIE EXTERNA
@@ -1536,8 +1585,10 @@ FOREIGN KEY (id_rezervare) REFERENCES rezervare (id_rezervare);
 
 ALTER TABLE angajat1
 ADD CONSTRAINT fk_angajat1_id_hotel FOREIGN KEY (id_hotel) REFERENCES hotel1 (id_hotel);
+
 ALTER TABLE angajat1
 ADD CONSTRAINT fk_angajat1_id_departament FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+
 ALTER TABLE angajat1
 ADD CONSTRAINT fk_angajat1_id_serviciu FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
 
@@ -1580,8 +1631,10 @@ FOREIGN KEY (id_rezervare) REFERENCES rezervare (id_rezervare);
 
 ALTER TABLE angajat2
 ADD CONSTRAINT fk_angajat2_id_hotel FOREIGN KEY (id_hotel) REFERENCES hotel2 (id_hotel);
+
 ALTER TABLE angajat2
 ADD CONSTRAINT fk_angajat2_id_departament FOREIGN KEY (id_departament) REFERENCES departament (id_departament);
+
 ALTER TABLE angajat2
 ADD CONSTRAINT fk_angajat2_id_serviciu FOREIGN KEY (id_serviciu) REFERENCES serviciu (id_serviciu);
 
@@ -1610,6 +1663,9 @@ ADD CONSTRAINT capacitate_pozitiva CHECK (capacitate > 0);
 ALTER TABLE hotel1
 ADD CONSTRAINT nr_stele CHECK (nr_stele >= 1 and nr_stele <= 5);
 
+ALTER TABLE angajat1
+ADD CONSTRAINT salariu_pozitiv CHECK (salariu > 0);
+
 ALTER TABLE tip_camera
 ADD CONSTRAINT pret_pozitiv CHECK (pret > 0);
 
@@ -1617,22 +1673,49 @@ ALTER TABLE serviciu
 ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
 
 -- constrangere la nivel global pe fragmente diferinte
+-- NOTA: Definitia constrangerii a fost facuta pe fragmentele verticale VECHI angajat_identitate si angajat_salarizare
+--       Conform consultatiei, a ramas ca este ok daca constrangerea ramene neactualizata, ca exemplu teoretic
+-- FRAGMENTELE VECHI:
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
 -- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
--- Trigger pe fragmentul orizontal angajat1 (BUCURESTI)
-CREATE OR REPLACE TRIGGER trg_salariu_manager_angajat1
-BEFORE INSERT OR UPDATE ON angajat1
+CREATE OR REPLACE TRIGGER trg_salariu_manager_identitate
+BEFORE INSERT OR UPDATE ON angajat_identitate
 FOR EACH ROW
 DECLARE
     v_salariu NUMBER;
 BEGIN
-    IF :NEW.functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+    IF :NEW.functie = 'Manager Hotel' THEN
+        SELECT salariu INTO v_salariu
+        FROM angajat_salarizare@bd_constanta
+        WHERE id_angajat = :NEW.id_angajat;
+
+        IF v_salariu > 10000 OR v_salariu < 5000 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+        END IF;
     END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN null;
 END;
 /
 
 -- TEST: inserare din fragment bucuresti
-INSERT INTO angajat1 VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1000, 1, null, 1);
+INSERT INTO angajat_salarizare@bd_constanta VALUES (100, 1000, 1);
+INSERT INTO angajat_identitate VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
+SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
+SELECT * FROM angajat_identitate WHERE id_angajat = 100;
 ROLLBACK;
 
 -- BD_CONSTANTA
@@ -1651,16 +1734,36 @@ ALTER TABLE serviciu
 ADD CONSTRAINT pret_serviciu_pozitiv CHECK (pret_serviciu > 0);
 
 -- constrangere la nivel global pe fragmente diferinte
+-- NOTA: Definitia constrangerii a fost facuta pe fragmentele verticale VECHI angajat_identitate si angajat_salarizare
+--       Conform consultatiei, a ramas ca este ok daca constrangerea ramene neactualizata, ca exemplu teoretic
+-- FRAGMENTELE VECHI:
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
+-- CREATE TABLE angajat_identitate (
+--     id_angajat   NUMBER        PRIMARY KEY,
+--     nume         VARCHAR2(30)  NOT NULL,
+--     prenume      VARCHAR2(30)  NOT NULL,
+--     functie      VARCHAR2(30),
+--     id_serviciu  NUMBER
+-- );
 -- managerul trebuie sa aiba salariu intre 5000 si 10000 lei
--- Trigger pe fragmentul orizontal angajat2 (CONSTANTA)
-CREATE OR REPLACE TRIGGER trg_salariu_manager_angajat2
-BEFORE INSERT OR UPDATE ON angajat2
+CREATE OR REPLACE TRIGGER trg_salariu_manager_salarizare
+BEFORE INSERT OR UPDATE ON angajat_salarizare
 FOR EACH ROW
 DECLARE
     v_functie VARCHAR2(200);
 BEGIN
-    IF :NEW.functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
+    SELECT functie INTO v_functie
+    FROM angajat_identitate@bd_bucuresti
+    WHERE id_angajat = :NEW.id_angajat;
+
+    IF v_functie = 'Manager Hotel' AND (:NEW.salariu > 10000 OR :NEW.salariu < 5000) THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Constrangere incalcata: managerul trebuie sa aiba salariul intre 5000 si 10000 lei!');
     END IF;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN null;
@@ -1668,17 +1771,18 @@ END;
 /
 
 -- TEST: inserare din fragment constanta
-INSERT INTO angajat2 VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1000, 1, null, 2);
+INSERT INTO angajat_identitate@bd_bucuresti VALUES (100, 'nume', 'prenume', 'Manager Hotel', 1);
+INSERT INTO angajat_salarizare VALUES (100, 1000, 1);
+SELECT * FROM angajat_salarizare WHERE id_angajat = 100;
+SELECT * FROM angajat_identitate@bd_bucuresti WHERE id_angajat = 100;
 ROLLBACK;
 
 -- TEST: inserare din view-ul global
 INSERT INTO angajat_global
-    (id_angajat, nume, prenume, functie, salariu, id_departament, id_serviciu, id_hotel, cnp, data_angajare)
-VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL, 1, '000000001', date '2025-01-01');
+VALUES (100, 'nume', 'prenume', 'Manager Hotel', 90000, 1, NULL);
 SELECT * FROM angajat_global WHERE id_angajat = 100;
-SELECT * FROM bdd.angajat1 WHERE id_angajat = 100;
-SELECT * FROM angajat_date_personale WHERE id_angajat = 100;
-ROLLBACK;
+SELECT * FROM bdd.angajat_identitate WHERE id_angajat = 100;
+SELECT * FROM angajat_salarizare@bd_constanta WHERE id_angajat = 100;
 
 -- =====================================================================
 -- OPTIMIZARE CERERE SQL PROPUSA IN MODULUL DE ANALIZA
