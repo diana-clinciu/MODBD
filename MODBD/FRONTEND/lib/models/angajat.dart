@@ -6,9 +6,9 @@ import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Angajat {
   final int id;
-  final String nume;
-  final String prenume;
-  final String functie;
+  final String? nume;
+  final String? prenume;
+  final String? functie;
   final double? salariu;
   final int idServiciu;
 
@@ -33,9 +33,9 @@ class Angajat {
   }
 
   static void showAddAngajatDialog(BuildContext context, OLTPViewModel vm) {
-    String nume = '';
-    String prenume = '';
-    String functie = '';
+    String? nume = '';
+    String? prenume = '';
+    String? functie = '';
     double? salariu;
     int? idServiciu;
 
@@ -131,9 +131,9 @@ class Angajat {
   static void showEditAngajatDialog(
       BuildContext context, OLTPViewModel vm, int index) {
     Angajat a = vm.angajati[index];
-    String nume = a.nume;
-    String prenume = a.prenume;
-    String functie = a.functie;
+    String? nume = a.nume;
+    String? prenume = a.prenume;
+    String? functie = a.functie;
     double? salariu = a.salariu;
     int idServiciu = a.idServiciu;
 

@@ -47,8 +47,8 @@ class OltpScreen extends StatelessWidget {
                     vm.rezervari
                         .map(
                           (c) => "${c.clientName} - "
-                              "${c.dataStart.toShortDateString()} → "
-                              "${c.dataFinal.toShortDateString()}",
+                              "${c.dataStart.toShortDateString?()} → "
+                              "${c.dataFinal.toShortDateString?()}",
                         )
                         .toList(),
                     () => Rezervare.showAddReservationDialog(context, vm),
@@ -70,10 +70,10 @@ class OltpScreen extends StatelessWidget {
                     context,
                     "Servicii",
                     vm.servicii.map((c) {
-                      String dataText = c.dataAchizitionare != null
+                      String? dataText = c.dataAchizitionare != null
                           ? "${c.dataAchizitionare!.day}/${c.dataAchizitionare!.month}/${c.dataAchizitionare!.year}"
                           : "N/A";
-                      String cantText =
+                      String? cantText =
                           c.cantitate != null ? "${c.cantitate}" : "N/A";
 
                       return "${c.denumire} - ${c.pret} RON - Cantitate: $cantText - Data: $dataText";
@@ -130,8 +130,8 @@ class OltpScreen extends StatelessWidget {
 
   Widget _buildCrudSection(
     BuildContext context,
-    String title,
-    List<String> items,
+    String? title,
+    List<String?> items,
     VoidCallback onAdd,
     void Function(int) onEdit,
     void Function(int) onDelete,
@@ -215,7 +215,7 @@ class OltpScreen extends StatelessWidget {
 }
 
 extension DateTimeExtension on DateTime {
-  String toShortDateString() {
+  String? toShortDateString?() {
     return "${this.day.toString().padLeft(2, '0')}/"
         "${this.month.toString().padLeft(2, '0')}/"
         "${this.year}";

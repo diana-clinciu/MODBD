@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-enum AppTabType { otlp, dw, rapoarte }
+enum AppTabType { local, global, statistici }
 
 class TabViewViewModel extends ChangeNotifier {
-  AppTabType _currentTab = AppTabType.otlp;
-  AppTabType _activeTab = AppTabType.otlp;
+  AppTabType _currentTab = AppTabType.local;
+  AppTabType _activeTab = AppTabType.local;
   // ignore: unused_field
-  AppTabType _previousTab = AppTabType.otlp;
+  AppTabType _previousTab = AppTabType.local;
 
   AppTabType get currentTab => _currentTab;
   AppTabType get activeTab => _activeTab;

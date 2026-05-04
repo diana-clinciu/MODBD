@@ -84,7 +84,7 @@ class ReportsView extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(String reportName, List<ReportData> data) {
+  Widget _buildChart(String? reportName, List<ReportData> data) {
     if (data.length == 1 && data[0].label == 'Nu exista date') {
       return Center(child: Text("Nu există date pentru acest raport"));
     }
@@ -95,7 +95,7 @@ class ReportsView extends StatelessWidget {
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
           series: <CartesianSeries>[
-            ColumnSeries<ReportData, String>(
+            ColumnSeries<ReportData, String?>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,
@@ -112,7 +112,7 @@ class ReportsView extends StatelessWidget {
               isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
           tooltipBehavior: TooltipBehavior(enable: true),
           series: <CircularSeries>[
-            PieSeries<ReportData, String>(
+            PieSeries<ReportData, String?>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,
@@ -129,7 +129,7 @@ class ReportsView extends StatelessWidget {
           tooltipBehavior: TooltipBehavior(enable: true),
           legend: Legend(isVisible: true),
           series: <CircularSeries>[
-            DoughnutSeries<ReportData, String>(
+            DoughnutSeries<ReportData, String?>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,
@@ -149,7 +149,7 @@ class ReportsView extends StatelessWidget {
           ),
           tooltipBehavior: TooltipBehavior(enable: true),
           series: <CartesianSeries>[
-            ColumnSeries<ReportData, String>(
+            ColumnSeries<ReportData, String?>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,
@@ -165,7 +165,7 @@ class ReportsView extends StatelessWidget {
           primaryXAxis: CategoryAxis(),
           tooltipBehavior: TooltipBehavior(enable: true),
           series: <CartesianSeries>[
-            BarSeries<ReportData, String>(
+            BarSeries<ReportData, String?>(
               dataSource: data,
               xValueMapper: (d, _) => d.label,
               yValueMapper: (d, _) => d.value,

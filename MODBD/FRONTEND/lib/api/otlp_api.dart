@@ -81,11 +81,11 @@ final class OtlpApi extends ClientApi {
         multipartEncoding: (form) {
           form.append(rezervare.clientId.toString(), withName: "id_client");
           form.append(
-            rezervare.dataStart.toIso8601String(),
+            rezervare.dataStart.toIso8601String?(),
             withName: "data_start",
           );
           form.append(
-            rezervare.dataFinal.toIso8601String(),
+            rezervare.dataFinal.toIso8601String?(),
             withName: "data_final",
           );
         },
@@ -109,9 +109,9 @@ final class OtlpApi extends ClientApi {
         path: "rezervari/update/${rezervare.id}",
         multipartEncoding: (form) {
           form.append(rezervare.clientId.toString(), withName: "id_client");
-          form.append(rezervare.dataStart.toIso8601String(),
+          form.append(rezervare.dataStart.toIso8601String?(),
               withName: "data_start");
-          form.append(rezervare.dataFinal.toIso8601String(),
+          form.append(rezervare.dataFinal.toIso8601String?(),
               withName: "data_final");
         },
         deserializer: (json) {
@@ -244,7 +244,7 @@ final class OtlpApi extends ClientApi {
           form.append(plata.idRezervare.toString(), withName: "id_rezervare");
           form.append(plata.suma.toString(), withName: "suma");
           form.append(
-            plata.dataPlata.toIso8601String().split("T")[0],
+            plata.dataPlata.toIso8601String?().split("T")[0],
             withName: "data_plata",
           );
           form.append(plata.metoda, withName: "metoda_plata");
@@ -267,7 +267,7 @@ final class OtlpApi extends ClientApi {
           form.append(plata.idRezervare.toString(), withName: "id_rezervare");
           form.append(plata.suma.toString(), withName: "suma");
           form.append(
-            plata.dataPlata.toIso8601String().split("T")[0],
+            plata.dataPlata.toIso8601String?().split("T")[0],
             withName: "data_plata",
           );
           form.append(plata.metoda, withName: "metoda_plata");
@@ -362,7 +362,7 @@ final class OtlpApi extends ClientApi {
         path: "evenimente/add",
         multipartEncoding: (form) {
           form.append(eveniment.nume, withName: "nume_eveniment");
-          form.append(eveniment.data.toIso8601String(),
+          form.append(eveniment.data.toIso8601String?(),
               withName: "data_eveniment");
           form.append(eveniment.descriere ?? '', withName: "descriere");
         },
@@ -382,7 +382,7 @@ final class OtlpApi extends ClientApi {
         path: "evenimente/${eveniment.id}",
         multipartEncoding: (form) {
           form.append(eveniment.nume, withName: "nume_eveniment");
-          form.append(eveniment.data.toIso8601String(),
+          form.append(eveniment.data.toIso8601String?(),
               withName: "data_eveniment");
           form.append(eveniment.descriere ?? '', withName: "descriere");
         },

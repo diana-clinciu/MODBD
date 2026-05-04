@@ -8,9 +8,9 @@ class DWViewModel extends ChangeNotifier {
   bool isLoading = false;
   bool syncCompleted = false;
 
-  Map<String, int> insertedResults = {};
-  Map<String, int> totalResults = {};
-  Map<String, int> filteredInsertedResults = {};
+  Map<String?, int> insertedResults = {};
+  Map<String?, int> totalResults = {};
+  Map<String?, int> filteredInsertedResults = {};
 
   Future<void> syncToDW() async {
     isLoading = true;
@@ -42,9 +42,9 @@ class DWViewModel extends ChangeNotifier {
     }
   }
 
-  Map<String, int> filteredResults = {};
+  Map<String?, int> filteredResults = {};
 
-  void filterResults(String query) {
+  void filterResults(String? query) {
     if (query.isEmpty) {
       filteredInsertedResults = Map.from(insertedResults);
     } else {

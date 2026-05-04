@@ -191,7 +191,7 @@ class Rezervare {
 
   static Widget _datePicker(
     BuildContext context,
-    String label,
+    String? label,
     DateTime date,
     Function(DateTime) onPicked,
   ) {

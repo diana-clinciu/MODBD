@@ -25,14 +25,14 @@ typedef Arguments = Map<String, dynamic>;
 typedef APIClientDeserializer<T> = T Function(dynamic json);
 
 class ApiException implements Exception {
-  final String message;
+  final String? message;
   final int? statusCode;
-  final Map<String, dynamic>? errorBody; // Added this
+  final Map<String, dynamic>? errorBody;
 
   ApiException(
     this.message, {
     this.statusCode,
-    this.errorBody, // Added this
+    this.errorBody,
   });
 
   @override
@@ -45,20 +45,17 @@ class MultipartFormData {
   final String _boundary = _generateBoundary();
 
   static String _generateBoundary() {
-    // Generate a proper boundary without leading dashes
     return 'WebKitFormBoundary${DateTime.now().millisecondsSinceEpoch}${DateTime.now().microsecondsSinceEpoch % 1000}';
   }
 
-  /// Append a string field to the multipart form
-  void append(String value, {required String withName}) {
+  void append(String? value, {required String withName}) {
     _fields.add(_MultipartField(
       name: withName,
-      value: utf8.encode(value),
+      value: utf8.encode(value ?? ''),
       isFile: false,
     ));
   }
 
-  /// Append a file to the multipart form
   void appendFile(
     List<int> fileData, {
     required String withName,
@@ -69,7 +66,7 @@ class MultipartFormData {
       name: withName,
       value: fileData,
       fileName: fileName,
-      mimeType: mimeType ?? 'application/octet-stream', // Default MIME type
+      mimeType: mimeType ?? 'application/octet-stream',
       isFile: true,
     ));
   }
@@ -78,10 +75,7 @@ class MultipartFormData {
     final List<int> body = [];
 
     for (final field in _fields) {
-      // Start boundary
       body.addAll(utf8.encode('--$_boundary\r\n'));
-
-      // Content-Disposition header
       body.addAll(
           utf8.encode('Content-Disposition: form-data; name="${field.name}"'));
 
@@ -90,30 +84,21 @@ class MultipartFormData {
       }
       body.addAll(utf8.encode('\r\n'));
 
-      // Content-Type header (for files)
       if (field.isFile && field.mimeType != null) {
         body.addAll(utf8.encode('Content-Type: ${field.mimeType}\r\n'));
       }
 
-      // Blank line before content
       body.addAll(utf8.encode('\r\n'));
-
-      // Field value/file data
       body.addAll(field.value);
-
-      // End with CRLF
       body.addAll(utf8.encode('\r\n'));
     }
 
-    // Final boundary
     body.addAll(utf8.encode('--$_boundary--\r\n'));
-
     return body;
   }
 
   String get boundary => _boundary;
 
-  // Helper to debug the multipart structure
   String preview() {
     final body = encode();
     return utf8.decode(body, allowMalformed: true);
@@ -148,18 +133,14 @@ class ClientApi {
       {required String path, Map<String, dynamic>? queryParameters}) {
     final baseUri = Uri.parse(baseURL);
 
-    // Properly combine base URL with path
     String combinedPath;
     if ((path.startsWith('/') && !baseUri.path.endsWith('/')) ||
         (!path.startsWith('/') && baseUri.path.endsWith('/'))) {
-      // If path starts with /, append it to the base path
       combinedPath = baseUri.path + path.trimRight();
     } else if (path.startsWith('/') && baseUri.path.endsWith('/')) {
-      // If both have /, avoid double slashes
       combinedPath = baseUri.path + path.substring(1).trimRight();
     } else {
-      // If path doesn't start with /, add a separator
-      combinedPath = "${baseUri.path}/${path}";
+      combinedPath = '${baseUri.path}/$path';
     }
 
     final uri = Uri(
@@ -169,7 +150,7 @@ class ClientApi {
         path: combinedPath,
         queryParameters: queryParameters);
 
-    debugPrint("Endpoint path: ${uri.toString()}");
+    debugPrint('Endpoint path: ${uri.toString()}');
     return URL.fromUri(uri);
   }
 
@@ -183,7 +164,6 @@ class ClientApi {
     try {
       final uri = Uri.parse(endpoint.path);
 
-      // Construim headers
       final Map<String, String> requestHeaders = {
         'Content-Type': 'application/json',
         if (headers != null)
@@ -192,7 +172,6 @@ class ClientApi {
 
       late http.Response response;
 
-      // Trimitem requestul
       switch (method) {
         case HttpMethod.get:
           response = await _httpClient.get(uri, headers: requestHeaders);
@@ -219,7 +198,6 @@ class ClientApi {
           break;
       }
 
-      // Verificăm codul de status
       if (response.statusCode < 200 || response.statusCode >= 300) {
         Map<String, dynamic>? errorBody;
         try {
@@ -302,8 +280,7 @@ class ClientApi {
         );
       }
 
-      final Map<String, dynamic> jsonResponse =
-          jsonDecode(response.body) as Map<String, dynamic>;
+      final dynamic jsonResponse = jsonDecode(response.body);
       return deserializer(jsonResponse);
     } catch (e) {
       throw ApiException('Request failed: $e');
@@ -339,8 +316,7 @@ class ClientApi {
         );
       }
 
-      final Map<String, dynamic> jsonResponse =
-          jsonDecode(response.body) as Map<String, dynamic>;
+      final dynamic jsonResponse = jsonDecode(response.body);
       return deserializer(jsonResponse);
     } catch (e) {
       throw ApiException('Request failed: $e');
@@ -360,14 +336,12 @@ class ClientApi {
 
       final request = http.MultipartRequest('POST', uri);
 
-      // Adăugăm headers
       if (headers != null) {
         for (var h in headers) {
           request.headers[h.key] = h.value;
         }
       }
 
-      // Construim multipart data
       final form = MultipartFormData();
       multipartEncoding(form);
 
@@ -403,11 +377,47 @@ class ClientApi {
         );
       }
 
-      final Map<String, dynamic> jsonResponse =
-          jsonDecode(response.body) as Map<String, dynamic>;
+      final dynamic jsonResponse = jsonDecode(response.body);
       return deserializer(jsonResponse);
     } catch (e) {
       throw ApiException('Multipart request failed: $e');
+    }
+  }
+
+  Future<T> sendForm<T>({
+    required String method,
+    required String path,
+    required Map<String, String> fields,
+    List<HttpHeader>? headers,
+    required APIClientDeserializer<T> deserializer,
+  }) async {
+    final url = _buildEndpointURL(path: path);
+    try {
+      final uri = Uri.parse(url.path);
+      final request = http.MultipartRequest(method, uri);
+      if (headers != null) {
+        for (var h in headers) {
+          request.headers[h.key] = h.value;
+        }
+      }
+      request.fields.addAll(fields);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        Map<String, dynamic>? errorBody;
+        try {
+          errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
+        throw ApiException(
+          'HTTP Error: ${response.statusCode}',
+          statusCode: response.statusCode,
+          errorBody: errorBody,
+        );
+      }
+      final dynamic jsonResponse = jsonDecode(response.body);
+      return deserializer(jsonResponse);
+    } catch (e) {
+      throw ApiException('Form request failed: $e');
     }
   }
 

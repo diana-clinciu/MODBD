@@ -6,7 +6,7 @@ import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Eveniment {
   final int id;
-  final String nume;
+  final String? nume;
   final DateTime data;
   final String? descriere;
 
@@ -27,8 +27,8 @@ class Eveniment {
   }
 
   static void showAddEvenimentDialog(BuildContext context, OLTPViewModel vm) {
-    String nume = '';
-    String descriere = '';
+    String? nume = '';
+    String? descriere = '';
     DateTime data = DateTime.now();
 
     showDialog(
@@ -117,7 +117,7 @@ class Eveniment {
 
   static void showEditEvenimentDialog(
       BuildContext context, OLTPViewModel vm, int index) {
-    String nume = vm.evenimente[index].nume;
+    String? nume = vm.evenimente[index].nume;
     String? descriere = vm.evenimente[index].descriere;
     DateTime data = vm.evenimente[index].data;
 

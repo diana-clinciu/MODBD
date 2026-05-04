@@ -6,7 +6,7 @@ import 'package:mvvm_flutter/services/reports_service.dart';
 class ReportsViewModel extends ChangeNotifier {
   final ReportsService _service = GetIt.instance.get<ReportsService>();
 
-  Map<String, List<ReportData>> allReports = {};
+  Map<String?, List<ReportData>> allReports = {};
   bool isLoading = false;
   String? errorMessage;
 
@@ -54,7 +54,7 @@ class ReportsViewModel extends ChangeNotifier {
     }
   }
 
-  List<ReportData> _mapToReportData1(List<Map<String, dynamic>> data) {
+  List<ReportData> _mapToReportData1(List<Map<String?, dynamic>> data) {
     final List<ReportData> result = [];
 
     for (final e in data) {
@@ -70,7 +70,7 @@ class ReportsViewModel extends ChangeNotifier {
     return result;
   }
 
-  ReportData _mapToReportData2(Map<String, dynamic> e) {
+  ReportData _mapToReportData2(Map<String?, dynamic> e) {
     final camera = e['id_camera_dim']?.toString() ?? '';
     final plata = e['metoda_plata']?.toString() ?? '';
 
@@ -79,14 +79,14 @@ class ReportsViewModel extends ChangeNotifier {
     final rawValue = e['venit_metoda_plata'];
     if (rawValue is num) {
       value = rawValue.toDouble();
-    } else if (rawValue is String) {
+    } else if (rawValue is String?) {
       value = double.tryParse(rawValue) ?? 0.0;
     }
 
     return ReportData("$camera\n($plata)", value);
   }
 
-  ReportData _mapToReportData3(Map<String, dynamic> e) {
+  ReportData _mapToReportData3(Map<String?, dynamic> e) {
     final label = e['categorie_camera']?.toString() ?? 'N/A';
 
     double value = 0.0;
@@ -94,14 +94,14 @@ class ReportsViewModel extends ChangeNotifier {
     final rawValue = e['numar_rezervari'];
     if (rawValue is num) {
       value = rawValue.toDouble();
-    } else if (rawValue is String) {
+    } else if (rawValue is String?) {
       value = double.tryParse(rawValue) ?? 0.0;
     }
 
     return ReportData(label, value);
   }
 
-  ReportData _mapToReportData4(Map<String, dynamic> e) {
+  ReportData _mapToReportData4(Map<String?, dynamic> e) {
     final categorie = e['categorie_camera']?.toString() ?? 'N/A';
     final trimestru = e['trimestru']?.toString() ?? '';
     final numarRezervari = e['numar_rezervari'] ?? 0;
@@ -110,7 +110,7 @@ class ReportsViewModel extends ChangeNotifier {
     final rawValue = e['venit_mediu_rezervare'];
     if (rawValue is num) {
       venitMediuRezervare = rawValue.toDouble();
-    } else if (rawValue is String) {
+    } else if (rawValue is String?) {
       venitMediuRezervare = double.tryParse(rawValue) ?? 0.0;
     }
 
@@ -120,7 +120,7 @@ class ReportsViewModel extends ChangeNotifier {
     );
   }
 
-  ReportData _mapToReportData5(Map<String, dynamic> e) {
+  ReportData _mapToReportData5(Map<String?, dynamic> e) {
     final metoda = e['metoda_plata']?.toString() ?? 'N/A';
     final camera = e['categorie_camera']?.toString() ?? 'N/A';
     final nrCamera = e['nr_camera']?.toString() ?? '';

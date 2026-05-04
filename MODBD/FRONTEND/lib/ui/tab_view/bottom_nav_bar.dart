@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mvvm_flutter/ui/tab_view/tab_view_model.dart';
 import 'package:provider/provider.dart';
-import 'package:mvvm_flutter/internal_models/image_resource.dart';
 import 'package:mvvm_flutter/internal_models/app_colors.dart';
 
-class _BottomNavBarItem extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final ImageResource iconResource;
-  final ImageResource selectedIconResource;
+class _NavItem extends StatelessWidget {
+  final String? label;
+  final IconData icon;
+  final IconData selectedIcon;
   final bool isSelected;
+  final VoidCallback onTap;
 
-  const _BottomNavBarItem({
+  const _NavItem({
     required this.label,
-    required this.iconResource,
-    required this.selectedIconResource,
+    required this.icon,
+    required this.selectedIcon,
     required this.isSelected,
     required this.onTap,
   });
@@ -30,28 +28,29 @@ class _BottomNavBarItem extends StatelessWidget {
           splashColor: AppColors.rippleEffectBackground,
           highlightColor: AppColors.rippleEffectBackground,
           child: Padding(
-            padding: EdgeInsets.only(bottom: 12, top: 12),
+            padding: const EdgeInsets.only(bottom: 12, top: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SvgPicture.asset(
-                  isSelected
-                      ? selectedIconResource.source
-                      : iconResource.source,
-                  width: 24,
-                  height: 24,
+                Icon(
+                  isSelected ? selectedIcon : icon,
+                  size: 24,
+                  color: isSelected
+                      ? AppColors.oliveColor
+                      : AppColors.blackForestColor,
                 ),
-                SizedBox(height: 12),
-                Text(label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight:
-                          isSelected ? FontWeight.w900 : FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.oliveColor
-                          : AppColors.blackForestColor,
-                    )),
+                const SizedBox(width: 6),
+                Text(
+                  label ?? '',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight:
+                        isSelected ? FontWeight.w900 : FontWeight.w600,
+                    color: isSelected
+                        ? AppColors.oliveColor
+                        : AppColors.blackForestColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -82,7 +81,7 @@ class BottomNavBar extends StatelessWidget {
                 bottom: 0,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
+                    borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(16),
                         bottomRight: Radius.circular(16)),
                     color: Colors.white,
@@ -101,8 +100,9 @@ class BottomNavBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: EdgeInsets.only(left: 16, top: 16),
-                        child: Text("Hotel Manager",
+                        padding:
+                            const EdgeInsets.only(left: 16, top: 16),
+                        child: Text('Hotel Manager',
                             style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -110,31 +110,32 @@ class BottomNavBar extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          _BottomNavBarItem(
-                            label: "OLTP",
-                            iconResource: ImageResource.bottomNavOtlp,
-                            selectedIconResource:
-                                ImageResource.bottomNavOtlpSelected,
-                            isSelected: viewModel.activeTab == AppTabType.otlp,
-                            onTap: () => viewModel.selectTab(AppTabType.otlp),
-                          ),
-                          _BottomNavBarItem(
-                            label: "DW",
-                            iconResource: ImageResource.bottomNavDw,
-                            selectedIconResource:
-                                ImageResource.bottomNavDwSelected,
-                            isSelected: viewModel.activeTab == AppTabType.dw,
-                            onTap: () => viewModel.selectTab(AppTabType.dw),
-                          ),
-                          _BottomNavBarItem(
-                            label: "Rapoarte",
-                            iconResource: ImageResource.bottomNavReports,
-                            selectedIconResource:
-                                ImageResource.bottomNavReportsSelected,
+                          _NavItem(
+                            label: 'Local',
+                            icon: Icons.place_outlined,
+                            selectedIcon: Icons.place,
                             isSelected:
-                                viewModel.activeTab == AppTabType.rapoarte,
+                                viewModel.activeTab == AppTabType.local,
                             onTap: () =>
-                                viewModel.selectTab(AppTabType.rapoarte),
+                                viewModel.selectTab(AppTabType.local),
+                          ),
+                          _NavItem(
+                            label: 'Global',
+                            icon: Icons.public_outlined,
+                            selectedIcon: Icons.public,
+                            isSelected:
+                                viewModel.activeTab == AppTabType.global,
+                            onTap: () =>
+                                viewModel.selectTab(AppTabType.global),
+                          ),
+                          _NavItem(
+                            label: 'Statistici',
+                            icon: Icons.bar_chart_outlined,
+                            selectedIcon: Icons.bar_chart,
+                            isSelected:
+                                viewModel.activeTab == AppTabType.statistici,
+                            onTap: () => viewModel
+                                .selectTab(AppTabType.statistici),
                           ),
                         ],
                       ),

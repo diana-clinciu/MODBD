@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:mvvm_flutter/ui/dw/dw_screen.dart';
-import 'package:mvvm_flutter/ui/oltp/oltp_screen.dart';
-import 'package:mvvm_flutter/ui/rapoarte/rapoarte_screen.dart';
+import 'package:mvvm_flutter/ui/local/local_screen.dart';
+import 'package:mvvm_flutter/ui/global/global_screen.dart';
+import 'package:mvvm_flutter/ui/statistici/statistici_screen.dart';
 import 'package:mvvm_flutter/ui/reusable_components/keep_alive.dart';
 import 'package:mvvm_flutter/ui/tab_view/tab_view_model.dart';
 import 'package:provider/provider.dart';
@@ -11,10 +11,10 @@ import 'bottom_nav_bar.dart';
 class TabScreen extends StatelessWidget {
   final TabViewViewModel _viewModel = GetIt.instance.get<TabViewViewModel>();
 
-  final List<Widget> _pages = [
-    KeepAlivePage(child: OltpScreen()),
-    KeepAlivePage(child: DWScreen()),
-    KeepAlivePage(child: ReportsView()),
+  final List<Widget> _pages = const [
+    KeepAlivePage(child: LocalScreen()),
+    KeepAlivePage(child: GlobalScreen()),
+    KeepAlivePage(child: StatisticiScreen()),
   ];
 
   @override
@@ -24,8 +24,8 @@ class TabScreen extends StatelessWidget {
       child: Scaffold(
         extendBody: true,
         appBar: PreferredSize(
-          preferredSize: Size.fromHeight(100),
-          child: BottomNavBar(), 
+          preferredSize: const Size.fromHeight(100),
+          child: BottomNavBar(),
         ),
         body: Consumer<TabViewViewModel>(
           builder: (context, viewModel, child) {

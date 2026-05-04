@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class PoppinsTextStyles {
-  static const String _poppinsFamily = 'Poppins';
+  static const String? _poppinsFamily = 'Poppins';
 
   PoppinsTextStyles._();
 
   static TextStyle Function(
-    String,
+    String?,
     FontWeight,
     double, {
     bool? inherit,
@@ -29,11 +29,11 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) get _fontGenerator => (
-        String fontFamily,
+        String? fontFamily,
         FontWeight fontWeight,
         double fontSize, {
         bool? inherit = true,
@@ -56,7 +56,7 @@ class PoppinsTextStyles {
         TextDecorationStyle? decorationStyle,
         double? decorationThickness,
         String? debugLabel,
-        List<String>? fontFamilyFallback,
+        List<String?>? fontFamilyFallback,
         String? package,
         TextOverflow? overflow,
       }) {
@@ -112,7 +112,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {
@@ -168,7 +168,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) poppinsMedium = (
@@ -193,7 +193,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {
@@ -249,7 +249,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) poppinsSemiBold = (
@@ -274,7 +274,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {
@@ -330,7 +330,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) poppinsBold = (
@@ -355,7 +355,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {
@@ -411,7 +411,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) poppinsExtraBold = (
@@ -436,7 +436,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {
@@ -492,7 +492,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) poppinsThin = (
@@ -517,7 +517,7 @@ class PoppinsTextStyles {
     TextDecorationStyle? decorationStyle,
     double? decorationThickness,
     String? debugLabel,
-    List<String>? fontFamilyFallback,
+    List<String?>? fontFamilyFallback,
     String? package,
     TextOverflow? overflow,
   }) {

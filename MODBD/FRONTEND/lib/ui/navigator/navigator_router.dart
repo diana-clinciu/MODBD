@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 class NavigationDestination {
   static const Uuid _uuid = Uuid();
-  final String tag;
+  final String? tag;
   final Widget child;
 
   NavigationDestination({required this.child, String? tag})
@@ -46,7 +46,7 @@ class NavigationRouter extends RouterDelegate<List<NavigationDestination>>
     }
   }
 
-  void popToTag(String tag) {
+  void popToTag(String? tag) {
     while (_navigationStack.length > 1 && _navigationStack.last.tag != tag) {
       _navigationStack.removeLast();
     }

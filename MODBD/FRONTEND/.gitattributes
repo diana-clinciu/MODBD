@@ -1,0 +1,159 @@
+###############################################################################
+# .gitattributes — STK Orchestrator (root)
+#
+# Policy: LF in the repository for everything. Windows developers should set
+#   git config --global core.autocrlf false
+# and let this file control line endings per-file-type.
+###############################################################################
+
+# Default: auto-detect text, normalise to LF in the repo
+* text=auto eol=lf
+
+# ── C# & .NET source ──────────────────────────────────────────────────────────
+*.cs            text eol=lf diff=csharp
+*.csx           text eol=lf diff=csharp
+*.vb            text eol=lf
+*.fs            text eol=lf
+*.fsx           text eol=lf
+
+# ── Solution & project files ──────────────────────────────────────────────────
+# .sln: keep CRLF — older MSBuild / VS parsers are whitespace-sensitive here
+*.sln           text eol=crlf
+*.csproj        text eol=lf
+*.vbproj        text eol=lf
+*.fsproj        text eol=lf
+*.dcproj        text eol=lf
+*.props         text eol=lf
+*.targets       text eol=lf
+*.nuspec        text eol=lf
+*.nuget.props   text eol=lf
+*.nuget.targets text eol=lf
+*.nupkg         binary
+*.snupkg        binary
+
+# ── Configuration & secrets ───────────────────────────────────────────────────
+*.json          text eol=lf
+*.jsonc         text eol=lf
+*.xml           text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+*.toml          text eol=lf
+*.ini           text eol=lf
+*.config        text eol=lf
+*.env           text eol=lf
+*.env.*         text eol=lf
+*.pfx           binary
+*.cer           binary
+*.key           text eol=lf
+launchSettings.json text eol=lf
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+Dockerfile          text eol=lf
+Dockerfile.*        text eol=lf
+.dockerignore       text eol=lf
+docker-compose*.yml text eol=lf
+docker-compose*.yaml text eol=lf
+
+# ── gRPC / Protobuf ───────────────────────────────────────────────────────────
+*.proto         text eol=lf
+
+# ── GraphQL ───────────────────────────────────────────────────────────────────
+*.graphql       text eol=lf
+*.gql           text eol=lf
+
+# ── Shell & scripts ───────────────────────────────────────────────────────────
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.ps1           text eol=lf
+*.psm1          text eol=lf
+*.psd1          text eol=lf
+# Windows-only scripts that genuinely require CRLF
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+
+# ── Web assets ────────────────────────────────────────────────────────────────
+*.html          text eol=lf
+*.htm           text eol=lf
+*.css           text eol=lf
+*.scss          text eol=lf
+*.sass          text eol=lf
+*.js            text eol=lf
+*.mjs           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.jsx           text eol=lf
+
+# ── SVG (text-based image format) ────────────────────────────────────────────
+*.svg           text eol=lf
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+*.md            text eol=lf
+*.txt           text eol=lf
+*.rst           text eol=lf
+
+# ── Git meta ──────────────────────────────────────────────────────────────────
+.gitattributes  text eol=lf
+.gitignore      text eol=lf
+.gitmodules     text eol=lf
+
+# ── Binary — never convert line endings, never text-diff ──────────────────────
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.bmp           binary
+*.tiff          binary
+*.tif           binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.otf           binary
+*.eot           binary
+*.pdf           binary
+*.zip           binary
+*.tar           binary
+*.gz            binary
+*.tgz           binary
+*.7z            binary
+*.rar           binary
+*.dll           binary
+*.exe           binary
+*.pdb           binary
+*.so            binary
+*.dylib         binary
+# SQL Server data files
+*.mdf           binary
+*.ldf           binary
+*.bak           binary
+
+# ── EF Core migrations ────────────────────────────────────────────────────────
+# Designer snapshots are auto-generated. On conflicts, keep ours and re-run
+# `dotnet ef migrations add` to produce a clean snapshot. Marking merge=ours
+# prevents painful three-way merges on generated code.
+**/Migrations/**/*.Designer.cs          merge=ours diff=csharp
+**/Migrations/**/*ModelSnapshot.cs      merge=ours diff=csharp
+**/Migrations/**/*ApplicationDbContext*.cs merge=ours diff=csharp
+**/Migrations/**/*AuthDbContext*.cs     merge=ours diff=csharp
+
+# ── GitHub Linguist ───────────────────────────────────────────────────────────
+# Prevent auto-generated files from skewing language statistics on GitHub.
+**/Migrations/**        linguist-generated=true
+*.Designer.cs           linguist-generated=true
+*.g.cs                  linguist-generated=true
+
+# ── `git archive` export exclusions ──────────────────────────────────────────
+# These files are useful in the repo but should not ship in release archives.
+.gitattributes          export-ignore
+.gitignore              export-ignore
+.gitmodules             export-ignore
+.editorconfig           export-ignore
+.claude/                export-ignore
+CLAUDE.md               export-ignore
+CLAUDE.local.md         export-ignore
+docker-compose*.yml     export-ignore
+docker-compose*.yaml    export-ignore
+Dockerfile*             export-ignore
+Logs/                   export-ignore
+**/obj/                 export-ignore
+**/bin/                 export-ignore

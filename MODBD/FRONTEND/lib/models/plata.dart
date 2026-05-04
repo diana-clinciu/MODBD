@@ -9,7 +9,7 @@ class Plata {
   final int idRezervare;
   final double suma;
   final DateTime dataPlata;
-  final String metoda;
+  final String? metoda;
 
   Plata({
     required this.id,
@@ -33,7 +33,7 @@ class Plata {
     int idRezervare = 0;
     double suma = 0.0;
     DateTime? dataPlata;
-    String metoda = 'Cash';
+    String? metoda = 'Cash';
 
     showDialog(
       context: context,
@@ -86,7 +86,7 @@ class Plata {
                   ),
                 ],
               ),
-              DropdownButton<String>(
+              DropdownButton<String?>(
                 value: metoda,
                 items: ['Cash', 'Card', 'Transfer']
                     .map((m) => DropdownMenuItem(value: m, child: Text(m)))
@@ -144,7 +144,7 @@ class Plata {
     int idRezervare = vm.plati[index].idRezervare;
     double suma = vm.plati[index].suma;
     DateTime dataPlata = vm.plati[index].dataPlata;
-    String metoda = vm.plati[index].metoda;
+    String? metoda = vm.plati[index].metoda;
 
     showDialog(
       context: context,
@@ -197,7 +197,7 @@ class Plata {
                   ),
                 ],
               ),
-              DropdownButton<String>(
+              DropdownButton<String?>(
                 value: metoda,
                 items: ['Cash', 'Card', 'Transfer']
                     .map((m) => DropdownMenuItem(value: m, child: Text(m)))

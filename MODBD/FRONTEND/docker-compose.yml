@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: modbd_frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      # Codul sursa montat ca volum pentru hot-reload
+      - .:/app
+      # Cache-ul pachetelor persistat intre reporniri
+      - pub_cache:/root/.pub-cache
+    stdin_open: true
+    tty: true
+    # Decommenteaza daca ai si un backend in docker-compose
+    # networks:
+    #   - modbd_network
+
+  # Exemplu de configurare backend (FastAPI) - adauga daca este necesar
+  # backend:
+  #   image: ...
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - modbd_network
+
+volumes:
+  pub_cache:
+
+# networks:
+#   modbd_network:
+#     driver: bridge

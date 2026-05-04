@@ -7,9 +7,9 @@ import 'package:mvvm_flutter/utils/extensions/color+.dart';
 class Camera {
   final int id;
   final int nr;
-  final String tip;
-  final String categorie;
-  final String clasaConfort;
+  final String? tip;
+  final String? categorie;
+  final String? clasaConfort;
   final double pret;
 
   Camera(
@@ -32,9 +32,9 @@ class Camera {
 
   static void showAddCameraDialog(BuildContext context, OLTPViewModel vm) {
     int nr = 0;
-    String tip = '';
-    String categorie = '';
-    String clasaConfort = '';
+    String? tip = '';
+    String? categorie = '';
+    String? clasaConfort = '';
     double pret = 0.0;
 
     showDialog(
@@ -117,9 +117,9 @@ class Camera {
   static void showEditCameraDialog(
       BuildContext context, OLTPViewModel vm, int index) {
     int nr = vm.camere[index].nr;
-    String tip = vm.camere[index].tip;
-    String categorie = vm.camere[index].categorie;
-    String clasaConfort = vm.camere[index].clasaConfort;
+    String? tip = vm.camere[index].tip;
+    String? categorie = vm.camere[index].categorie;
+    String? clasaConfort = vm.camere[index].clasaConfort;
     double pret = vm.camere[index].pret;
 
     showDialog(

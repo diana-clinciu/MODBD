@@ -1,168 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
-import 'package:mvvm_flutter/internal_models/app_colors.dart';
-import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
-import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
 class Client {
   final int id;
-  final String nume;
-  final String prenume;
-  final String email;
+  final String? nume;
+  final String? prenume;
+  final String? email;
 
-  Client(
-      {required this.id,
-      required this.nume,
-      required this.prenume,
-      required this.email});
+  Client({
+    required this.id,
+    required this.nume,
+    required this.prenume,
+    this.email,
+  });
 
-  static Client fromJson(JSON jsonBody) {
-    return Client(
-        email: jsonBody["email"],
-        id: jsonBody["id_client"],
-        nume: jsonBody["nume"],
-        prenume: jsonBody["prenume"]);
-  }
+  factory Client.fromJson(JSON j) => Client(
+        id: j['id_client'] as int,
+        nume: j['nume'] as String?,
+        prenume: j['prenume'] as String?,
+        email: j['email'] as String?,
+      );
 
-  static void showAddClientDialog(BuildContext context, OLTPViewModel vm) {
-    String nume = '';
-    String prenume = '';
-    String email = '';
+  Map<String, String> toFormFields() => {
+        'id_client': id.toString(),
+        if (nume != null) 'nume': nume!,
+        if (prenume != null) 'prenume': prenume!,
+        if (email != null) 'email': email!,
+      };
 
-    showDialog(
+  static Future<Client?> showAddDialog(BuildContext context) =>
+      _showDialog(context, null);
+
+  static Future<Client?> showEditDialog(BuildContext context, Client c) =>
+      _showDialog(context, c);
+
+  static Future<Client?> _showDialog(BuildContext context, Client? existing) {
+    final idCtrl =
+        TextEditingController(text: existing?.id.toString() ?? '');
+    final numeCtrl = TextEditingController(text: existing?.nume ?? '');
+    final prenumeCtrl =
+        TextEditingController(text: existing?.prenume ?? '');
+    final emailCtrl =
+        TextEditingController(text: existing?.email ?? '');
+
+    return showDialog<Client>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          "Adauga client",
-          style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.blackForestColor),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (ctx) => AlertDialog(
+        title: Text(existing == null ? 'Adauga Client' : 'Editeaza Client'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(
-                onChanged: (v) => nume = v,
-                decoration: InputDecoration(labelText: "Nume")),
+              controller: idCtrl,
+              decoration: const InputDecoration(labelText: 'ID Client *'),
+              keyboardType: TextInputType.number,
+              enabled: existing == null,
+            ),
             TextField(
-                onChanged: (v) => prenume = v,
-                decoration: InputDecoration(labelText: "Prenume")),
+                controller: numeCtrl,
+                decoration: const InputDecoration(labelText: 'Nume *')),
             TextField(
-                onChanged: (v) => email = v,
-                decoration: InputDecoration(labelText: "Email")),
-          ],
+                controller: prenumeCtrl,
+                decoration: const InputDecoration(labelText: 'Prenume *')),
+            TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'Email')),
+          ]),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blackForestColor))),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Anuleaza')),
           ElevatedButton(
             onPressed: () {
-              vm.addClient(Client(
-                  id: vm.clients.length + 1,
-                  nume: nume,
-                  prenume: prenume,
-                  email: email));
-              Navigator.pop(dialogContext);
+              final id = int.tryParse(idCtrl.text.trim());
+              if (id == null ||
+                  numeCtrl.text.trim().isEmpty ||
+                  prenumeCtrl.text.trim().isEmpty) return;
+              Navigator.pop(
+                ctx,
+                Client(
+                  id: existing?.id ?? id,
+                  nume: numeCtrl.text.trim(),
+                  prenume: prenumeCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                ),
+              );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  AppColors.lightCaramelColor.withTransparency(0.5),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text("Salveaza",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blackForestColor)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void showEditClientDialog(
-      BuildContext context, OLTPViewModel vm, int index) {
-    String nume = vm.clients[index].nume;
-    String prenume = vm.clients[index].prenume;
-    String email = vm.clients[index].email;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          "Modifica client",
-          style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.blackForestColor),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: TextEditingController(text: nume),
-              onChanged: (v) => nume = v,
-              decoration: InputDecoration(labelText: "Nume"),
-            ),
-            TextField(
-              controller: TextEditingController(text: prenume),
-              onChanged: (v) => prenume = v,
-              decoration: InputDecoration(labelText: "Prenume"),
-            ),
-            TextField(
-              controller: TextEditingController(text: email),
-              onChanged: (v) => email = v,
-              decoration: InputDecoration(labelText: "Email"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text("Anuleaza",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blackForestColor))),
-          ElevatedButton(
-            onPressed: () {
-              vm.editClient(
-                  index,
-                  Client(
-                      id: vm.clients[index].id,
-                      nume: nume,
-                      prenume: prenume,
-                      email: email));
-              Navigator.pop(dialogContext);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  AppColors.lightCaramelColor.withTransparency(0.5),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text("Salveaza",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blackForestColor)),
+            child: const Text('Salveaza'),
           ),
         ],
       ),
