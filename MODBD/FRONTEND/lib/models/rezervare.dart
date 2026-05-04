@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mvvm_flutter/api/client_api.dart';
 import 'package:mvvm_flutter/internal_models/app_colors.dart';
+import 'package:mvvm_flutter/models/client.dart';
 import 'package:mvvm_flutter/ui/oltp/oltp_view_model.dart';
 import 'package:mvvm_flutter/utils/extensions/color+.dart';
 
@@ -26,6 +27,109 @@ class Rezervare {
       clientName: jsonBody["clientName"],
       dataStart: DateTime.parse(jsonBody["data_start"]),
       dataFinal: DateTime.parse(jsonBody["data_final"]),
+    );
+  }
+
+  Map<String, String> toFormFields() => {
+        'id_rezervare': id.toString(),
+        if (clientId != null) 'id_client': clientId.toString(),
+        'data_start': dataStart.toIso8601String().split('T')[0],
+        'data_final': dataFinal.toIso8601String().split('T')[0],
+      };
+
+  // Generic dialog – nu depinde de OLTPViewModel
+  static Future<Rezervare?> showAddDialog(
+          BuildContext context, List<Client> clients) =>
+      _showGenericDialog(context, null, clients);
+
+  static Future<Rezervare?> showEditDialog(
+          BuildContext context, Rezervare r, List<Client> clients) =>
+      _showGenericDialog(context, r, clients);
+
+  static Future<Rezervare?> _showGenericDialog(
+      BuildContext context, Rezervare? existing, List<Client> clients) {
+    final idCtrl = TextEditingController(text: existing?.id.toString() ?? '');
+    int? selectedClientId = existing?.clientId;
+    DateTime dataStart = existing?.dataStart ?? DateTime.now();
+    DateTime dataFinal = existing?.dataFinal ?? DateTime.now().add(const Duration(days: 1));
+
+    return showDialog<Rezervare>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text(existing == null ? 'Adauga Rezervare' : 'Editeaza Rezervare'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (existing == null)
+                TextField(
+                  controller: idCtrl,
+                  decoration: const InputDecoration(labelText: 'ID Rezervare *'),
+                  keyboardType: TextInputType.number,
+                ),
+              DropdownButtonFormField<int>(
+                decoration: const InputDecoration(labelText: 'Client *'),
+                value: selectedClientId,
+                items: clients
+                    .map((c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text('${c.nume} ${c.prenume}'),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => selectedClientId = v),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                dense: true,
+                title: Text('Start: ${dataStart.day}/${dataStart.month}/${dataStart.year}'),
+                trailing: const Icon(Icons.calendar_today, size: 18),
+                onTap: () async {
+                  final p = await showDatePicker(
+                      context: ctx,
+                      initialDate: dataStart,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100));
+                  if (p != null) setState(() => dataStart = p);
+                },
+              ),
+              ListTile(
+                dense: true,
+                title: Text('Final: ${dataFinal.day}/${dataFinal.month}/${dataFinal.year}'),
+                trailing: const Icon(Icons.calendar_today, size: 18),
+                onTap: () async {
+                  final p = await showDatePicker(
+                      context: ctx,
+                      initialDate: dataFinal,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100));
+                  if (p != null) setState(() => dataFinal = p);
+                },
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Anuleaza')),
+            ElevatedButton(
+              onPressed: () {
+                final id = existing?.id ?? int.tryParse(idCtrl.text.trim());
+                if (id == null || selectedClientId == null) return;
+                if (dataStart.isAfter(dataFinal)) return;
+                Navigator.pop(
+                  ctx,
+                  Rezervare(
+                    id: id,
+                    clientId: selectedClientId,
+                    dataStart: dataStart,
+                    dataFinal: dataFinal,
+                  ),
+                );
+              },
+              child: const Text('Salveaza'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

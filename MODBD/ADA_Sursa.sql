@@ -892,6 +892,17 @@ CREATE OR REPLACE SYNONYM bdd_global.tip_camera FOR bdd_all.tip_camera;
 CREATE OR REPLACE SYNONYM bdd_global.departament FOR bdd_all.departament;
 CREATE OR REPLACE SYNONYM bdd_global.client FOR bdd_all.client;
 CREATE OR REPLACE SYNONYM bdd_global.serviciu FOR bdd_all.serviciu;
+CREATE OR REPLACE SYNONYM bdd_global.rezervare FOR bdd_all.rezervare;
+CREATE OR REPLACE SYNONYM bdd_global.plata FOR bdd_all.plata;
+
+-- Privilegii DML pentru bdd_global pe tabelele centralizate din bdd_all
+-- (rulate cu userul bdd_all sau un DBA)
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.tip_camera  TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.departament TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client      TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.serviciu    TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare   TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata       TO bdd_global;
 
 -- Verificare
 SELECT * FROM hotel1;

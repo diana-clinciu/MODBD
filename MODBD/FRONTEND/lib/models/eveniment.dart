@@ -9,12 +9,14 @@ class Eveniment {
   final String? nume;
   final DateTime data;
   final String? descriere;
+  final int? idSalaEveniment;
 
   Eveniment({
     required this.id,
     required this.nume,
     required this.data,
     this.descriere,
+    this.idSalaEveniment,
   });
 
   static Eveniment fromJSON(JSON jsonBody) {
@@ -23,6 +25,93 @@ class Eveniment {
       nume: jsonBody["nume_eveniment"],
       data: DateTime.parse(jsonBody["data_eveniment"]),
       descriere: jsonBody["descriere"],
+      idSalaEveniment: jsonBody["id_sala_eveniment"] as int?,
+    );
+  }
+
+  Map<String, String> toFormFields() => {
+        'id_eveniment': id.toString(),
+        if (nume != null) 'nume_eveniment': nume!,
+        'data_eveniment': data.toIso8601String().split('T')[0],
+        if (descriere != null && descriere!.isNotEmpty) 'descriere': descriere!,
+        if (idSalaEveniment != null) 'id_sala_eveniment': idSalaEveniment.toString(),
+      };
+
+  // Generic dialog – nu depinde de OLTPViewModel
+  static Future<Eveniment?> showAddDialog(BuildContext context) =>
+      _showGenericDialog(context, null);
+
+  static Future<Eveniment?> showEditDialog(BuildContext context, Eveniment e) =>
+      _showGenericDialog(context, e);
+
+  static Future<Eveniment?> _showGenericDialog(BuildContext context, Eveniment? existing) {
+    final idCtrl = TextEditingController(text: existing?.id.toString() ?? '');
+    final numeCtrl = TextEditingController(text: existing?.nume ?? '');
+    final descCtrl = TextEditingController(text: existing?.descriere ?? '');
+    final salaCtrl = TextEditingController(text: existing?.idSalaEveniment?.toString() ?? '');
+    DateTime data = existing?.data ?? DateTime.now();
+
+    return showDialog<Eveniment>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text(existing == null ? 'Adauga Eveniment' : 'Editeaza Eveniment'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (existing == null)
+                TextField(
+                  controller: idCtrl,
+                  decoration: const InputDecoration(labelText: 'ID Eveniment *'),
+                  keyboardType: TextInputType.number,
+                ),
+              TextField(controller: numeCtrl,
+                  decoration: const InputDecoration(labelText: 'Nume Eveniment')),
+              ListTile(
+                dense: true,
+                title: Text('Data: ${data.day}/${data.month}/${data.year}'),
+                trailing: const Icon(Icons.calendar_today, size: 18),
+                onTap: () async {
+                  final p = await showDatePicker(
+                      context: ctx,
+                      initialDate: data,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100));
+                  if (p != null) setState(() => data = p);
+                },
+              ),
+              TextField(controller: descCtrl,
+                  decoration: const InputDecoration(labelText: 'Descriere')),
+              TextField(
+                controller: salaCtrl,
+                decoration: const InputDecoration(labelText: 'ID Sala Eveniment'),
+                keyboardType: TextInputType.number,
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Anuleaza')),
+            ElevatedButton(
+              onPressed: () {
+                final id = existing?.id ?? int.tryParse(idCtrl.text.trim());
+                if (id == null) return;
+                Navigator.pop(
+                  ctx,
+                  Eveniment(
+                    id: id,
+                    nume: numeCtrl.text.trim().isEmpty ? null : numeCtrl.text.trim(),
+                    data: data,
+                    descriere: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                    idSalaEveniment: int.tryParse(salaCtrl.text.trim()),
+                  ),
+                );
+              },
+              child: const Text('Salveaza'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -89,7 +178,7 @@ class Eveniment {
                 id: vm.evenimente.length + 1,
                 nume: nume,
                 data: data,
-                descriere: descriere.isEmpty ? null : descriere,
+                descriere: (descriere ?? '').isEmpty ? null : descriere,
               ));
               Navigator.pop(dialogContext);
             },

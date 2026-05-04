@@ -74,8 +74,8 @@ class Angajat {
                 hint: Text("Alege serviciu"),
                 value: idServiciu,
                 items: vm.servicii
-                    .map((s) => DropdownMenuItem(
-                        value: s.id,
+                    .map((s) => DropdownMenuItem<int>(
+                        value: s.idServiciu,
                         child: Text("${s.denumire} (${s.pret} RON)")))
                     .toList(),
                 onChanged: (v) => idServiciu = v,
@@ -174,8 +174,8 @@ class Angajat {
               DropdownButton<int>(
                 value: idServiciu,
                 items: vm.servicii
-                    .map((s) => DropdownMenuItem(
-                        value: s.id,
+                    .map((s) => DropdownMenuItem<int>(
+                        value: s.idServiciu,
                         child: Text("${s.denumire} (${s.pret} RON)")))
                     .toList(),
                 onChanged: (v) => idServiciu = v ?? idServiciu,

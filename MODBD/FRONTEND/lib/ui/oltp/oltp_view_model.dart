@@ -142,7 +142,7 @@ class OLTPViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteServiciu(int index) async {
-    final id = servicii[index].id;
+    final id = servicii[index].idServiciu;
     await otlpService.deleteServiciu(id);
     servicii.removeAt(index);
     notifyListeners();
