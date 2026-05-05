@@ -1060,9 +1060,112 @@ CREATE OR REPLACE SYNONYM rezervare_camera FOR bdd_all.rezervare_camera@bd_bucur
 CREATE OR REPLACE SYNONYM plata            FOR bdd_all.plata@bd_bucuresti;
 CREATE OR REPLACE SYNONYM client_serviciu  FOR bdd_all.client_serviciu@bd_bucuresti;
 
---5. (1p) Asigurarea sincronizării datelor pentru relațiile replicate. 
--- Creare tabele replicate pe CONSTANTA si populare initiala
+--5. (1p) Asigurarea sincronizării datelor pentru relațiile replicate.
+-- Creare tabele replicate in bdd pe BUCURESTI si populare initiala din bdd_all (acelasi server)
 
+-- TIP_CAMERA (replica in bdd pe BUCURESTI)
+create table bdd.tip_camera (
+   id_tip_camera    number primary key,
+   tip_camera       varchar2(20) not null,
+   clasa_confort    varchar2(20) not null,
+   categorie_camera varchar2(30) not null,
+   pret             number(10,2) not null
+);
+
+insert into bdd.tip_camera
+select * from bdd_all.tip_camera;
+
+-- SERVICIU (replica in bdd pe BUCURESTI)
+create table bdd.serviciu (
+   id_serviciu   number primary key,
+   denumire      varchar2(50) not null,
+   pret_serviciu number(10,2) not null
+);
+
+insert into bdd.serviciu
+select * from bdd_all.serviciu;
+
+-- DEPARTAMENT (replica in bdd pe BUCURESTI)
+create table bdd.departament (
+   id_departament   number primary key,
+   nume_departament varchar2(50) not null
+);
+
+insert into bdd.departament
+select * from bdd_all.departament;
+
+-- CLIENT (replica in bdd pe BUCURESTI)
+create table bdd.client (
+   id_client number primary key,
+   nume      varchar2(30) not null,
+   prenume   varchar2(30) not null,
+   email     varchar2(50) unique
+);
+
+insert into bdd.client
+select * from bdd_all.client;
+
+-- REZERVARE (replica in bdd pe BUCURESTI)
+create table bdd.rezervare (
+   id_rezervare number primary key,
+   id_client    number not null,
+   data_start   date not null,
+   data_final   date not null,
+   foreign key ( id_client )
+      references bdd.client ( id_client ),
+   constraint interval_data_valid check ( data_start <= data_final )
+);
+
+insert into bdd.rezervare
+select * from bdd_all.rezervare;
+
+-- PLATA (replica in bdd pe BUCURESTI)
+create table bdd.plata (
+   id_plata     number primary key,
+   id_rezervare number not null,
+   suma         number(10,2),
+   data_plata   date not null,
+   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash', 'Card', 'Transfer' ) ),
+   foreign key ( id_rezervare )
+      references bdd.rezervare ( id_rezervare )
+);
+
+insert into bdd.plata select * from bdd_all.plata;
+
+-- CLIENT_SERVICIU (replica in bdd pe BUCURESTI)
+create table bdd.client_serviciu (
+   id_client      number,
+   id_serviciu    number,
+   data_utilizare date default sysdate,
+   cantitate      number default 1 not null,
+   primary key ( id_client, id_serviciu, data_utilizare ),
+   foreign key ( id_client )
+      references bdd.client ( id_client ),
+   foreign key ( id_serviciu )
+      references bdd.serviciu ( id_serviciu )
+);
+
+insert into bdd.client_serviciu
+select * from bdd_all.client_serviciu;
+
+commit;
+
+-- Verificare replici BUCURESTI
+select 'TIP_CAMERA' as tabel, count(*) as nr from bdd.tip_camera
+union all
+select 'SERVICIU',       count(*) from bdd.serviciu
+union all
+select 'DEPARTAMENT',    count(*) from bdd.departament
+union all
+select 'CLIENT',         count(*) from bdd.client
+union all
+select 'REZERVARE',      count(*) from bdd.rezervare
+union all
+select 'PLATA',          count(*) from bdd.plata
+union all
+select 'CLIENT_SERVICIU',count(*) from bdd.client_serviciu;
+
+-- Creare tabele replicate pe CONSTANTA si populare initiala
 -- TIP_CAMERA (replica)
 create table tip_camera (
    id_tip_camera    number primary key,
