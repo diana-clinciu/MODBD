@@ -1061,7 +1061,6 @@ CREATE OR REPLACE SYNONYM plata            FOR bdd_all.plata@bd_bucuresti;
 CREATE OR REPLACE SYNONYM client_serviciu  FOR bdd_all.client_serviciu@bd_bucuresti;
 
 --5. (1p) Asigurarea sincronizării datelor pentru relațiile replicate. 
-
 -- Creare tabele replicate pe CONSTANTA si populare initiala
 
 -- TIP_CAMERA (replica)
@@ -1106,6 +1105,50 @@ create table client (
 insert into client
 select * from bdd_all.client@bd_bucuresti;
 
+-- REZERVARE (replica)
+create table rezervare (
+   id_rezervare number primary key,
+   id_client    number not null,
+   data_start   date not null,
+   data_final   date not null,
+   foreign key ( id_client )
+      references client ( id_client ),
+   constraint interval_data_valid check ( data_start <= data_final )
+);
+
+insert into rezervare
+select * from bdd_all.rezervare@bd_bucuresti;
+
+--PLATA (replica)
+create table plata (
+   id_plata     number primary key,
+   id_rezervare number not null,
+   suma         number(10,2),
+   data_plata   date not null,
+   metoda_plata varchar2(20) check ( metoda_plata in ( 'Cash', 'Card', 'Transfer' ) ),
+   foreign key ( id_rezervare )
+      references rezervare ( id_rezervare )
+);
+
+insert into plata
+select * from bdd_all.plata@bd_bucuresti;
+
+--CLIENT_SERVICIU (replica)
+create table client_serviciu (
+   id_client      number,
+   id_serviciu    number,
+   data_utilizare date default sysdate,
+   cantitate      number default 1 not null,
+   primary key ( id_client, id_serviciu, data_utilizare ),
+   foreign key ( id_client )
+      references client ( id_client ),
+   foreign key ( id_serviciu )
+      references serviciu ( id_serviciu )
+);
+
+insert into client_serviciu
+select * from bdd_all.client_serviciu@bd_bucuresti;
+
 commit;
 
 -- Verificare replici
@@ -1117,7 +1160,11 @@ select 'DEPARTAMENT' as tabel, count(*) from departament
 union all
 select 'CLIENT' as tabel, count(*) from client
 union all
-select 'CAMERA' as tabel, count(*) from camera;
+select 'REZERVARE' as tabel, count(*) from rezervare
+union all
+select 'PLATA' as tabel, count(*) from plata
+union all
+select 'CLIENT_SERVICIU' as tabel, count(*) from client_serviciu;
 
 -- Triggere de sincronizare BUCURESTI -> CONSTANTA
 -- La orice modificare pe tabelele sursa de pe BUCURESTI, se propaga pe CONSTANTA
