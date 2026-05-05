@@ -394,7 +394,7 @@ select p.id_plata, p.id_rezervare, p.suma as suma_calculata_automat, p.data_plat
 
  
 
-
+--2. (1p) Crearea relațiilor și a fragmentelor - obligatoriu
  -- =====================================================================
 -- Crearea si popularea fragmentelor orizontale
 -- =====================================================================
@@ -406,7 +406,7 @@ FROM bdd_all.oras
 WHERE oras = 'Bucuresti';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON oras1 TO bdd_global;
-GRANT SELECT, INSERT, UPDATE, DELETE ON oras TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON oras TO bdd; -- rulat ca bdd_all
 
 -- Fragment Orizontal ORAS2 - creat pe BUCURESTI (user bdd)
 CREATE TABLE oras2 AS
@@ -422,6 +422,7 @@ JOIN bdd_all.oras USING (id_oras)
 WHERE oras = 'Bucuresti';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON hotel1 TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON hotel TO bdd; -- rulat ca bdd_all
 
 -- Fragment Orizontal HOTEL2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE hotel2 AS
@@ -437,6 +438,7 @@ FROM bdd_all.camera
 WHERE id_hotel = 1;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON camera1 TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON camera TO bdd; -- rulat ca bdd_all
 
 -- Fragment Derivat CAMERA2 - creat pe CONSTANTA (user bdd)
 CREATE TABLE camera2 AS
@@ -463,8 +465,6 @@ JOIN bdd_all.camera@bd_bucuresti c ON c.id_camera = rc.id_camera
 JOIN bdd_all.hotel@bd_bucuresti h ON c.id_hotel = h.id_hotel
 JOIN bdd_all.oras@bd_bucuresti o ON o.id_oras = h.id_oras
 WHERE o.oras = 'Constanta';
-
---2. (1p) Crearea relațiilor și a fragmentelor - obligatoriu  
 
 -- Fragmentare ANGAJAT
 -- NOTA: Fragmentarea verticala initiala (identitate/salarizare) a fost
@@ -493,6 +493,7 @@ FROM bdd_all.angajat
 WHERE id_hotel = 1;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON angajat1 TO bdd_global;
+GRANT SELECT, INSERT, UPDATE, DELETE ON angajat TO bdd_global; -- rulat ca bdd_all
 
 -- Fragment Orizontal ANGAJAT2 - creat pe CONSTANTA (user bdd)
 -- Contine angajatii hotelului din Constanta; toate FK raman in acelasi fragment
@@ -1036,6 +1037,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.plata            TO bdd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client_serviciu  TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.tip_camera  TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.serviciu  TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.departament  TO bdd;
+GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.client  TO bdd;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare        TO bdd_global;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bdd_all.rezervare_camera TO bdd_global;
@@ -1512,7 +1517,7 @@ END;
 /
 
 -- test
-INSERT INTO hotel1 VALUES (3, 'Royal Hotel Constanta', 'Bucuresti', 4, 400);
+INSERT INTO hotel1 VALUES (3, 'Royal Hotel Constanta', 4, 400, 2);
 
 CREATE OR REPLACE TRIGGER trg_unique_camera1
 BEFORE INSERT OR UPDATE ON camera1
@@ -1552,7 +1557,7 @@ END;
 /
 
 -- test
-INSERT INTO hotel2 VALUES (4, 'Grand Hotel Bucuresti', 'Constanta', 4, 400);
+INSERT INTO hotel2 VALUES (4, 'Grand Hotel Bucuresti', 4, 400, 1);
 
 
 CREATE OR REPLACE TRIGGER trg_unique_camera2
