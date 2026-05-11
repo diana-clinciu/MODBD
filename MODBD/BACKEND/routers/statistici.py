@@ -1,5 +1,3 @@
-"""Statistici distributie date per fragment (Tab 3 – Statistici)."""
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from session import get_db_global as get_db

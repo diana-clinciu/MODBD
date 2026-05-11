@@ -1,5 +1,3 @@
-"""Rute CRUD pentru fragmentul LOCAL BUCURESTI (bdd@oracle-bucuresti)."""
-
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from session import get_db_buc

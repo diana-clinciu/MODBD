@@ -1,12 +1,4 @@
-"""
-Modele ORM pentru fragmentele locale (schema bdd).
 
-oracle-bucuresti / bdd: hotel1, angajat1, camera1
-oracle-constanta / bdd:  hotel2, angajat2, camera2
-
-Ambele seturi partajeaza aceleasi coloane – sunt clase separate
-deoarece se afla pe motoare (engines) diferite.
-"""
 
 from sqlalchemy import Column, Integer, String, Float
 from database import Base

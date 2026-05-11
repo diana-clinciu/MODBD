@@ -1,7 +1,4 @@
-"""
-Modele ORM pentru tabelele centralizate (schema bdd_all pe oracle-bucuresti).
-Accesibile din sesiunile bdd prin sinonime, si direct din sesiunea bdd_all.
-"""
+
 
 from sqlalchemy import Column, Integer, String, Float, Date, CheckConstraint
 from database import Base

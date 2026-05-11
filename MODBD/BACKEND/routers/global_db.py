@@ -1,5 +1,3 @@
-"""Rute pentru BD globala (vederi bdd_global). Req 2 + Req 4."""
-
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from session import get_db_global as get_db

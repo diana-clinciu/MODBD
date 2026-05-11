@@ -1,5 +1,3 @@
-"""Rute CRUD pentru fragmentul LOCAL CONSTANTA (bdd@oracle-constanta)."""
-
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from session import get_db_con

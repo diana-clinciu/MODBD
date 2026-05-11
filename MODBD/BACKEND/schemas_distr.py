@@ -1,5 +1,3 @@
-"""Pydantic schemas pentru schema distribuita (BD_MODBD)."""
-
 from datetime import date
 from typing import Optional
 from pydantic import BaseModel

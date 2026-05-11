@@ -1,19 +1,7 @@
-"""CRUD pentru tab-urile locale.
-
-Aceste functii se executa pe o conexiune locala (bdd@oracle-bucuresti sau
-bdd@oracle-constanta), nu prin bdd_global. Fragmentele orizontale sunt
-referite explicit prin sufixul fragmentului (1 = Bucuresti, 2 = Constanta).
-Tabelele centrale (rezervare, plata, client, serviciu, departament,
-tip_camera) sunt referite prin nume neclasificat, rezolvat de sinonime
-locale sau replici la nivel de schema.
-"""
-
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-# 1 = fragmentul Bucuresti, 2 = fragmentul Constanta.
 _FRAG = {"Bucuresti": "1", "Constanta": "2"}
-
 
 def _suffix(oras: str) -> str:
     try:
@@ -21,16 +9,12 @@ def _suffix(oras: str) -> str:
     except KeyError as exc:
         raise ValueError(f"Oras necunoscut pentru fragmentare: {oras!r}") from exc
 
-
-# ─── HOTEL (fragment orizontal hotel1 / hotel2) ──────────────────────────────
-
 def get_hoteluri(db: Session, oras: str) -> list[dict]:
     s = _suffix(oras)
     rows = db.execute(text(
         f"SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM hotel{s}"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_hotel(db: Session, data: dict) -> dict:
     s = _suffix(data["oras"])
@@ -42,7 +26,6 @@ def create_hotel(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_hotel(db: Session, id_hotel: int, data: dict) -> dict:
     s = _suffix(data["oras"])
     db.execute(text(
@@ -53,15 +36,11 @@ def update_hotel(db: Session, id_hotel: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_hotel": id_hotel}
 
-
 def delete_hotel(db: Session, id_hotel: int, oras: str) -> bool:
     s = _suffix(oras)
     db.execute(text(f"DELETE FROM hotel{s} WHERE id_hotel=:id"), {"id": id_hotel})
     db.commit()
     return True
-
-
-# ─── ANGAJAT (fragment orizontal angajat1/angajat2 + vertical angajat_date_personale) ─
 
 def get_angajati(db: Session, oras: str) -> list[dict]:
     s = _suffix(oras)
@@ -72,7 +51,6 @@ def get_angajati(db: Session, oras: str) -> list[dict]:
         "JOIN angajat_date_personale dp ON a.id_angajat = dp.id_angajat"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_angajat(db: Session, data: dict, oras: str) -> dict:
     s = _suffix(oras)
@@ -92,7 +70,6 @@ def create_angajat(db: Session, data: dict, oras: str) -> dict:
     db.commit()
     return data
 
-
 def update_angajat(db: Session, id_angajat: int, data: dict, oras: str) -> dict:
     s = _suffix(oras)
     db.execute(text(
@@ -111,7 +88,6 @@ def update_angajat(db: Session, id_angajat: int, data: dict, oras: str) -> dict:
     db.commit()
     return {**data, "id_angajat": id_angajat}
 
-
 def delete_angajat(db: Session, id_angajat: int, oras: str) -> bool:
     s = _suffix(oras)
     db.execute(text(f"DELETE FROM angajat{s} WHERE id_angajat=:id"), {"id": id_angajat})
@@ -120,16 +96,12 @@ def delete_angajat(db: Session, id_angajat: int, oras: str) -> bool:
     db.commit()
     return True
 
-
-# ─── CAMERA (fragment derivat camera1 / camera2) ─────────────────────────────
-
 def get_camere(db: Session, oras: str) -> list[dict]:
     s = _suffix(oras)
     rows = db.execute(text(
         f"SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM camera{s}"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_camera(db: Session, data: dict, oras: str) -> dict:
     s = _suffix(oras)
@@ -141,7 +113,6 @@ def create_camera(db: Session, data: dict, oras: str) -> dict:
     db.commit()
     return data
 
-
 def update_camera(db: Session, id_camera: int, data: dict, oras: str) -> dict:
     s = _suffix(oras)
     db.execute(text(
@@ -152,15 +123,11 @@ def update_camera(db: Session, id_camera: int, data: dict, oras: str) -> dict:
     db.commit()
     return {**data, "id_camera": id_camera}
 
-
 def delete_camera(db: Session, id_camera: int, oras: str) -> bool:
     s = _suffix(oras)
     db.execute(text(f"DELETE FROM camera{s} WHERE id_camera=:id"), {"id": id_camera})
     db.commit()
     return True
-
-
-# ─── Cataloage / tabele centrale (rezolvate prin sinonime locale / replici) ──
 
 def get_clienti(db: Session) -> list[dict]:
     rows = db.execute(text(
@@ -168,13 +135,11 @@ def get_clienti(db: Session) -> list[dict]:
     )).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 def get_servicii(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_serviciu, denumire, pret_serviciu FROM serviciu"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def get_tip_camere(db: Session) -> list[dict]:
     rows = db.execute(text(
@@ -183,20 +148,17 @@ def get_tip_camere(db: Session) -> list[dict]:
     )).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 def get_departamente(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_departament, nume_departament FROM departament"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 def get_rezervari(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_rezervare, id_client, data_start, data_final FROM rezervare"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_client_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -205,7 +167,6 @@ def create_client_central(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_client_central(db: Session, id_client: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE client SET nume=:n, prenume=:p, email=:e WHERE id_client=:id"
@@ -213,12 +174,10 @@ def update_client_central(db: Session, id_client: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_client": id_client}
 
-
 def delete_client_central(db: Session, id_client: int) -> bool:
     db.execute(text("DELETE FROM client WHERE id_client=:id"), {"id": id_client})
     db.commit()
     return True
-
 
 def create_rezervare_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -228,7 +187,6 @@ def create_rezervare_central(db: Session, data: dict) -> dict:
         "s": data["data_start"][:10], "f": data["data_final"][:10]})
     db.commit()
     return data
-
 
 def update_rezervare_central(db: Session, id_rezervare: int, data: dict) -> dict:
     db.execute(text(
@@ -240,19 +198,16 @@ def update_rezervare_central(db: Session, id_rezervare: int, data: dict) -> dict
     db.commit()
     return {**data, "id_rezervare": id_rezervare}
 
-
 def delete_rezervare_central(db: Session, id_rezervare: int) -> bool:
     db.execute(text("DELETE FROM rezervare WHERE id_rezervare=:id"), {"id": id_rezervare})
     db.commit()
     return True
-
 
 def get_plati_central(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_plata, id_rezervare, suma, data_plata, metoda_plata FROM plata"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_plata_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -263,7 +218,6 @@ def create_plata_central(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_plata_central(db: Session, id_plata: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE plata SET id_rezervare=:r, suma=:s, "
@@ -273,12 +227,10 @@ def update_plata_central(db: Session, id_plata: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_plata": id_plata}
 
-
 def delete_plata_central(db: Session, id_plata: int) -> bool:
     db.execute(text("DELETE FROM plata WHERE id_plata=:id"), {"id": id_plata})
     db.commit()
     return True
-
 
 def create_serviciu_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -287,7 +239,6 @@ def create_serviciu_central(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_serviciu_central(db: Session, id_serviciu: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE serviciu SET denumire=:d, pret_serviciu=:p WHERE id_serviciu=:id"
@@ -295,12 +246,10 @@ def update_serviciu_central(db: Session, id_serviciu: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_serviciu": id_serviciu}
 
-
 def delete_serviciu_central(db: Session, id_serviciu: int) -> bool:
     db.execute(text("DELETE FROM serviciu WHERE id_serviciu=:id"), {"id": id_serviciu})
     db.commit()
     return True
-
 
 def create_departament_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -309,7 +258,6 @@ def create_departament_central(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_departament_central(db: Session, id_departament: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE departament SET nume_departament=:n WHERE id_departament=:id"
@@ -317,19 +265,16 @@ def update_departament_central(db: Session, id_departament: int, data: dict) -> 
     db.commit()
     return {**data, "id_departament": id_departament}
 
-
 def delete_departament_central(db: Session, id_departament: int) -> bool:
     db.execute(text("DELETE FROM departament WHERE id_departament=:id"), {"id": id_departament})
     db.commit()
     return True
-
 
 def get_tipuri_camera_central(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_tip_camera, tip_camera, clasa_confort, categorie_camera, pret FROM tip_camera"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_tip_camera_central(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -341,7 +286,6 @@ def create_tip_camera_central(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_tip_camera_central(db: Session, id_tip_camera: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE tip_camera SET tip_camera=:tip, clasa_confort=:clasa, "
@@ -350,7 +294,6 @@ def update_tip_camera_central(db: Session, id_tip_camera: int, data: dict) -> di
         "cat": data.get("categorie_camera"), "pret": data["pret"], "id": id_tip_camera})
     db.commit()
     return {**data, "id_tip_camera": id_tip_camera}
-
 
 def delete_tip_camera_central(db: Session, id_tip_camera: int) -> bool:
     db.execute(text("DELETE FROM tip_camera WHERE id_tip_camera=:id"), {"id": id_tip_camera})

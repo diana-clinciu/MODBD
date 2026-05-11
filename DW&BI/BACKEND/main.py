@@ -5,8 +5,8 @@ from routers import clients, rezervari, camere, servicii, plati, angajati, eveni
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173",  # portul unde ruleaza Flutter Web
-    "http://localhost:8000",  # backendul
+    "http://localhost:5173",
+    "http://localhost:8000",
     "*",  
 ]
 

@@ -27,7 +27,7 @@ def run_query_raport3(db: Session, query: str) -> List[Dict]:
     try:
         with db.connection() as conn:
             result = conn.execute(text(query))
-            rows = result.mappings().all()  # fiecare rând devine dict
+            rows = result.mappings().all()
             if not rows:
                 print("Raport 3: Query-ul nu a returnat rezultate")
                 return []

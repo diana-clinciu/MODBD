@@ -1,12 +1,3 @@
-"""
-CRUD helpers pentru vederile globale (bdd_global).
-
-Toate operatiile merg prin singura conexiune bdd_global@oracle-bucuresti.
-Triggerele INSTEAD OF ruteaza DML catre fragmentul corect (hotel1/hotel2 etc.).
-Verificarea propagarii (Req 4) interogheaza vederea globala si determina
-fragmentul din coloana oras (hotel/camera) sau prin JOIN cu hotel_global (angajat).
-"""
-
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -52,12 +43,13 @@ def create_angajat_global(db: Session, data: dict) -> dict:
         "INSERT INTO angajat_global "
         "(id_angajat, nume, prenume, functie, salariu, "
         "id_departament, id_serviciu, id_hotel, cnp, data_angajare) "
-        "VALUES (:id, :n, :p, :f, :s, :dep, :serv, :hotel, :cnp, :da)"
+        "VALUES (:id, :n, :p, :f, :s, :dep, :serv, :hotel, :cnp, "
+        "TO_DATE(:da, 'YYYY-MM-DD'))"
     ), {"id": data["id_angajat"], "n": data["nume"], "p": data["prenume"],
         "f": data.get("functie"), "s": data.get("salariu"),
         "dep": data["id_departament"], "serv": data.get("id_serviciu"),
         "hotel": data["id_hotel"], "cnp": data.get("cnp"),
-        "da": data.get("data_angajare")})
+        "da": (data.get("data_angajare") or "")[:10] or None})
     db.commit()
     return data
 
@@ -65,12 +57,14 @@ def update_angajat_global(db: Session, id_angajat: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE angajat_global SET nume=:n, prenume=:p, functie=:f, salariu=:s, "
         "id_departament=:dep, id_serviciu=:serv, id_hotel=:hotel, "
-        "cnp=:cnp, data_angajare=:da "
+        "cnp=:cnp, data_angajare=TO_DATE(:da, 'YYYY-MM-DD') "
         "WHERE id_angajat=:id"
     ), {"n": data["nume"], "p": data["prenume"], "f": data.get("functie"),
         "s": data.get("salariu"), "dep": data["id_departament"],
         "serv": data.get("id_serviciu"), "hotel": data["id_hotel"],
-        "cnp": data.get("cnp"), "da": data.get("data_angajare"), "id": id_angajat})
+        "cnp": data.get("cnp"),
+        "da": (data.get("data_angajare") or "")[:10] or None,
+        "id": id_angajat})
     db.commit()
     return {**data, "id_angajat": id_angajat}
 

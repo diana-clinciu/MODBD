@@ -1,12 +1,4 @@
-"""
-Modele ORM pentru schema bdd_global (oracle-bucuresti).
 
-Contine:
-- AngajatDatePersonale: fragmentul vertical cu date sensibile (cnp, data_angajare)
-- Vederile globale (angajat_global, hotel_global, camera_global) sunt accesate
-  prin SQL text() direct, deoarece UNION ALL + INSTEAD OF triggers nu sunt
-  compatibile cu ORM insert standard.
-"""
 
 from sqlalchemy import Column, Integer, String, Date
 from database import Base
