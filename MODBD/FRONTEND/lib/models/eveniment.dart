@@ -37,7 +37,6 @@ class Eveniment {
         if (idSalaEveniment != null) 'id_sala_eveniment': idSalaEveniment.toString(),
       };
 
-  // Generic dialog – nu depinde de OLTPViewModel
   static Future<Eveniment?> showAddDialog(BuildContext context) =>
       _showGenericDialog(context, null);
 

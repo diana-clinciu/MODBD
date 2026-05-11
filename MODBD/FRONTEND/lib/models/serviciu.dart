@@ -6,7 +6,6 @@ class Serviciu {
   final String? denumire;
   final double pretServiciu;
 
-  // Optional fields used in OLTP context
   final DateTime? dataAchizitionare;
   final int? cantitate;
 
@@ -24,7 +23,6 @@ class Serviciu {
         pretServiciu: (j['pret_serviciu'] as num).toDouble(),
       );
 
-  // Alias used by OLTP screen
   double get pret => pretServiciu;
 
   Map<String, String> toFormFields() => {

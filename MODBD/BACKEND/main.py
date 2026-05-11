@@ -17,7 +17,6 @@ app.include_router(local_con.router)
 app.include_router(global_db.router)
 app.include_router(statistici.router)
 
-
 @app.get("/")
 def root():
     return {

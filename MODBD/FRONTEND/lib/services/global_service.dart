@@ -10,7 +10,6 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/models/departament.dart';
 import 'package:mvvm_flutter/models/tip_camera.dart';
 
-
 class GlobalService {
   final GlobalApi _api = GetIt.instance.get<GlobalApi>();
 

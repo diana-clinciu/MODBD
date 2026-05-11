@@ -2,18 +2,14 @@
 
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
-from session import get_db
+from session import get_db_global as get_db
 from crud import global_crud as crud
 
 router = APIRouter(prefix="/global", tags=["Global"])
 
-
-# ─── HOTEL GLOBAL ─────────────────────────────────────────────────────────────
-
 @router.get("/hoteluri")
 def list_hoteluri(db: Session = Depends(get_db)):
     return crud.get_hoteluri_global(db)
-
 
 @router.post("/hoteluri")
 def add_hotel(
@@ -29,7 +25,6 @@ def add_hotel(
         "nr_stele": nr_stele, "capacitate": capacitate,
     })
 
-
 @router.put("/hoteluri/{id_hotel}")
 def edit_hotel(
     id_hotel: int,
@@ -44,19 +39,14 @@ def edit_hotel(
         "nr_stele": nr_stele, "capacitate": capacitate,
     })
 
-
 @router.delete("/hoteluri/{id_hotel}")
 def remove_hotel(id_hotel: int, db: Session = Depends(get_db)):
     crud.delete_hotel_global(db, id_hotel)
     return {"success": True}
 
-
-# ─── ANGAJAT GLOBAL ───────────────────────────────────────────────────────────
-
 @router.get("/angajati")
 def list_angajati(db: Session = Depends(get_db)):
     return crud.get_angajati_global(db)
-
 
 @router.post("/angajati")
 def add_angajat(
@@ -79,7 +69,6 @@ def add_angajat(
         "id_hotel": id_hotel, "cnp": cnp, "data_angajare": data_angajare,
     })
 
-
 @router.put("/angajati/{id_angajat}")
 def edit_angajat(
     id_angajat: int,
@@ -100,19 +89,14 @@ def edit_angajat(
         "id_hotel": id_hotel, "cnp": cnp, "data_angajare": data_angajare,
     })
 
-
 @router.delete("/angajati/{id_angajat}")
 def remove_angajat(id_angajat: int, db: Session = Depends(get_db)):
     crud.delete_angajat_global(db, id_angajat)
     return {"success": True}
 
-
-# ─── CAMERA GLOBAL ────────────────────────────────────────────────────────────
-
 @router.get("/camere")
 def list_camere(db: Session = Depends(get_db)):
     return crud.get_camere_global(db)
-
 
 @router.post("/camere")
 def add_camera(
@@ -127,7 +111,6 @@ def add_camera(
         "id_tip_camera": id_tip_camera, "id_hotel": id_hotel,
     })
 
-
 @router.put("/camere/{id_camera}")
 def edit_camera(
     id_camera: int,
@@ -140,19 +123,14 @@ def edit_camera(
         "nr_camera": nr_camera, "id_tip_camera": id_tip_camera, "id_hotel": id_hotel,
     })
 
-
 @router.delete("/camere/{id_camera}")
 def remove_camera(id_camera: int, db: Session = Depends(get_db)):
     crud.delete_camera_global(db, id_camera)
     return {"success": True}
 
-
-# ─── CLIENT CRUD ─────────────────────────────────────────────────────────────
-
 @router.get("/clienti")
 def list_clienti(db: Session = Depends(get_db)):
     return crud.get_clienti_global(db)
-
 
 @router.post("/clienti")
 def add_client(
@@ -166,7 +144,6 @@ def add_client(
         "id_client": id_client, "nume": nume, "prenume": prenume, "email": email,
     })
 
-
 @router.put("/clienti/{id_client}")
 def edit_client(
     id_client: int,
@@ -179,19 +156,14 @@ def edit_client(
         "nume": nume, "prenume": prenume, "email": email,
     })
 
-
 @router.delete("/clienti/{id_client}")
 def remove_client(id_client: int, db: Session = Depends(get_db)):
     crud.delete_client_global(db, id_client)
     return {"success": True}
 
-
-# ─── REZERVARE CRUD ───────────────────────────────────────────────────────────
-
 @router.get("/rezervari")
 def list_rezervari(db: Session = Depends(get_db)):
     return crud.get_rezervari(db)
-
 
 @router.post("/rezervari")
 def add_rezervare(
@@ -206,7 +178,6 @@ def add_rezervare(
         "data_start": data_start, "data_final": data_final,
     })
 
-
 @router.put("/rezervari/{id_rezervare}")
 def edit_rezervare(
     id_rezervare: int,
@@ -219,19 +190,14 @@ def edit_rezervare(
         "id_client": id_client, "data_start": data_start, "data_final": data_final,
     })
 
-
 @router.delete("/rezervari/{id_rezervare}")
 def remove_rezervare(id_rezervare: int, db: Session = Depends(get_db)):
     crud.delete_rezervare_global(db, id_rezervare)
     return {"success": True}
 
-
-# ─── PLATA CRUD ───────────────────────────────────────────────────────────────
-
 @router.get("/plati")
 def list_plati(db: Session = Depends(get_db)):
     return crud.get_plati(db)
-
 
 @router.post("/plati")
 def add_plata(
@@ -247,7 +213,6 @@ def add_plata(
         "suma": suma, "data_plata": data_plata, "metoda_plata": metoda_plata,
     })
 
-
 @router.put("/plati/{id_plata}")
 def edit_plata(
     id_plata: int,
@@ -262,19 +227,14 @@ def edit_plata(
         "data_plata": data_plata, "metoda_plata": metoda_plata,
     })
 
-
 @router.delete("/plati/{id_plata}")
 def remove_plata(id_plata: int, db: Session = Depends(get_db)):
     crud.delete_plata_global(db, id_plata)
     return {"success": True}
 
-
-# ─── SERVICII CRUD ────────────────────────────────────────────────────────────
-
 @router.get("/servicii")
 def list_servicii(db: Session = Depends(get_db)):
     return crud.get_servicii_global(db)
-
 
 @router.post("/servicii")
 def add_serviciu(
@@ -287,7 +247,6 @@ def add_serviciu(
         "id_serviciu": id_serviciu, "denumire": denumire, "pret_serviciu": pret_serviciu,
     })
 
-
 @router.put("/servicii/{id_serviciu}")
 def edit_serviciu(
     id_serviciu: int,
@@ -299,19 +258,14 @@ def edit_serviciu(
         "denumire": denumire, "pret_serviciu": pret_serviciu,
     })
 
-
 @router.delete("/servicii/{id_serviciu}")
 def remove_serviciu(id_serviciu: int, db: Session = Depends(get_db)):
     crud.delete_serviciu_global(db, id_serviciu)
     return {"success": True}
 
-
-# ─── DEPARTAMENTE CRUD ────────────────────────────────────────────────────────
-
 @router.get("/departamente")
 def list_departamente(db: Session = Depends(get_db)):
     return crud.get_departamente_global(db)
-
 
 @router.post("/departamente")
 def add_departament(
@@ -323,7 +277,6 @@ def add_departament(
         "id_departament": id_departament, "nume_departament": nume_departament,
     })
 
-
 @router.put("/departamente/{id_departament}")
 def edit_departament(
     id_departament: int,
@@ -334,19 +287,14 @@ def edit_departament(
         "nume_departament": nume_departament,
     })
 
-
 @router.delete("/departamente/{id_departament}")
 def remove_departament(id_departament: int, db: Session = Depends(get_db)):
     crud.delete_departament_global(db, id_departament)
     return {"success": True}
 
-
-# ─── TIPURI CAMERA CRUD ───────────────────────────────────────────────────────
-
 @router.get("/tipuri_camera")
 def list_tipuri_camera(db: Session = Depends(get_db)):
     return crud.get_tipuri_camera_global(db)
-
 
 @router.post("/tipuri_camera")
 def add_tip_camera(
@@ -362,7 +310,6 @@ def add_tip_camera(
         "clasa_confort": clasa_confort, "categorie_camera": categorie_camera, "pret": pret,
     })
 
-
 @router.put("/tipuri_camera/{id_tip_camera}")
 def edit_tip_camera(
     id_tip_camera: int,
@@ -377,24 +324,18 @@ def edit_tip_camera(
         "categorie_camera": categorie_camera, "pret": pret,
     })
 
-
 @router.delete("/tipuri_camera/{id_tip_camera}")
 def remove_tip_camera(id_tip_camera: int, db: Session = Depends(get_db)):
     crud.delete_tip_camera_global(db, id_tip_camera)
     return {"success": True}
 
-
-# ─── VERIFICARE PROPAGARE (Req 4) ─────────────────────────────────────────────
-
 @router.get("/verificare/hoteluri/{id_hotel}")
 def verificare_hotel(id_hotel: int, db: Session = Depends(get_db)):
     return crud.verifica_hotel(db, id_hotel)
 
-
 @router.get("/verificare/angajati/{id_angajat}")
 def verificare_angajat(id_angajat: int, db: Session = Depends(get_db)):
     return crud.verifica_angajat(db, id_angajat)
-
 
 @router.get("/verificare/camere/{id_camera}")
 def verificare_camera(id_camera: int, db: Session = Depends(get_db)):

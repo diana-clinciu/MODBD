@@ -3,7 +3,6 @@ class ImageResource {
 
   ImageResource({required this.source});
 
-  // bottom nav bar
   static ImageResource bottomNavReports =
       ImageResource(source: "images/bottom_navbar/Icon1337.svg");
   static ImageResource bottomNavReportsSelected =
@@ -16,5 +15,5 @@ class ImageResource {
       ImageResource(source: "images/bottom_navbar/Icon13373.svg");
   static ImageResource bottomNavOtlp =
       ImageResource(source: "images/bottom_navbar/Icon13372.svg");
-  // icons
+
 }

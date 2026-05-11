@@ -37,7 +37,6 @@ class Rezervare {
         'data_final': dataFinal.toIso8601String().split('T')[0],
       };
 
-  // Generic dialog – nu depinde de OLTPViewModel
   static Future<Rezervare?> showAddDialog(
           BuildContext context, List<Client> clients) =>
       _showGenericDialog(context, null, clients);
@@ -250,7 +249,7 @@ class Rezervare {
           ),
           ElevatedButton(
             onPressed: () {
-              /// VALIDARE UI (foarte important)
+
               if (dataStart.isAfter(dataFinal)) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

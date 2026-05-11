@@ -4,9 +4,6 @@ from datetime import date
 from typing import Optional
 from pydantic import BaseModel
 
-
-# ─── HOTEL ────────────────────────────────────────────────────────────────────
-
 class HotelBase(BaseModel):
     nume_hotel: str
     oras: str
@@ -21,9 +18,6 @@ class HotelResponse(HotelBase):
     class Config:
         from_attributes = True
 
-
-# ─── TIP CAMERA ───────────────────────────────────────────────────────────────
-
 class TipCameraResponse(BaseModel):
     id_tip_camera: int
     tip_camera: str
@@ -32,9 +26,6 @@ class TipCameraResponse(BaseModel):
     pret: float
     class Config:
         from_attributes = True
-
-
-# ─── CAMERA ───────────────────────────────────────────────────────────────────
 
 class CameraBase(BaseModel):
     nr_camera: int
@@ -49,17 +40,11 @@ class CameraResponse(CameraBase):
     class Config:
         from_attributes = True
 
-
-# ─── DEPARTAMENT ──────────────────────────────────────────────────────────────
-
 class DepartamentResponse(BaseModel):
     id_departament: int
     nume_departament: str
     class Config:
         from_attributes = True
-
-
-# ─── SERVICIU ─────────────────────────────────────────────────────────────────
 
 class ServiciuBase(BaseModel):
     denumire: str
@@ -72,9 +57,6 @@ class ServiciuResponse(ServiciuBase):
     id_serviciu: int
     class Config:
         from_attributes = True
-
-
-# ─── ANGAJAT LOCAL (fara fragment vertical) ───────────────────────────────────
 
 class AngajatLocalBase(BaseModel):
     nume: str
@@ -92,9 +74,6 @@ class AngajatLocalResponse(AngajatLocalBase):
     id_angajat: int
     class Config:
         from_attributes = True
-
-
-# ─── ANGAJAT GLOBAL (cu fragment vertical) ────────────────────────────────────
 
 class AngajatGlobalBase(BaseModel):
     nume: str
@@ -115,9 +94,6 @@ class AngajatGlobalResponse(AngajatGlobalBase):
     class Config:
         from_attributes = True
 
-
-# ─── CLIENT ───────────────────────────────────────────────────────────────────
-
 class ClientBase(BaseModel):
     nume: str
     prenume: str
@@ -130,9 +106,6 @@ class ClientResponse(ClientBase):
     id_client: int
     class Config:
         from_attributes = True
-
-
-# ─── REZERVARE ────────────────────────────────────────────────────────────────
 
 class RezervareBase(BaseModel):
     id_client: int
@@ -147,9 +120,6 @@ class RezervareResponse(RezervareBase):
     class Config:
         from_attributes = True
 
-
-# ─── PLATA ────────────────────────────────────────────────────────────────────
-
 class PlataBase(BaseModel):
     id_rezervare: int
     suma: Optional[float] = None
@@ -163,9 +133,6 @@ class PlataResponse(PlataBase):
     id_plata: int
     class Config:
         from_attributes = True
-
-
-# ─── VERIFICARE PROPAGARE (Req 4) ─────────────────────────────────────────────
 
 class VerificareHotelResponse(BaseModel):
     entitate: str
@@ -185,9 +152,6 @@ class VerificareCameraResponse(BaseModel):
     id: int
     fragment_bucuresti: Optional[dict] = None
     fragment_constanta: Optional[dict] = None
-
-
-# ─── STATISTICI DISTRIBUTIE ───────────────────────────────────────────────────
 
 class DistributieEntry(BaseModel):
     entitate: str

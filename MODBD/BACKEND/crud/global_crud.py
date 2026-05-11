@@ -10,15 +10,11 @@ fragmentul din coloana oras (hotel/camera) sau prin JOIN cu hotel_global (angaja
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-
-# ─── HOTEL GLOBAL ─────────────────────────────────────────────────────────────
-
 def get_hoteluri_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_hotel, nume_hotel, oras, nr_stele, capacitate FROM hotel_global"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_hotel_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -29,7 +25,6 @@ def create_hotel_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_hotel_global(db: Session, id_hotel: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE hotel_global SET nume_hotel=:nume, oras=:oras, "
@@ -39,14 +34,10 @@ def update_hotel_global(db: Session, id_hotel: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_hotel": id_hotel}
 
-
 def delete_hotel_global(db: Session, id_hotel: int) -> bool:
     db.execute(text("DELETE FROM hotel_global WHERE id_hotel=:id"), {"id": id_hotel})
     db.commit()
     return True
-
-
-# ─── ANGAJAT GLOBAL ───────────────────────────────────────────────────────────
 
 def get_angajati_global(db: Session) -> list[dict]:
     rows = db.execute(text(
@@ -55,7 +46,6 @@ def get_angajati_global(db: Session) -> list[dict]:
         "FROM angajat_global"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_angajat_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -71,7 +61,6 @@ def create_angajat_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_angajat_global(db: Session, id_angajat: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE angajat_global SET nume=:n, prenume=:p, functie=:f, salariu=:s, "
@@ -85,21 +74,16 @@ def update_angajat_global(db: Session, id_angajat: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_angajat": id_angajat}
 
-
 def delete_angajat_global(db: Session, id_angajat: int) -> bool:
     db.execute(text("DELETE FROM angajat_global WHERE id_angajat=:id"), {"id": id_angajat})
     db.commit()
     return True
-
-
-# ─── CAMERA GLOBAL ────────────────────────────────────────────────────────────
 
 def get_camere_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_camera, nr_camera, id_tip_camera, id_hotel FROM camera_global"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_camera_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -110,7 +94,6 @@ def create_camera_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_camera_global(db: Session, id_camera: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE camera_global SET nr_camera=:nr, id_tip_camera=:tip, id_hotel=:hotel "
@@ -120,14 +103,10 @@ def update_camera_global(db: Session, id_camera: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_camera": id_camera}
 
-
 def delete_camera_global(db: Session, id_camera: int) -> bool:
     db.execute(text("DELETE FROM camera_global WHERE id_camera=:id"), {"id": id_camera})
     db.commit()
     return True
-
-
-# ─── TABELE CENTRALIZATE (read-only via sinonime) ─────────────────────────────
 
 def get_rezervari(db: Session) -> list[dict]:
     rows = db.execute(text(
@@ -135,27 +114,17 @@ def get_rezervari(db: Session) -> list[dict]:
     )).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 def get_plati(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_plata, id_rezervare, suma, data_plata, metoda_plata FROM plata"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 def get_clienti_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_client, nume, prenume, email FROM client"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
-
-# ─── VERIFICARE PROPAGARE (Req 4) ─────────────────────────────────────────────
-#
-# Cu o singura conexiune bdd_global, verificarea se face prin vederea globala.
-# Coloana oras indica in ce fragment fizic se afla inregistrarea:
-#   oras='Bucuresti' → hotel1 / angajat1 / camera1
-#   oras='Constanta' → hotel2 / angajat2 / camera2
 
 def verifica_hotel(db: Session, id_hotel: int) -> dict:
     row = db.execute(text(
@@ -170,7 +139,6 @@ def verifica_hotel(db: Session, id_hotel: int) -> dict:
         "fragment_bucuresti": data if oras == "Bucuresti" else None,
         "fragment_constanta": data if oras == "Constanta" else None,
     }
-
 
 def verifica_angajat(db: Session, id_angajat: int) -> dict:
     row = db.execute(text(
@@ -194,7 +162,6 @@ def verifica_angajat(db: Session, id_angajat: int) -> dict:
         "fragment_constanta": data if oras == "Constanta" else None,
     }
 
-
 def verifica_camera(db: Session, id_camera: int) -> dict:
     row = db.execute(text(
         "SELECT cg.id_camera, cg.nr_camera, cg.id_tip_camera, cg.id_hotel, h.oras "
@@ -215,16 +182,12 @@ def verifica_camera(db: Session, id_camera: int) -> dict:
         "fragment_constanta": data if oras == "Constanta" else None,
     }
 
-
-# ─── CLIENT CRUD ─────────────────────────────────────────────────────────────
-
 def create_client_global(db: Session, data: dict) -> dict:
     db.execute(text(
         "INSERT INTO client (id_client, nume, prenume, email) VALUES (:id, :n, :p, :e)"
     ), {"id": data["id_client"], "n": data["nume"], "p": data["prenume"], "e": data.get("email")})
     db.commit()
     return data
-
 
 def update_client_global(db: Session, id_client: int, data: dict) -> dict:
     db.execute(text(
@@ -233,14 +196,10 @@ def update_client_global(db: Session, id_client: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_client": id_client}
 
-
 def delete_client_global(db: Session, id_client: int) -> bool:
     db.execute(text("DELETE FROM client WHERE id_client=:id"), {"id": id_client})
     db.commit()
     return True
-
-
-# ─── REZERVARE CRUD ───────────────────────────────────────────────────────────
 
 def create_rezervare_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -250,7 +209,6 @@ def create_rezervare_global(db: Session, data: dict) -> dict:
         "s": data["data_start"][:10], "f": data["data_final"][:10]})
     db.commit()
     return data
-
 
 def update_rezervare_global(db: Session, id_rezervare: int, data: dict) -> dict:
     db.execute(text(
@@ -262,14 +220,10 @@ def update_rezervare_global(db: Session, id_rezervare: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_rezervare": id_rezervare}
 
-
 def delete_rezervare_global(db: Session, id_rezervare: int) -> bool:
     db.execute(text("DELETE FROM rezervare WHERE id_rezervare=:id"), {"id": id_rezervare})
     db.commit()
     return True
-
-
-# ─── PLATA CRUD ───────────────────────────────────────────────────────────────
 
 def create_plata_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -279,7 +233,6 @@ def create_plata_global(db: Session, data: dict) -> dict:
         "s": data["suma"], "d": data["data_plata"][:10], "m": data.get("metoda_plata")})
     db.commit()
     return data
-
 
 def update_plata_global(db: Session, id_plata: int, data: dict) -> dict:
     db.execute(text(
@@ -291,21 +244,16 @@ def update_plata_global(db: Session, id_plata: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_plata": id_plata}
 
-
 def delete_plata_global(db: Session, id_plata: int) -> bool:
     db.execute(text("DELETE FROM plata WHERE id_plata=:id"), {"id": id_plata})
     db.commit()
     return True
-
-
-# ─── SERVICIU CRUD ────────────────────────────────────────────────────────────
 
 def get_servicii_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_serviciu, denumire, pret_serviciu FROM serviciu"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_serviciu_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -314,7 +262,6 @@ def create_serviciu_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_serviciu_global(db: Session, id_serviciu: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE serviciu SET denumire=:d, pret_serviciu=:p WHERE id_serviciu=:id"
@@ -322,21 +269,16 @@ def update_serviciu_global(db: Session, id_serviciu: int, data: dict) -> dict:
     db.commit()
     return {**data, "id_serviciu": id_serviciu}
 
-
 def delete_serviciu_global(db: Session, id_serviciu: int) -> bool:
     db.execute(text("DELETE FROM serviciu WHERE id_serviciu=:id"), {"id": id_serviciu})
     db.commit()
     return True
-
-
-# ─── DEPARTAMENT CRUD ─────────────────────────────────────────────────────────
 
 def get_departamente_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_departament, nume_departament FROM departament"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_departament_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -345,7 +287,6 @@ def create_departament_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_departament_global(db: Session, id_departament: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE departament SET nume_departament=:n WHERE id_departament=:id"
@@ -353,21 +294,16 @@ def update_departament_global(db: Session, id_departament: int, data: dict) -> d
     db.commit()
     return {**data, "id_departament": id_departament}
 
-
 def delete_departament_global(db: Session, id_departament: int) -> bool:
     db.execute(text("DELETE FROM departament WHERE id_departament=:id"), {"id": id_departament})
     db.commit()
     return True
-
-
-# ─── TIP CAMERA CRUD ──────────────────────────────────────────────────────────
 
 def get_tipuri_camera_global(db: Session) -> list[dict]:
     rows = db.execute(text(
         "SELECT id_tip_camera, tip_camera, clasa_confort, categorie_camera, pret FROM tip_camera"
     )).fetchall()
     return [dict(r._mapping) for r in rows]
-
 
 def create_tip_camera_global(db: Session, data: dict) -> dict:
     db.execute(text(
@@ -379,7 +315,6 @@ def create_tip_camera_global(db: Session, data: dict) -> dict:
     db.commit()
     return data
 
-
 def update_tip_camera_global(db: Session, id_tip_camera: int, data: dict) -> dict:
     db.execute(text(
         "UPDATE tip_camera SET tip_camera=:tip, clasa_confort=:clasa, "
@@ -389,25 +324,20 @@ def update_tip_camera_global(db: Session, id_tip_camera: int, data: dict) -> dic
     db.commit()
     return {**data, "id_tip_camera": id_tip_camera}
 
-
 def delete_tip_camera_global(db: Session, id_tip_camera: int) -> bool:
     db.execute(text("DELETE FROM tip_camera WHERE id_tip_camera=:id"), {"id": id_tip_camera})
     db.commit()
     return True
 
-
-# ─── STATISTICI DISTRIBUTIE ───────────────────────────────────────────────────
-
 def get_distributie(db: Session) -> list[dict]:
     result = []
-    # Hotel: group by oras directly
+
     rows = db.execute(text(
         "SELECT oras AS fragment, COUNT(*) AS cnt FROM hotel_global GROUP BY oras"
     )).fetchall()
     for r in rows:
         result.append({"entitate": "hotel", "fragment": r[0], "count": r[1]})
 
-    # Angajat: join cu hotel_global pentru oras
     rows = db.execute(text(
         "SELECT h.oras AS fragment, COUNT(*) AS cnt "
         "FROM angajat_global ag JOIN hotel_global h ON ag.id_hotel = h.id_hotel "
@@ -416,7 +346,6 @@ def get_distributie(db: Session) -> list[dict]:
     for r in rows:
         result.append({"entitate": "angajat", "fragment": r[0], "count": r[1]})
 
-    # Camera: join cu hotel_global pentru oras
     rows = db.execute(text(
         "SELECT h.oras AS fragment, COUNT(*) AS cnt "
         "FROM camera_global cg JOIN hotel_global h ON cg.id_hotel = h.id_hotel "

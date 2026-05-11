@@ -1,22 +1,17 @@
-"""Rute CRUD pentru fragmentul LOCAL CONSTANTA (filtrat din vederi globale bdd_global)."""
+"""Rute CRUD pentru fragmentul LOCAL CONSTANTA (bdd@oracle-constanta)."""
 
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
-from session import get_db
+from session import get_db_con
 from crud import local_crud as crud
-from crud import global_crud as central
 
 router = APIRouter(prefix="/local/con", tags=["Local – Constanta"])
 
 _ORAS = "Constanta"
 
-
-# ─── HOTEL2 ───────────────────────────────────────────────────────────────────
-
 @router.get("/hoteluri")
-def list_hoteluri(db: Session = Depends(get_db)):
+def list_hoteluri(db: Session = Depends(get_db_con)):
     return crud.get_hoteluri(db, _ORAS)
-
 
 @router.post("/hoteluri")
 def add_hotel(
@@ -25,13 +20,12 @@ def add_hotel(
     oras: str        = Form(...),
     nr_stele: int    = Form(None),
     capacitate: int  = Form(None),
-    db: Session      = Depends(get_db),
+    db: Session      = Depends(get_db_con),
 ):
     return crud.create_hotel(db, {
         "id_hotel": id_hotel, "nume_hotel": nume_hotel, "oras": oras,
         "nr_stele": nr_stele, "capacitate": capacitate,
     })
-
 
 @router.put("/hoteluri/{id_hotel}")
 def edit_hotel(
@@ -40,26 +34,21 @@ def edit_hotel(
     oras: str       = Form(...),
     nr_stele: int   = Form(None),
     capacitate: int = Form(None),
-    db: Session     = Depends(get_db),
+    db: Session     = Depends(get_db_con),
 ):
     return crud.update_hotel(db, id_hotel, {
         "nume_hotel": nume_hotel, "oras": oras,
         "nr_stele": nr_stele, "capacitate": capacitate,
     })
 
-
 @router.delete("/hoteluri/{id_hotel}")
-def remove_hotel(id_hotel: int, db: Session = Depends(get_db)):
-    crud.delete_hotel(db, id_hotel)
+def remove_hotel(id_hotel: int, db: Session = Depends(get_db_con)):
+    crud.delete_hotel(db, id_hotel, _ORAS)
     return {"success": True}
 
-
-# ─── ANGAJAT2 ─────────────────────────────────────────────────────────────────
-
 @router.get("/angajati")
-def list_angajati(db: Session = Depends(get_db)):
+def list_angajati(db: Session = Depends(get_db_con)):
     return crud.get_angajati(db, _ORAS)
-
 
 @router.post("/angajati")
 def add_angajat(
@@ -73,15 +62,14 @@ def add_angajat(
     id_hotel: int       = Form(...),
     cnp: str            = Form(None),
     data_angajare: str  = Form(None),
-    db: Session         = Depends(get_db),
+    db: Session         = Depends(get_db_con),
 ):
     return crud.create_angajat(db, {
         "id_angajat": id_angajat, "nume": nume, "prenume": prenume,
         "functie": functie, "salariu": salariu,
         "id_departament": id_departament, "id_serviciu": id_serviciu,
         "id_hotel": id_hotel, "cnp": cnp, "data_angajare": data_angajare,
-    })
-
+    }, _ORAS)
 
 @router.put("/angajati/{id_angajat}")
 def edit_angajat(
@@ -95,27 +83,22 @@ def edit_angajat(
     id_hotel: int       = Form(...),
     cnp: str            = Form(None),
     data_angajare: str  = Form(None),
-    db: Session         = Depends(get_db),
+    db: Session         = Depends(get_db_con),
 ):
     return crud.update_angajat(db, id_angajat, {
         "nume": nume, "prenume": prenume, "functie": functie, "salariu": salariu,
         "id_departament": id_departament, "id_serviciu": id_serviciu,
         "id_hotel": id_hotel, "cnp": cnp, "data_angajare": data_angajare,
-    })
-
+    }, _ORAS)
 
 @router.delete("/angajati/{id_angajat}")
-def remove_angajat(id_angajat: int, db: Session = Depends(get_db)):
-    crud.delete_angajat(db, id_angajat)
+def remove_angajat(id_angajat: int, db: Session = Depends(get_db_con)):
+    crud.delete_angajat(db, id_angajat, _ORAS)
     return {"success": True}
 
-
-# ─── CAMERA2 ──────────────────────────────────────────────────────────────────
-
 @router.get("/camere")
-def list_camere(db: Session = Depends(get_db)):
+def list_camere(db: Session = Depends(get_db_con)):
     return crud.get_camere(db, _ORAS)
-
 
 @router.post("/camere")
 def add_camera(
@@ -123,13 +106,12 @@ def add_camera(
     nr_camera: int     = Form(...),
     id_tip_camera: int = Form(...),
     id_hotel: int      = Form(...),
-    db: Session        = Depends(get_db),
+    db: Session        = Depends(get_db_con),
 ):
     return crud.create_camera(db, {
         "id_camera": id_camera, "nr_camera": nr_camera,
         "id_tip_camera": id_tip_camera, "id_hotel": id_hotel,
-    })
-
+    }, _ORAS)
 
 @router.put("/camere/{id_camera}")
 def edit_camera(
@@ -137,44 +119,32 @@ def edit_camera(
     nr_camera: int     = Form(...),
     id_tip_camera: int = Form(...),
     id_hotel: int      = Form(...),
-    db: Session        = Depends(get_db),
+    db: Session        = Depends(get_db_con),
 ):
     return crud.update_camera(db, id_camera, {
         "nr_camera": nr_camera, "id_tip_camera": id_tip_camera, "id_hotel": id_hotel,
-    })
-
+    }, _ORAS)
 
 @router.delete("/camere/{id_camera}")
-def remove_camera(id_camera: int, db: Session = Depends(get_db)):
-    crud.delete_camera(db, id_camera)
+def remove_camera(id_camera: int, db: Session = Depends(get_db_con)):
+    crud.delete_camera(db, id_camera, _ORAS)
     return {"success": True}
 
-
-# ─── TABELE REPLICATE ─────────────────────────────────────────────────────────
-
 @router.get("/clienti")
-def list_clienti(db: Session = Depends(get_db)):
+def list_clienti(db: Session = Depends(get_db_con)):
     return crud.get_clienti(db)
 
-
 @router.get("/servicii")
-def list_servicii(db: Session = Depends(get_db)):
+def list_servicii(db: Session = Depends(get_db_con)):
     return crud.get_servicii(db)
 
-
-# ─── REFERINTA ────────────────────────────────────────────────────────────────
-
 @router.get("/referinta/tipuri_camera")
-def ref_tip_camere(db: Session = Depends(get_db)):
+def ref_tip_camere(db: Session = Depends(get_db_con)):
     return crud.get_tip_camere(db)
 
-
 @router.get("/referinta/departamente")
-def ref_departamente(db: Session = Depends(get_db)):
+def ref_departamente(db: Session = Depends(get_db_con)):
     return crud.get_departamente(db)
-
-
-# ─── TABELE CENTRALIZATE – CRUD COMPLET ───────────────────────────────────────
 
 @router.post("/clienti")
 def add_client(
@@ -182,12 +152,11 @@ def add_client(
     nume: str      = Form(...),
     prenume: str   = Form(...),
     email: str     = Form(None),
-    db: Session    = Depends(get_db),
+    db: Session    = Depends(get_db_con),
 ):
     return crud.create_client_central(db, {
         "id_client": id_client, "nume": nume, "prenume": prenume, "email": email,
     })
-
 
 @router.put("/clienti/{id_client}")
 def edit_client(
@@ -195,23 +164,20 @@ def edit_client(
     nume: str    = Form(...),
     prenume: str = Form(...),
     email: str   = Form(None),
-    db: Session  = Depends(get_db),
+    db: Session  = Depends(get_db_con),
 ):
     return crud.update_client_central(db, id_client, {
         "nume": nume, "prenume": prenume, "email": email,
     })
 
-
 @router.delete("/clienti/{id_client}")
-def remove_client(id_client: int, db: Session = Depends(get_db)):
+def remove_client(id_client: int, db: Session = Depends(get_db_con)):
     crud.delete_client_central(db, id_client)
     return {"success": True}
 
-
 @router.get("/rezervari")
-def list_rezervari(db: Session = Depends(get_db)):
-    return central.get_rezervari(db)
-
+def list_rezervari(db: Session = Depends(get_db_con)):
+    return crud.get_rezervari(db)
 
 @router.post("/rezervari")
 def add_rezervare(
@@ -219,13 +185,12 @@ def add_rezervare(
     id_client: int    = Form(...),
     data_start: str   = Form(...),
     data_final: str   = Form(...),
-    db: Session       = Depends(get_db),
+    db: Session       = Depends(get_db_con),
 ):
     return crud.create_rezervare_central(db, {
         "id_rezervare": id_rezervare, "id_client": id_client,
         "data_start": data_start, "data_final": data_final,
     })
-
 
 @router.put("/rezervari/{id_rezervare}")
 def edit_rezervare(
@@ -233,23 +198,20 @@ def edit_rezervare(
     id_client: int  = Form(...),
     data_start: str = Form(...),
     data_final: str = Form(...),
-    db: Session     = Depends(get_db),
+    db: Session     = Depends(get_db_con),
 ):
     return crud.update_rezervare_central(db, id_rezervare, {
         "id_client": id_client, "data_start": data_start, "data_final": data_final,
     })
 
-
 @router.delete("/rezervari/{id_rezervare}")
-def remove_rezervare(id_rezervare: int, db: Session = Depends(get_db)):
+def remove_rezervare(id_rezervare: int, db: Session = Depends(get_db_con)):
     crud.delete_rezervare_central(db, id_rezervare)
     return {"success": True}
 
-
 @router.get("/plati")
-def list_plati(db: Session = Depends(get_db)):
+def list_plati(db: Session = Depends(get_db_con)):
     return crud.get_plati_central(db)
-
 
 @router.post("/plati")
 def add_plata(
@@ -258,13 +220,12 @@ def add_plata(
     suma: float       = Form(...),
     data_plata: str   = Form(...),
     metoda_plata: str = Form(None),
-    db: Session       = Depends(get_db),
+    db: Session       = Depends(get_db_con),
 ):
     return crud.create_plata_central(db, {
         "id_plata": id_plata, "id_rezervare": id_rezervare,
         "suma": suma, "data_plata": data_plata, "metoda_plata": metoda_plata,
     })
-
 
 @router.put("/plati/{id_plata}")
 def edit_plata(
@@ -273,87 +234,77 @@ def edit_plata(
     suma: float       = Form(...),
     data_plata: str   = Form(...),
     metoda_plata: str = Form(None),
-    db: Session       = Depends(get_db),
+    db: Session       = Depends(get_db_con),
 ):
     return crud.update_plata_central(db, id_plata, {
         "id_rezervare": id_rezervare, "suma": suma,
         "data_plata": data_plata, "metoda_plata": metoda_plata,
     })
 
-
 @router.delete("/plati/{id_plata}")
-def remove_plata(id_plata: int, db: Session = Depends(get_db)):
+def remove_plata(id_plata: int, db: Session = Depends(get_db_con)):
     crud.delete_plata_central(db, id_plata)
     return {"success": True}
-
 
 @router.post("/servicii")
 def add_serviciu(
     id_serviciu: int     = Form(...),
     denumire: str        = Form(...),
     pret_serviciu: float = Form(...),
-    db: Session          = Depends(get_db),
+    db: Session          = Depends(get_db_con),
 ):
     return crud.create_serviciu_central(db, {
         "id_serviciu": id_serviciu, "denumire": denumire, "pret_serviciu": pret_serviciu,
     })
-
 
 @router.put("/servicii/{id_serviciu}")
 def edit_serviciu(
     id_serviciu: int,
     denumire: str        = Form(...),
     pret_serviciu: float = Form(...),
-    db: Session          = Depends(get_db),
+    db: Session          = Depends(get_db_con),
 ):
     return crud.update_serviciu_central(db, id_serviciu, {
         "denumire": denumire, "pret_serviciu": pret_serviciu,
     })
 
-
 @router.delete("/servicii/{id_serviciu}")
-def remove_serviciu(id_serviciu: int, db: Session = Depends(get_db)):
+def remove_serviciu(id_serviciu: int, db: Session = Depends(get_db_con)):
     crud.delete_serviciu_central(db, id_serviciu)
     return {"success": True}
 
-
 @router.get("/departamente")
-def list_departamente(db: Session = Depends(get_db)):
+def list_departamente(db: Session = Depends(get_db_con)):
     return crud.get_departamente(db)
-
 
 @router.post("/departamente")
 def add_departament(
     id_departament: int   = Form(...),
     nume_departament: str = Form(...),
-    db: Session           = Depends(get_db),
+    db: Session           = Depends(get_db_con),
 ):
     return crud.create_departament_central(db, {
         "id_departament": id_departament, "nume_departament": nume_departament,
     })
 
-
 @router.put("/departamente/{id_departament}")
 def edit_departament(
     id_departament: int,
     nume_departament: str = Form(...),
-    db: Session           = Depends(get_db),
+    db: Session           = Depends(get_db_con),
 ):
     return crud.update_departament_central(db, id_departament, {
         "nume_departament": nume_departament,
     })
 
-
 @router.delete("/departamente/{id_departament}")
-def remove_departament(id_departament: int, db: Session = Depends(get_db)):
+def remove_departament(id_departament: int, db: Session = Depends(get_db_con)):
     crud.delete_departament_central(db, id_departament)
     return {"success": True}
 
-
 @router.get("/tipuri_camera")
-def list_tipuri_camera(db: Session = Depends(get_db)):
+def list_tipuri_camera(db: Session = Depends(get_db_con)):
     return crud.get_tipuri_camera_central(db)
-
 
 @router.post("/tipuri_camera")
 def add_tip_camera(
@@ -362,13 +313,12 @@ def add_tip_camera(
     clasa_confort: str    = Form(None),
     categorie_camera: str = Form(None),
     pret: float           = Form(...),
-    db: Session           = Depends(get_db),
+    db: Session           = Depends(get_db_con),
 ):
     return crud.create_tip_camera_central(db, {
         "id_tip_camera": id_tip_camera, "tip_camera": tip_camera,
         "clasa_confort": clasa_confort, "categorie_camera": categorie_camera, "pret": pret,
     })
-
 
 @router.put("/tipuri_camera/{id_tip_camera}")
 def edit_tip_camera(
@@ -377,17 +327,14 @@ def edit_tip_camera(
     clasa_confort: str    = Form(None),
     categorie_camera: str = Form(None),
     pret: float           = Form(...),
-    db: Session           = Depends(get_db),
+    db: Session           = Depends(get_db_con),
 ):
     return crud.update_tip_camera_central(db, id_tip_camera, {
         "tip_camera": tip_camera, "clasa_confort": clasa_confort,
         "categorie_camera": categorie_camera, "pret": pret,
     })
 
-
 @router.delete("/tipuri_camera/{id_tip_camera}")
-def remove_tip_camera(id_tip_camera: int, db: Session = Depends(get_db)):
+def remove_tip_camera(id_tip_camera: int, db: Session = Depends(get_db_con)):
     crud.delete_tip_camera_central(db, id_tip_camera)
     return {"success": True}
-
-

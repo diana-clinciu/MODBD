@@ -68,7 +68,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // CLIENT CRUD
   Future<void> addClient(Client client) async {
     final newClient = await otlpService.addClient(client);
     clients.add(newClient);
@@ -88,7 +87,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // REZERVARE CRUD
   Future<void> addRezervare(Rezervare rezervare) async {
     final newRezervare = await otlpService.addRezervare(rezervare);
     rezervari.add(newRezervare);
@@ -108,7 +106,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // CAMERA CRUD
   Future<void> addCamera(Camera camera) async {
     final newCamera = await otlpService.addCamera(camera);
     camere.add(newCamera);
@@ -128,7 +125,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // SERVICIU CRUD
   Future<void> addServiciu(Serviciu serviciu) async {
     final newServiciu = await otlpService.addServiciu(serviciu);
     servicii.add(newServiciu);
@@ -148,7 +144,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // PLATA CRUD
   Future<void> addPlata(Plata plata) async {
     final newPlata = await otlpService.addPlata(plata);
     plati.add(newPlata);
@@ -168,7 +163,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ANGAJAT CRUD
   Future<void> addAngajat(Angajat angajat) async {
     final newAngajat = await otlpService.addAngajat(angajat);
     angajati.add(newAngajat);
@@ -188,7 +182,6 @@ class OLTPViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // EVENIMENT CRUD
   Future<void> addEveniment(Eveniment eveniment) async {
     final newEveniment = await otlpService.addEveniment(eveniment);
     evenimente.add(newEveniment);

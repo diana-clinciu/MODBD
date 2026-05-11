@@ -44,7 +44,6 @@ def update_rezervare(
         raise HTTPException(status_code=404, detail="Rezervare not found")
     return updated
 
-
 @router.post("/rezervari/delete/{id}")
 def delete_rezervare(id: int, db: Session = Depends(get_db)):
     deleted = crud.delete_rezervare(db, id)

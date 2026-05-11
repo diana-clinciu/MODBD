@@ -2180,3 +2180,6 @@ FROM (
 )
 WHERE rank_salariu <= 3;
 SELECT * FROM TABLE(dbms_xplan.display('PLAN_TABLE', 'plan_cost_angajat_index', 'SERIAL'));
+
+CREATE OR REPLACE SYNONYM bdd.angajat_date_personale FOR bdd_global.angajat_date_personale;
+CREATE OR REPLACE SYNONYM angajat_date_personale FOR bdd_global.angajat_date_personale@bd_bucuresti

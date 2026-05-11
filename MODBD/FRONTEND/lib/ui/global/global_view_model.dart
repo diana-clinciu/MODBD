@@ -63,8 +63,6 @@ class GlobalViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── HOTEL ──────────────────────────────────────────────────────────────────
-
   Future<void> addHotel(Hotel h) async {
     await _service.addHotel(h);
     await loadAll();
@@ -79,8 +77,6 @@ class GlobalViewModel extends ChangeNotifier {
     await _service.deleteHotel(id);
     await loadAll();
   }
-
-  // ── ANGAJAT ────────────────────────────────────────────────────────────────
 
   Future<void> addAngajat(AngajatGlobal a) async {
     await _service.addAngajat(a);
@@ -97,8 +93,6 @@ class GlobalViewModel extends ChangeNotifier {
     await loadAll();
   }
 
-  // ── CAMERA ─────────────────────────────────────────────────────────────────
-
   Future<void> addCamera(CameraLocal c) async {
     await _service.addCamera(c);
     await loadAll();
@@ -113,8 +107,6 @@ class GlobalViewModel extends ChangeNotifier {
     await _service.deleteCamera(id);
     await loadAll();
   }
-
-  // ── CLIENT ─────────────────────────────────────────────────────────────────
 
   Future<void> addClient(Client c) async {
     await _service.addClient(c);
@@ -131,8 +123,6 @@ class GlobalViewModel extends ChangeNotifier {
     await loadAll();
   }
 
-  // ── REZERVARE ──────────────────────────────────────────────────────────────
-
   Future<void> addRezervare(Rezervare r) async {
     await _service.addRezervare(r);
     await loadAll();
@@ -147,8 +137,6 @@ class GlobalViewModel extends ChangeNotifier {
     await _service.deleteRezervare(id);
     await loadAll();
   }
-
-  // ── PLATA ──────────────────────────────────────────────────────────────────
 
   Future<void> addPlata(Plata p) async {
     await _service.addPlata(p);
@@ -165,8 +153,6 @@ class GlobalViewModel extends ChangeNotifier {
     await loadAll();
   }
 
-  // ── SERVICIU ───────────────────────────────────────────────────────────────
-
   Future<void> addServiciu(Serviciu s) async {
     await _service.addServiciu(s);
     await loadAll();
@@ -181,8 +167,6 @@ class GlobalViewModel extends ChangeNotifier {
     await _service.deleteServiciu(id);
     await loadAll();
   }
-
-  // ── DEPARTAMENT ────────────────────────────────────────────────────────────
 
   Future<void> addDepartament(Departament d) async {
     await _service.addDepartament(d);
@@ -199,8 +183,6 @@ class GlobalViewModel extends ChangeNotifier {
     await loadAll();
   }
 
-  // ── TIP CAMERA ─────────────────────────────────────────────────────────────
-
   Future<void> addTipCamera(TipCamera t) async {
     await _service.addTipCamera(t);
     await loadAll();
@@ -215,8 +197,6 @@ class GlobalViewModel extends ChangeNotifier {
     await _service.deleteTipCamera(id);
     await loadAll();
   }
-
-  // ── VERIFICARE PROPAGARE (Req 4) ───────────────────────────────────────────
 
   Future<void> verificaHotel(int id) async {
     verificareLoading = true;

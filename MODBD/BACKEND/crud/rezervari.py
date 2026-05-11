@@ -44,7 +44,7 @@ def update_rezervare(db: Session, id: int, rezervare_data: RezervareCreate):
     rezervare.data_final = rezervare_data.data_final
     db.commit()
     db.refresh(rezervare)
-    
+
     return RezervareResponse(
         id_rezervare=rezervare.id_rezervare,
         clientName=rezervare.client.nume + " " + rezervare.client.prenume,

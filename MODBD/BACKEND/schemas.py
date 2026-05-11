@@ -2,7 +2,6 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import date, datetime
 
-# Client
 class ClientBase(BaseModel):
     nume: str
     prenume: str
@@ -16,7 +15,6 @@ class Client(ClientBase):
     class Config:
         orm_mode = True
 
-# Rezervare
 class RezervareBase(BaseModel):
     data_start: date
     data_final: date
@@ -33,7 +31,6 @@ class RezervareResponse(BaseModel):
     class Config:
         orm_mode = True
 
-# Camera
 class CameraBase(BaseModel):
     nr_camera: int
     tip_camera: str
@@ -49,7 +46,6 @@ class Camera(CameraBase):
     class Config:
         orm_mode = True
 
-# Serviciu
 class ServiciuBase(BaseModel):
     denumire: str
     pret: float
@@ -68,7 +64,6 @@ class Serviciu(ServiciuBase):
     class Config:
         orm_mode = True
 
-# Plata
 class PlataBase(BaseModel):
     id_rezervare: int
     suma: float
@@ -83,7 +78,6 @@ class Plata(PlataBase):
     class Config:
         orm_mode = True
 
-# Angajat
 class AngajatBase(BaseModel):
     nume: str
     prenume: str
@@ -99,7 +93,6 @@ class Angajat(AngajatBase):
     class Config:
         orm_mode = True
 
-# Eveniment
 class EvenimentBase(BaseModel):
     nume_eveniment: str = Field(..., alias="nume_eveniment")
     data_eveniment: datetime = Field(..., alias="data_eveniment")

@@ -5,7 +5,7 @@ from datetime import datetime
 
 class Client(Base):
     __tablename__ = 'CLIENT'
-    __table_args__ = {'schema': 'ALEXIA'} 
+    __table_args__ = {'schema': 'ALEXIA'}
 
     id_client = Column("ID_CLIENT", Integer, primary_key=True, index=True)
     nume = Column("NUME", String(30), nullable=False)
@@ -24,7 +24,6 @@ class Rezervare(Base):
     data_final = Column("DATA_FINAL", Date, nullable=False)
 
     client = relationship("Client", back_populates="rezervari")
-
 
 class Camera(Base):
     __tablename__ = 'CAMERA'

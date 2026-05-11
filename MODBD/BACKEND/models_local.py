@@ -11,9 +11,6 @@ deoarece se afla pe motoare (engines) diferite.
 from sqlalchemy import Column, Integer, String, Float
 from database import Base
 
-
-# ─── HOTEL ────────────────────────────────────────────────────────────────────
-
 class Hotel1(Base):
     __tablename__ = "hotel1"
     id_hotel   = Column("ID_HOTEL",   Integer, primary_key=True)
@@ -22,7 +19,6 @@ class Hotel1(Base):
     nr_stele   = Column("NR_STELE",   Integer)
     capacitate = Column("CAPACITATE", Integer)
 
-
 class Hotel2(Base):
     __tablename__ = "hotel2"
     id_hotel   = Column("ID_HOTEL",   Integer, primary_key=True)
@@ -30,9 +26,6 @@ class Hotel2(Base):
     oras       = Column("ORAS",       String(30), nullable=False)
     nr_stele   = Column("NR_STELE",   Integer)
     capacitate = Column("CAPACITATE", Integer)
-
-
-# ─── ANGAJAT (fara cnp/data_angajare – fragment vertical stocat in bdd_global) ─
 
 class Angajat1(Base):
     __tablename__ = "angajat1"
@@ -45,7 +38,6 @@ class Angajat1(Base):
     id_serviciu    = Column("ID_SERVICIU",    Integer)
     id_hotel       = Column("ID_HOTEL",       Integer, nullable=False)
 
-
 class Angajat2(Base):
     __tablename__ = "angajat2"
     id_angajat     = Column("ID_ANGAJAT",     Integer, primary_key=True)
@@ -57,9 +49,6 @@ class Angajat2(Base):
     id_serviciu    = Column("ID_SERVICIU",    Integer)
     id_hotel       = Column("ID_HOTEL",       Integer, nullable=False)
 
-
-# ─── CAMERA ───────────────────────────────────────────────────────────────────
-
 class Camera1(Base):
     __tablename__ = "camera1"
     id_camera     = Column("ID_CAMERA",     Integer, primary_key=True)
@@ -67,16 +56,12 @@ class Camera1(Base):
     id_tip_camera = Column("ID_TIP_CAMERA", Integer, nullable=False)
     id_hotel      = Column("ID_HOTEL",      Integer, nullable=False)
 
-
 class Camera2(Base):
     __tablename__ = "camera2"
     id_camera     = Column("ID_CAMERA",     Integer, primary_key=True)
     nr_camera     = Column("NR_CAMERA",     Integer, nullable=False)
     id_tip_camera = Column("ID_TIP_CAMERA", Integer, nullable=False)
     id_hotel      = Column("ID_HOTEL",      Integer, nullable=False)
-
-
-# ─── TABELE REPLICATE (disponibile pe CONSTANTA prin schema bdd) ──────────────
 
 class TipCameraReplica(Base):
     __tablename__ = "tip_camera"
@@ -86,19 +71,16 @@ class TipCameraReplica(Base):
     categorie_camera = Column("CATEGORIE_CAMERA", String(30), nullable=False)
     pret             = Column("PRET",             Float, nullable=False)
 
-
 class ServiciuReplica(Base):
     __tablename__ = "serviciu"
     id_serviciu   = Column("ID_SERVICIU",   Integer, primary_key=True)
     denumire      = Column("DENUMIRE",      String(50), nullable=False)
     pret_serviciu = Column("PRET_SERVICIU", Float, nullable=False)
 
-
 class DepartamentReplica(Base):
     __tablename__ = "departament"
     id_departament   = Column("ID_DEPARTAMENT",   Integer, primary_key=True)
     nume_departament = Column("NUME_DEPARTAMENT", String(50), nullable=False)
-
 
 class ClientReplica(Base):
     __tablename__ = "client"

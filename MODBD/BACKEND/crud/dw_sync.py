@@ -4,7 +4,6 @@ from sqlalchemy import text
 def propagate_dw(db: Session):
     results = {}
 
-    # DIM_CLIENT
     db.execute(text("ALTER TABLE dim_client ENABLE CONSTRAINT UQ_DIM_CLIENT_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_client (id_client_dim, id_client_oltp, nume, prenume, email)
@@ -19,7 +18,6 @@ def propagate_dw(db: Session):
     results['dim_client_inserted'] = res.rowcount
     results['dim_client'] = db.execute(text("SELECT COUNT(*) FROM dim_client")).scalar()
 
-    # DIM_CAMERA
     db.execute(text("ALTER TABLE dim_camera ENABLE CONSTRAINT UQ_DIM_CAMERA_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_camera (id_camera_dim, id_camera_oltp, nr_camera, tip_camera, categorie_camera, clasa_confort, pret)
@@ -34,7 +32,6 @@ def propagate_dw(db: Session):
     results['dim_camera_inserted'] = res.rowcount
     results['dim_camera'] = db.execute(text("SELECT COUNT(*) FROM dim_camera")).scalar()
 
-    # DIM_SERVICIU
     db.execute(text("ALTER TABLE dim_serviciu ENABLE CONSTRAINT UQ_DIM_SERVICIU_OLTP"))
     res = db.execute(text("""
         INSERT INTO dim_serviciu (id_serviciu_dim, id_serviciu_oltp, denumire, pret_serviciu)
@@ -49,7 +46,6 @@ def propagate_dw(db: Session):
     results['dim_serviciu_inserted'] = res.rowcount
     results['dim_serviciu'] = db.execute(text("SELECT COUNT(*) FROM dim_serviciu")).scalar()
 
-    # DIM_EVENIMENT
     db.execute(text("ALTER TABLE dim_eveniment ENABLE CONSTRAINT UQ_DIM_EVENIMENT_OLTP"))
     db.execute(text("ALTER TABLE dim_eveniment ENABLE CONSTRAINT UQ_DIM_EVENIMENT_NUME_DATA"))
     res = db.execute(text("""
@@ -65,7 +61,6 @@ def propagate_dw(db: Session):
     results['dim_eveniment_inserted'] = res.rowcount
     results['dim_eveniment'] = db.execute(text("SELECT COUNT(*) FROM dim_eveniment")).scalar()
 
-    # DIM_TIMP
     res = db.execute(text("""
         INSERT INTO dim_timp (data_completa, zi, luna, an, luna_an)
         SELECT
@@ -90,7 +85,6 @@ def propagate_dw(db: Session):
     results['dim_timp_inserted'] = res.rowcount
     results['dim_timp'] = db.execute(text("SELECT COUNT(*) FROM dim_timp")).scalar()
 
-    # DIM_METODA_PLATA
     db.execute(text("ALTER TABLE dim_metoda_plata ENABLE CONSTRAINT UQ_DIM_METODA_PLATA"))
     res = db.execute(text("""
         INSERT INTO dim_metoda_plata (id_metoda_plata_dim, metoda_plata, tip_tranzactie)

@@ -46,7 +46,6 @@ class OtlpService {
     return evenimente;
   }
 
-  // CLIENT CRUD
   Future<Client> addClient(Client client) async {
     final addedClient = await bookingApi.addClient(client);
     return addedClient;
@@ -61,7 +60,6 @@ class OtlpService {
     await bookingApi.deleteClient(id_client);
   }
 
-  // REZERVARE CRUD
   Future<Rezervare> addRezervare(Rezervare rezervare) async {
     final addedRezervare = await bookingApi.addRezervare(rezervare);
     return addedRezervare;
@@ -76,7 +74,6 @@ class OtlpService {
     await bookingApi.deleteRezervare(id_rezervare);
   }
 
-  // CAMERA CRUD
   Future<Camera> addCamera(Camera camera) async {
     final addedCamera = await bookingApi.addCamera(camera);
     return addedCamera;
@@ -91,7 +88,6 @@ class OtlpService {
     await bookingApi.deleteCamera(id_camera);
   }
 
-  // SERVICIU CRUD
   Future<Serviciu> addServiciu(Serviciu serviciu) async {
     final addedServiciu = await bookingApi.addServiciu(serviciu);
     return addedServiciu;
@@ -106,7 +102,6 @@ class OtlpService {
     await bookingApi.deleteServiciu(id_serviciu);
   }
 
-  // PLATA CRUD
   Future<Plata> addPlata(Plata plata) async {
     final addedPlata = await bookingApi.addPlata(plata);
     return addedPlata;
@@ -121,7 +116,6 @@ class OtlpService {
     await bookingApi.deletePlata(id_plata);
   }
 
-  // ANGAJAT CRUD
   Future<Angajat> addAngajat(Angajat angajat) async {
     final addedAngajat = await bookingApi.addAngajat(angajat);
     return addedAngajat;
@@ -136,7 +130,6 @@ class OtlpService {
     await bookingApi.deleteAngajat(id_angajat);
   }
 
-  // EVENIMENT CRUD
   Future<Eveniment> addEveniment(Eveniment eveniment) async {
     final addedEveniment = await bookingApi.addEveniment(eveniment);
     return addedEveniment;

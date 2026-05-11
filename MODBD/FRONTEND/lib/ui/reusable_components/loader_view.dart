@@ -83,7 +83,6 @@ class GradientLoaderPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
 
-    // Create gradient shader
     final gradient = SweepGradient(
       colors: colors,
       stops: const [0.0, 0.7, 1.0],
@@ -98,11 +97,10 @@ class GradientLoaderPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..shader = gradient.createShader(rect);
 
-    // Draw the arc (partial circle)
     canvas.drawArc(
       rect,
-      -math.pi / 2, // Start from top
-      1.5 * math.pi, // Draw 3/4 of the circle
+      -math.pi / 2,
+      1.5 * math.pi,
       false,
       paint,
     );

@@ -12,7 +12,6 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/models/departament.dart';
 import 'package:mvvm_flutter/models/tip_camera.dart';
 
-
 class GlobalScreen extends StatefulWidget {
   const GlobalScreen({super.key});
 
@@ -134,8 +133,6 @@ class _GlobalScreenState extends State<GlobalScreen>
   }
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-
 Future<bool> _confirmG(BuildContext context, String? message) async {
   return await showDialog<bool>(
         context: context,
@@ -168,8 +165,6 @@ Widget _buildTab({
     floatingActionButton: FloatingActionButton(onPressed: onAdd, child: const Icon(Icons.add)),
   );
 }
-
-// ── VERIFICARE WIDGET ─────────────────────────────────────────────────────────
 
 class _VerificareWidget extends StatelessWidget {
   final Map<String?, dynamic> data;
@@ -231,8 +226,6 @@ class _FragmentCard extends StatelessWidget {
   }
 }
 
-// ── HOTEL TAB ─────────────────────────────────────────────────────────────────
-
 class _HotelGlobalTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _HotelGlobalTab({required this.vm});
@@ -269,8 +262,6 @@ class _HotelGlobalTab extends StatelessWidget {
     );
   }
 }
-
-// ── ANGAJAT TAB ───────────────────────────────────────────────────────────────
 
 class _AngajatGlobalTab extends StatelessWidget {
   final GlobalViewModel vm;
@@ -309,8 +300,6 @@ class _AngajatGlobalTab extends StatelessWidget {
   }
 }
 
-// ── CAMERA TAB ────────────────────────────────────────────────────────────────
-
 class _CameraGlobalTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _CameraGlobalTab({required this.vm});
@@ -348,8 +337,6 @@ class _CameraGlobalTab extends StatelessWidget {
   }
 }
 
-// ── CLIENT TAB ────────────────────────────────────────────────────────────────
-
 class _ClientTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _ClientTab({required this.vm});
@@ -384,8 +371,6 @@ class _ClientTab extends StatelessWidget {
     );
   }
 }
-
-// ── REZERVARE TAB ─────────────────────────────────────────────────────────────
 
 class _RezervareTab extends StatelessWidget {
   final GlobalViewModel vm;
@@ -424,8 +409,6 @@ class _RezervareTab extends StatelessWidget {
   }
 }
 
-// ── PLATA TAB ─────────────────────────────────────────────────────────────────
-
 class _PlataTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _PlataTab({required this.vm});
@@ -462,8 +445,6 @@ class _PlataTab extends StatelessWidget {
   }
 }
 
-// ── SERVICIU TAB ──────────────────────────────────────────────────────────────
-
 class _ServiciuTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _ServiciuTab({required this.vm});
@@ -499,8 +480,6 @@ class _ServiciuTab extends StatelessWidget {
   }
 }
 
-// ── DEPARTAMENT TAB ───────────────────────────────────────────────────────────
-
 class _DepartamentTab extends StatelessWidget {
   final GlobalViewModel vm;
   const _DepartamentTab({required this.vm});
@@ -535,8 +514,6 @@ class _DepartamentTab extends StatelessWidget {
     );
   }
 }
-
-// ── TIP CAMERA TAB ────────────────────────────────────────────────────────────
 
 class _TipCameraTab extends StatelessWidget {
   final GlobalViewModel vm;

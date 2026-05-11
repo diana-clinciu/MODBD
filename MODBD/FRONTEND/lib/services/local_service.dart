@@ -10,7 +10,6 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/models/rezervare.dart';
 import 'package:mvvm_flutter/models/plata.dart';
 
-
 class LocalService {
   final LocalApi _api = GetIt.instance.get<LocalApi>();
 

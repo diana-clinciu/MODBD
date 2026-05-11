@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Dict, List
-from session import get_db 
+from session import get_db
 
 router = APIRouter(prefix="/dw", tags=["DW - Rapoarte"])
 
 def run_query(db: Session, query: str) -> List[Dict]:
     try:
         result = db.execute(text(query))
-        
+
         columns = result.keys()
         rows = result.fetchall()
 
@@ -27,7 +27,7 @@ def run_query_raport3(db: Session, query: str) -> List[Dict]:
     try:
         with db.connection() as conn:
             result = conn.execute(text(query))
-            rows = result.mappings().all()  # fiecare rând devine dict
+            rows = result.mappings().all()
             if not rows:
                 print("Raport 3: Query-ul nu a returnat rezultate")
                 return []
@@ -94,7 +94,7 @@ def raport3(db: Session = Depends(get_db)) -> List[Dict]:
         SELECT
             id_client_dim,
             SUM(suma_totala) as total_cheltuit,
-            NTILE(20) OVER (ORDER BY SUM(suma_totala) DESC) as tile 
+            NTILE(20) OVER (ORDER BY SUM(suma_totala) DESC) as tile
         FROM fact_rezervari
         GROUP BY id_client_dim
     )
@@ -121,7 +121,7 @@ def raport3(db: Session = Depends(get_db)) -> List[Dict]:
 def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
     WITH venituri_anuale AS (
-    SELECT 
+    SELECT
         c.categorie_camera,
         AVG(f.suma_totala) as venit_mediu_anual
     FROM fact_rezervari f
@@ -131,7 +131,7 @@ def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     GROUP BY c.categorie_camera
     ),
     venituri_trimestriale AS (
-    SELECT 
+    SELECT
         c.categorie_camera,
         CEIL(t.luna / 3.0) as trimestru,
         COUNT(*) as numar_rezervari,
@@ -142,13 +142,13 @@ def raport4(db: Session = Depends(get_db)) -> List[Dict]:
     WHERE t.an = 2025
     GROUP BY c.categorie_camera, CEIL(t.luna / 3.0)
     )
-    SELECT 
+    SELECT
         vt.categorie_camera,
         vt.trimestru,
         vt.numar_rezervari,
         ROUND(vt.venit_mediu_rezervare, 2) as venit_mediu_rezervare,
         ROUND(
-            ((vt.venit_mediu_rezervare - va.venit_mediu_anual) / va.venit_mediu_anual) * 100, 
+            ((vt.venit_mediu_rezervare - va.venit_mediu_anual) / va.venit_mediu_anual) * 100,
             2
         ) as diferenta_procentuala_fata_de_medie_anuala
     FROM venituri_trimestriale vt
@@ -161,7 +161,7 @@ def raport4(db: Session = Depends(get_db)) -> List[Dict]:
 def raport5(db: Session = Depends(get_db)) -> List[Dict]:
     query = """
       WITH camere_count AS (
-      SELECT 
+      SELECT
           f.id_metoda_plata_dim,
           f.id_camera_dim,
           COUNT(*) AS numar_rezervari,
@@ -173,7 +173,7 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
   ),
 
   top_camere AS (
-      SELECT 
+      SELECT
           id_metoda_plata_dim,
           id_camera_dim,
           numar_rezervari,
@@ -186,14 +186,14 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
   ),
 
   venituri_lunare AS (
-      SELECT 
+      SELECT
           tc.id_metoda_plata_dim,
           tc.id_camera_dim,
           t.luna,
           SUM(f.suma_totala) AS venit_lunar
       FROM top_camere tc
-      JOIN fact_rezervari f 
-          ON tc.id_camera_dim = f.id_camera_dim 
+      JOIN fact_rezervari f
+          ON tc.id_camera_dim = f.id_camera_dim
         AND tc.id_metoda_plata_dim = f.id_metoda_plata_dim
       JOIN dim_timp t ON f.id_data_start = t.data_completa
       WHERE tc.rank_camera <= 3 AND t.an = 2025
@@ -201,23 +201,23 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
   ),
 
   rate_crestere AS (
-      SELECT 
+      SELECT
           id_metoda_plata_dim,
           id_camera_dim,
           AVG(
-              CASE 
+              CASE
                   WHEN prev_venit > 0 THEN ((venit_lunar - prev_venit)/prev_venit)*100
                   ELSE 0
               END
           ) AS rata_crestere_medie
       FROM (
-          SELECT 
+          SELECT
               id_metoda_plata_dim,
               id_camera_dim,
               luna,
               venit_lunar,
               LAG(venit_lunar) OVER (
-                  PARTITION BY id_metoda_plata_dim, id_camera_dim 
+                  PARTITION BY id_metoda_plata_dim, id_camera_dim
                   ORDER BY luna
               ) AS prev_venit
           FROM venituri_lunare
@@ -226,7 +226,7 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
   ),
 
   procent_contributie AS (
-      SELECT 
+      SELECT
           id_metoda_plata_dim,
           id_camera_dim,
           venit_total,
@@ -235,7 +235,7 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
       WHERE rank_camera <= 3
   )
 
-  SELECT 
+  SELECT
       mp.metoda_plata,
       c.categorie_camera,
       c.nr_camera,
@@ -244,11 +244,11 @@ def raport5(db: Session = Depends(get_db)) -> List[Dict]:
       ROUND(pc.contributie_procentuala, 2) AS contributie_procentuala,
       ROUND(rc.rata_crestere_medie, 2) AS rata_crestere_lunara_medie
   FROM top_camere tc
-  JOIN procent_contributie pc 
-      ON tc.id_metoda_plata_dim = pc.id_metoda_plata_dim 
+  JOIN procent_contributie pc
+      ON tc.id_metoda_plata_dim = pc.id_metoda_plata_dim
     AND tc.id_camera_dim = pc.id_camera_dim
-  JOIN rate_crestere rc 
-      ON tc.id_metoda_plata_dim = rc.id_metoda_plata_dim 
+  JOIN rate_crestere rc
+      ON tc.id_metoda_plata_dim = rc.id_metoda_plata_dim
     AND tc.id_camera_dim = rc.id_camera_dim
   JOIN dim_camera c ON tc.id_camera_dim = c.id_camera_dim
   JOIN dim_metoda_plata mp ON tc.id_metoda_plata_dim = mp.id_metoda_plata_dim

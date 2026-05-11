@@ -10,11 +10,8 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/models/departament.dart';
 import 'package:mvvm_flutter/models/tip_camera.dart';
 
-
 class GlobalApi extends ClientApi {
   GlobalApi() : super(baseURL: selectedApiType.baseUrl);
-
-  // ── HOTEL GLOBAL ────────────────────────────────────────────────────────────
 
   Future<List<Hotel>> fetchHoteluriGlobal() => get(
         path: '/global/hoteluri',
@@ -39,8 +36,6 @@ class GlobalApi extends ClientApi {
         path: '/global/hoteluri/$id',
         deserializer: (_) {},
       );
-
-  // ── ANGAJAT GLOBAL ──────────────────────────────────────────────────────────
 
   Future<List<AngajatGlobal>> fetchAngajatiGlobal() => get(
         path: '/global/angajati',
@@ -67,8 +62,6 @@ class GlobalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── CAMERA GLOBAL ───────────────────────────────────────────────────────────
-
   Future<List<CameraLocal>> fetchCamereGlobal() => get(
         path: '/global/camere',
         deserializer: (d) =>
@@ -93,8 +86,6 @@ class GlobalApi extends ClientApi {
         path: '/global/camere/$id',
         deserializer: (_) {},
       );
-
-  // ── CLIENT GLOBAL ────────────────────────────────────────────────────────────
 
   Future<List<Client>> fetchClientiGlobal() => get(
         path: '/global/clienti',
@@ -121,8 +112,6 @@ class GlobalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── REZERVARE GLOBAL ─────────────────────────────────────────────────────────
-
   Future<List<Rezervare>> fetchRezervariGlobal() => get(
         path: '/global/rezervari',
         deserializer: (d) =>
@@ -148,8 +137,6 @@ class GlobalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── PLATA GLOBAL ─────────────────────────────────────────────────────────────
-
   Future<List<Plata>> fetchPlatiGlobal() => get(
         path: '/global/plati',
         deserializer: (d) => (d as List).map((e) => Plata.fromJson(e)).toList(),
@@ -173,8 +160,6 @@ class GlobalApi extends ClientApi {
         path: '/global/plati/$id',
         deserializer: (_) {},
       );
-
-  // ── SERVICIU GLOBAL ───────────────────────────────────────────────────────────
 
   Future<List<Serviciu>> fetchServiciiGlobal() => get(
         path: '/global/servicii',
@@ -201,8 +186,6 @@ class GlobalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── DEPARTAMENT GLOBAL ────────────────────────────────────────────────────────
-
   Future<List<Departament>> fetchDepartamenteGlobal() => get(
         path: '/global/departamente',
         deserializer: (d) =>
@@ -227,8 +210,6 @@ class GlobalApi extends ClientApi {
         path: '/global/departamente/$id',
         deserializer: (_) {},
       );
-
-  // ── TIP CAMERA GLOBAL ─────────────────────────────────────────────────────────
 
   Future<List<TipCamera>> fetchTipuriCameraGlobal() => get(
         path: '/global/tipuri_camera',
@@ -255,8 +236,6 @@ class GlobalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── VERIFICARE PROPAGARE (Req 4) ────────────────────────────────────────────
-
   Future<Map<String?, dynamic>> verificareHotel(int id) => get(
         path: '/global/verificare/hoteluri/$id',
         deserializer: (d) => d as Map<String?, dynamic>,
@@ -271,8 +250,6 @@ class GlobalApi extends ClientApi {
         path: '/global/verificare/camere/$id',
         deserializer: (d) => d as Map<String?, dynamic>,
       );
-
-  // ── STATISTICI ──────────────────────────────────────────────────────────────
 
   Future<List<Map<String?, dynamic>>> fetchDistributie() => get(
         path: '/statistici/distributie',

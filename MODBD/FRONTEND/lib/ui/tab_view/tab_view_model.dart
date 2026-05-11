@@ -5,7 +5,7 @@ enum AppTabType { local, global, statistici }
 class TabViewViewModel extends ChangeNotifier {
   AppTabType _currentTab = AppTabType.local;
   AppTabType _activeTab = AppTabType.local;
-  // ignore: unused_field
+
   AppTabType _previousTab = AppTabType.local;
 
   AppTabType get currentTab => _currentTab;

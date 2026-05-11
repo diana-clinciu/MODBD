@@ -38,7 +38,6 @@ class Plata {
         if (metoda != null) 'metoda_plata': metoda!,
       };
 
-  // Generic dialog – nu depinde de OLTPViewModel
   static Future<Plata?> showAddDialog(
           BuildContext context, List<Rezervare> rezervari) =>
       _showGenericDialog(context, null, rezervari);

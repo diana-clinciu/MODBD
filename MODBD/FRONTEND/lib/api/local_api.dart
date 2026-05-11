@@ -10,13 +10,10 @@ import 'package:mvvm_flutter/models/serviciu.dart';
 import 'package:mvvm_flutter/models/rezervare.dart';
 import 'package:mvvm_flutter/models/plata.dart';
 
-
 class LocalApi extends ClientApi {
   LocalApi() : super(baseURL: selectedApiType.baseUrl);
 
   String? _p(String? oras) => oras == 'Bucuresti' ? '/local/buc' : '/local/con';
-
-  // ── HOTEL ──────────────────────────────────────────────────────────────────
 
   Future<List<Hotel>> fetchHoteluriLocal(String? oras) => get(
         path: '${_p(oras)}/hoteluri',
@@ -41,8 +38,6 @@ class LocalApi extends ClientApi {
         path: '${_p(oras)}/hoteluri/$id',
         deserializer: (_) {},
       );
-
-  // ── ANGAJAT ────────────────────────────────────────────────────────────────
 
   Future<List<AngajatGlobal>> fetchAngajatiLocal(String? oras) => get(
         path: '${_p(oras)}/angajati',
@@ -70,8 +65,6 @@ class LocalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── CAMERA ─────────────────────────────────────────────────────────────────
-
   Future<List<CameraLocal>> fetchCamereLocal(String? oras) => get(
         path: '${_p(oras)}/camere',
         deserializer: (d) =>
@@ -97,8 +90,6 @@ class LocalApi extends ClientApi {
         deserializer: (_) {},
       );
 
-  // ── REPLICI CONSTANTA ──────────────────────────────────────────────────────
-
   Future<List<Client>> fetchClientiLocal(String? oras) => get(
         path: '${_p(oras)}/clienti',
         deserializer: (d) =>
@@ -111,8 +102,6 @@ class LocalApi extends ClientApi {
             (d as List).map((e) => Serviciu.fromJson(e)).toList(),
       );
 
-  // ── REFERINTA ──────────────────────────────────────────────────────────────
-
   Future<List<TipCamera>> fetchTipuriCamera(String? oras) => get(
         path: '${_p(oras)}/referinta/tipuri_camera',
         deserializer: (d) =>
@@ -124,8 +113,6 @@ class LocalApi extends ClientApi {
         deserializer: (d) =>
             (d as List).map((e) => Departament.fromJson(e)).toList(),
       );
-
-  // ── TABELE CENTRALIZATE – CRUD COMPLET ────────────────────────────────────
 
   Future<Client> addClientLocal(String? oras, Client c) => sendForm(
         method: 'POST',
